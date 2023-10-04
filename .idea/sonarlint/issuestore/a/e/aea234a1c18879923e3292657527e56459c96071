@@ -1,0 +1,6 @@
+
+Z	java:S106"9Replace this use of System.out or System.err by a logger.(©şêÜúÿÿÿÿ8³â¯¯1
+o
+java:S1128"MRemove this unused import 'com.amazonaws.services.dynamodbv2.AmazonDynamoDB'.(Â“™Óûÿÿÿÿ8¹Ñ´Ş¯1
+[secrets:S6290"6Make sure this AWS Secret Access Key is not disclosed.(ñåš¥ûÿÿÿÿ8”³â¯¯1
+Qsecrets:S6290"2Make sure this AWS Access Key ID is not disclosed.(Ìıä 8”³â¯¯1

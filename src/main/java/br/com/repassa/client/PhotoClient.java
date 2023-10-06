@@ -1,4 +1,4 @@
-package br.com.repassa.service.client;
+package br.com.repassa.client;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,17 +8,20 @@ import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import br.com.repassa.service.entity.GroupPhotos;
-import br.com.repassa.service.entity.PhotosManager;
-import br.com.repassa.service.enums.StatusManagerPhotos;
-import br.com.repassa.service.dto.PhotoFilterResponseDTO;
-import com.amazonaws.services.dynamodbv2.document.*;
+import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.entity.GroupPhotos;
+import br.com.repassa.entity.PhotosManager;
+import br.com.repassa.exception.PhotoError;
+import br.com.repassa.enums.StatusManagerPhotos;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.ItemCollection;
+import com.amazonaws.services.dynamodbv2.document.ScanOutcome;
+import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.dynamodbv2.model.AmazonDynamoDBException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.service.exception.PhotoError;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -88,7 +91,7 @@ public class PhotoClient implements PhotoClientInterface {
                 responseDTO.setDate(item.getString("upload_date"));
                 responseDTO.setEditor(item.getString("editor"));
                 responseDTO.setStatusManagerPhotos(StatusManagerPhotos.valueOf(item.getString("statusManagerPhotos")));
-                String json = item.getJSON("groupPhotos");
+                String json = item.getString("groupPhotos");
                 ObjectMapper objectMapper = new ObjectMapper();
                 List<GroupPhotos> readValue = objectMapper.readValue(json, new TypeReference<List<GroupPhotos>>(){});
                 responseDTO.setGroupPhotos(readValue);

@@ -1,4 +1,4 @@
-package br.com.repassa.service.service;
+package br.com.repassa.service;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -12,14 +12,14 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 
-import br.com.repassa.service.client.PhotoClient;
-import br.com.repassa.service.dto.PhotoFilterDTO;
-import br.com.repassa.service.dto.PhotoFilterResponseDTO;
-import br.com.repassa.service.entity.GroupPhotos;
-import br.com.repassa.service.entity.Photo;
-import br.com.repassa.service.entity.PhotosManager;
-import br.com.repassa.service.enums.StatusManagerPhotos;
-import br.com.repassa.service.exception.PhotoError;
+import br.com.repassa.entity.PhotosManager;
+import br.com.repassa.exception.PhotoError;
+import br.com.repassa.client.PhotoClient;
+import br.com.repassa.dto.PhotoFilterDTO;
+import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.entity.GroupPhotos;
+import br.com.repassa.entity.Photo;
+import br.com.repassa.enums.StatusManagerPhotos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

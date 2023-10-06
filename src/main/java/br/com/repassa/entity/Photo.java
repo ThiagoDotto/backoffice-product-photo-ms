@@ -1,9 +1,9 @@
-package br.com.repassa.service.entity;
+package br.com.repassa.entity;
 
 import java.io.Serial;
 import java.io.Serializable;
 
-import br.com.repassa.service.enums.TypePhoto;
+import br.com.repassa.enums.TypePhoto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

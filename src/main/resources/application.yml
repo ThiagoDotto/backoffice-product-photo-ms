@@ -1,0 +1,16 @@
+quarkus:
+  devservices:
+    enabled: false
+
+  swagger-ui:
+    always-include: true
+
+  http:
+    root-path: /${project.artifactId}
+
+  application:
+    name: @project.artifactId@ # nome da aplicação será usando para definir o repositório de configura para o config-server
+
+  spring-cloud-config:
+    enabled: true # conexão com o config-server está disabilitado por padrão
+    url: https://api-java-qa.repassa.net.br/backoffice-spring-config/

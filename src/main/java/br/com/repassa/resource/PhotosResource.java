@@ -11,9 +11,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import br.com.repassa.dto.PhotoFilterDTO;
+import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.service.PhotosService;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
@@ -44,6 +46,16 @@ public class PhotosResource {
     public Response getAllDate(@QueryParam("date") String date) throws RepassaException {
         PhotoFilterDTO filter = new PhotoFilterDTO(date);
         photosService.filterAndPersist(filter, token.getClaim("name"));
+        return Response.ok().build();
+    }
+
+    @POST
+    @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Finaliza Gerencia de Fotos", description = "endpoint usado para finalizar o procosesso de gerencia de fot")
+    @Path("/finish-manager-bags")
+    public Response finishManagerPhotos(@RequestBody PhotosManager photosManager) {
+        photosService.finishManagerPhotos(photosManager);
         return Response.ok().build();
     }
 }

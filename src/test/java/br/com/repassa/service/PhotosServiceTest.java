@@ -62,9 +62,9 @@ public class PhotosServiceTest {
 
     @Test
     void whenPersistPhotoManager() throws RepassaException {
+        doNothing().when(photoClient).savePhotosManager(any());
 
         photosService.persistPhotoManager(listPhotoFilter);
-
     }
 
     private List<PhotoFilterResponseDTO> createListPhotoFilter() {

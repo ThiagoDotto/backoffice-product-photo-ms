@@ -3,21 +3,22 @@ package br.com.repassa.service.client;
 import java.util.Optional;
 
 import br.com.repassa.service.entity.PhotosManager;
+import br.com.repassa.service.repository.PhotosManagerRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
-import com.amazonaws.services.dynamodbv2.document.*;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.Table;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 
-import br.com.repassa.service.repository.PhotosManagerRepository;
-
 public class PhotosManagerRepositoryImpl implements PhotosManagerRepository {
 
     private final DynamoDB dynamoDB;
-    private final String TABLE_NAME = "PhotosManager";
+    private final String TABLE_NAME = "PhotosManager_QA";
 
     public PhotosManagerRepositoryImpl(DynamoDB dynamoDBClient) {
         this.dynamoDB = dynamoDBClient;
@@ -51,7 +52,7 @@ public class PhotosManagerRepositoryImpl implements PhotosManagerRepository {
                 .withString("editor", entity.getEditor())
                 .withString("upload_date", entity.getDate())
                 .withString("statusManagerPhotos", entity.getStatusManagerPhotos().toString())
-                .withJSON("groupPhotos", writeValueAsString);
+                .withString("groupPhotos", writeValueAsString);
 
         table.putItem(item);
 

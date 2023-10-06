@@ -12,18 +12,18 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 
+import br.com.repassa.service.client.PhotoClient;
+import br.com.repassa.service.dto.PhotoFilterDTO;
+import br.com.repassa.service.dto.PhotoFilterResponseDTO;
 import br.com.repassa.service.entity.GroupPhotos;
 import br.com.repassa.service.entity.Photo;
 import br.com.repassa.service.entity.PhotosManager;
 import br.com.repassa.service.enums.StatusManagerPhotos;
-import br.com.repassa.service.dto.PhotoFilterResponseDTO;
+import br.com.repassa.service.exception.PhotoError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.service.client.PhotoClient;
-import br.com.repassa.service.dto.PhotoFilterDTO;
-import br.com.repassa.service.exception.PhotoError;
 
 @ApplicationScoped
 public class PhotosService {
@@ -32,7 +32,8 @@ public class PhotosService {
 
     private static final String URL_ERROR_IMAGE = "https://backoffice-triage-photo-dev.s3.amazonaws.com/invalidPhoto.png";
 
-    @Inject PhotoClient photoClient;
+    @Inject
+    PhotoClient photoClient;
 
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
 
@@ -125,7 +126,7 @@ public class PhotosService {
             AtomicInteger counter = new AtomicInteger();
             photoManager.getGroupPhotos().forEach(x -> {
                 int index = counter.getAndIncrement();
-                x.setId(index);
+                x.setId("n>" + index);
             });
             photoClient.savePhotosManager(photoManager);
         } catch (Exception e) {

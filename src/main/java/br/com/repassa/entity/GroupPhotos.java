@@ -1,10 +1,10 @@
-package br.com.repassa.service.entity;
+package br.com.repassa.entity;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 
-import br.com.repassa.service.enums.TypeError;
+import br.com.repassa.enums.TypeError;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

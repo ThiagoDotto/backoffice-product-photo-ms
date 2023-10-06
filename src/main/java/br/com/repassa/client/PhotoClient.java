@@ -1,4 +1,4 @@
-package br.com.repassa.service.client;
+package br.com.repassa.client;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,11 +8,11 @@ import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import br.com.repassa.service.dto.PhotoFilterResponseDTO;
-import br.com.repassa.service.entity.GroupPhotos;
-import br.com.repassa.service.entity.PhotosManager;
-import br.com.repassa.service.enums.StatusManagerPhotos;
-import br.com.repassa.service.exception.PhotoError;
+import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.entity.GroupPhotos;
+import br.com.repassa.entity.PhotosManager;
+import br.com.repassa.enums.StatusManagerPhotos;
+import br.com.repassa.exception.PhotoError;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.ItemCollection;
 import com.amazonaws.services.dynamodbv2.document.ScanOutcome;

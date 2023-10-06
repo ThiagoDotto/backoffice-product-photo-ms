@@ -1,4 +1,4 @@
-package br.com.repassa.service.exception;
+package br.com.repassa.exception;
 
 import br.com.backoffice_repassa_utils_lib.error.api.ApiError;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;

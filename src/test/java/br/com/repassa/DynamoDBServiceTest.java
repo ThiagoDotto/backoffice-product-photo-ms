@@ -1,4 +1,4 @@
-package br.com.repassa.service;
+package br.com.repassa;
 
 import java.util.Map;
 

@@ -21,8 +21,8 @@ public class GroupPhotos implements Serializable {
     @Serial
     private static final long serialVersionUID = -3869326221476646938L;
 
-    private int id;
-    private Long productId;
+    private String id;
+    private String productId;
     private TypeError typeError;
     private List<Photo> photos;
 }

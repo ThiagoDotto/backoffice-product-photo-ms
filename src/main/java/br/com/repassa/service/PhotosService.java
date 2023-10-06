@@ -134,6 +134,11 @@ public class PhotosService {
         }
     }
 
+    @Transactional
+    public void finishManagerPhotos(PhotosManager photosManager){
+
+    }
+
     private void createPhotosError(List<Photo> photos){
         Photo photoError = Photo.builder().urlPhoto(URL_ERROR_IMAGE).namePhoto("error").base64("")
                 .sizePhoto("0").build();

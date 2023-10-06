@@ -1,9 +1,9 @@
-package br.com.repassa.service.client;
+package br.com.repassa.client;
 
 import java.util.Optional;
 
-import br.com.repassa.service.entity.PhotosManager;
-import br.com.repassa.service.repository.PhotosManagerRepository;
+import br.com.repassa.entity.PhotosManager;
+import br.com.repassa.repository.PhotosManagerRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;

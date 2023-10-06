@@ -1,4 +1,4 @@
-package br.com.repassa.service.enums;
+package br.com.repassa.enums;
 
 public enum StatusManagerPhotos {
 

@@ -30,7 +30,7 @@ public class PhotosService {
 
     private static final Logger LOG = LoggerFactory.getLogger(PhotosService.class);
 
-    private static final String URL_ERROR_IMAGE = "https://backoffice-triage-photo-dev.s3.amazonaws.com/invalidPhoto.png";
+    private static final String URL_ERROR_IMAGE = "https://backoffice-triage-photo-qa.s3.amazonaws.com/invalidPhoto.png";
 
     @Inject
     PhotoClient photoClient;

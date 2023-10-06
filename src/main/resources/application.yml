@@ -13,4 +13,4 @@ quarkus:
 
   spring-cloud-config:
     enabled: true # conexão com o config-server está disabilitado por padrão
-    url: https://api-java-dev.repassa.net.br/backoffice-spring-config/
+    url: https://api-java-qa.repassa.net.br/backoffice-spring-config/

@@ -24,8 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @ApplicationScoped
 public class PhotoClient implements PhotoClientInterface {
-    private static final String TABLE_NAME = "PhotoProcessingTable";
-    private static final String TABLE_NAME_PHOTOS = "PhotosManager";
+    private static final String TABLE_NAME = "PhotoProcessingTable_QA";
+    private static final String TABLE_NAME_PHOTOS = "PhotosManager_QA";
 
     private DynamoDbClient dynamoDB;
 

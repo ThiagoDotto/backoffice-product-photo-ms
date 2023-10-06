@@ -1,16 +1,16 @@
-package br.com.repassa.service;
+package br.com.repassa;
 
 
 
 import java.util.*;
 
-import br.com.repassa.service.client.DynamoDbClient;
-import br.com.repassa.service.client.PhotoClient;
-import br.com.repassa.service.client.PhotoClientInterface;
-import br.com.repassa.service.dto.PhotoFilterDTO;
-import br.com.repassa.service.dto.PhotoFilterResponseDTO;
-import br.com.repassa.service.repository.PhotosManagerRepository;
-import br.com.repassa.service.service.PhotosService;
+import br.com.repassa.service.PhotosService;
+import br.com.repassa.client.DynamoDbClient;
+import br.com.repassa.client.PhotoClient;
+import br.com.repassa.client.PhotoClientInterface;
+import br.com.repassa.dto.PhotoFilterDTO;
+import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.repository.PhotosManagerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

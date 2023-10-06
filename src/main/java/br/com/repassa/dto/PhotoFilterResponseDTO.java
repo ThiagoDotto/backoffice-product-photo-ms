@@ -1,4 +1,4 @@
-package br.com.repassa.service.dto;
+package br.com.repassa.dto;
 
 import java.io.Serializable;
 

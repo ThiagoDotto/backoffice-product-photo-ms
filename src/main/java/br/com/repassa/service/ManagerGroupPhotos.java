@@ -1,8 +1,8 @@
-package br.com.repassa.service.service;
+package br.com.repassa.service;
 
-import br.com.repassa.service.entity.GroupPhotos;
-import br.com.repassa.service.entity.Photo;
-import br.com.repassa.service.enums.TypeError;
+import br.com.repassa.entity.GroupPhotos;
+import br.com.repassa.entity.Photo;
+import br.com.repassa.enums.TypeError;
 
 import java.util.ArrayList;
 import java.util.List;

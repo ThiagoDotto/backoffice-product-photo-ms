@@ -136,7 +136,6 @@ public class PhotosService {
 
     @Transactional
     public void finishManagerPhotos(PhotosManager photosManager){
-
         photoClient.savePhotosManager(photosManager);
     }
 

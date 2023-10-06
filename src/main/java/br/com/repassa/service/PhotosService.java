@@ -137,6 +137,7 @@ public class PhotosService {
     @Transactional
     public void finishManagerPhotos(PhotosManager photosManager){
 
+        photoClient.savePhotosManager(photosManager);
     }
 
     private void createPhotosError(List<Photo> photos){

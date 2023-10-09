@@ -12,6 +12,7 @@ public class PhotoError implements RepassaUtilError {
     public static final RepassaUtilError BUSCAR_DYNAMODB = new PhotoError("003","Erro ao consultar as informações no banco DynamoDB.");
     public static final RepassaUtilError FOTOS_NAO_ENCONTRADA = new PhotoError("004","Não há itens encontrados para a data informada. Selecione uma nova data ou tente novamente");
     public static final RepassaUtilError ERRO_AO_BUSCAR_IMAGENS = new PhotoError("005","Erro nao esperado ao buscar as Fotoso no DynamoDB");
+    public static final RepassaUtilError VALIDATE_IDENTIFICATORS_EMPTY = new PhotoError("005","A lista para validar os ID's se encontra vazia.");
     public PhotoError(String errorCode, String errorMessage) {
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;

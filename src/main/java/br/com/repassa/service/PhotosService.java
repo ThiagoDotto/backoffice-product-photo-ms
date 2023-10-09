@@ -6,24 +6,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 
-import br.com.repassa.client.PhotoClient;
-import br.com.repassa.dto.PhotoFilterDTO;
-import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.enums.StatusManagerPhotos;
-import br.com.repassa.exception.PhotoError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
+import br.com.repassa.client.PhotoClient;
+import br.com.repassa.dto.IdentificatorsDTO;
+import br.com.repassa.dto.PhotoFilterDTO;
+import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.exception.PhotoError;
 
 @ApplicationScoped
 public class PhotosService {
@@ -82,6 +83,57 @@ public class PhotosService {
     }
 
     @Transactional
+    public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators) throws Exception {
+        if (identificators.isEmpty()) {
+            throw new RepassaException(PhotoError.VALIDATE_IDENTIFICATORS_EMPTY);
+        }
+
+        List<IdentificatorsDTO> response = new ArrayList<>();
+
+        identificators.forEach(identificator -> {
+            try {
+                PhotosManager photosManager = photoClient.findByProductId(identificator.getProductId());
+
+                if (photosManager == null) {
+                    identificator.setValid(true);
+                    identificator.setMessage("ID Disponível");
+                    LOG.info("ProductiID " + identificator.getProductId() + " não encontrado.");
+                } else {
+                    if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.STARTED) {
+                        // Verifica se encontrou outro Grupo com o mesmo ID
+                        List<GroupPhotos> foundGroupPhotos = photosManager.getGroupPhotos()
+                                .stream()
+                                .filter(group -> identificator.getProductId().equals(group.getProductId())
+                                        && group.getId() != identificator.getGroupId())
+                                .collect(Collectors.toList());
+
+                        if (foundGroupPhotos.size() >= 2) {
+                            identificator.setMessage(
+                                    "O ID " + identificator.getProductId() + " está sendo utilizando em outro Grupo.");
+                        } else if (foundGroupPhotos.size() == 1
+                                && !foundGroupPhotos.get(0).getId().equals(identificator.getGroupId())) {
+                            identificator.setMessage(
+                                    "O ID " + identificator.getProductId() + " está sendo utilizando em outro Grupo.");
+                        } else {
+                            identificator.setValid(true);
+                            identificator.setMessage("ID Disponível");
+                        }
+                    } else if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
+                        identificator.setMessage("O ID " + identificator.getProductId()
+                                + " está sendo utilizando em outro Grupo com status Finalizado.");
+                    }
+                }
+
+                response.add(identificator);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        return response;
+    }
+
+    @Transactional
     public void persistPhotoManager(List<PhotoFilterResponseDTO> resultList) throws RepassaException {
         LOG.info("Iniciando processo de persistencia");
 
@@ -111,7 +163,7 @@ public class PhotosService {
             } else if (photos.size() < 4
                     && (resultList.size() - managerGroupPhotos.getTotalPhotos()) == photos.size()) {
 
-                while (photos.size() < 4){
+                while (photos.size() < 4) {
                     createPhotosError(photos);
                 }
                 managerGroupPhotos.addPhotos(photos, false);
@@ -123,23 +175,17 @@ public class PhotosService {
         photoManager.setGroupPhotos(groupPhotos);
 
         try {
-            AtomicInteger counter = new AtomicInteger();
             photoManager.getGroupPhotos().forEach(x -> {
-                int index = counter.getAndIncrement();
-                x.setId("n>" + index);
+                x.setId(UUID.randomUUID().toString());
             });
+
             photoClient.savePhotosManager(photoManager);
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
         }
     }
 
-    @Transactional
-    public void finishManagerPhotos(PhotosManager photosManager){
-
-    }
-
-    private void createPhotosError(List<Photo> photos){
+    private void createPhotosError(List<Photo> photos) {
         Photo photoError = Photo.builder().urlPhoto(URL_ERROR_IMAGE).namePhoto("error").base64("")
                 .sizePhoto("0").build();
         photos.add(photoError);

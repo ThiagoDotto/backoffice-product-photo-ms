@@ -1,21 +1,21 @@
 package br.com.repassa.service;
 
 import java.text.Normalizer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 
+import br.com.repassa.client.DynamoDbClient;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.enums.StatusManagerPhotos;
+import br.com.repassa.enums.StatusProduct;
+import com.amazonaws.services.dynamodbv2.model.AmazonDynamoDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,6 +182,26 @@ public class PhotosService {
             photoClient.savePhotosManager(photoManager);
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
+        }
+    }
+
+    @Transactional
+    public String finishManagerPhotos(PhotosManager photosManager) throws RepassaException {
+
+        if(Objects.isNull(photosManager)){
+            throw new RepassaException(PhotoError.OBJETO_VAZIO);
+        }
+        photosManager.setStatusManagerPhotos(StatusManagerPhotos.FINISHED);
+        photosManager.getGroupPhotos().forEach(group -> {
+            group.setStatusProduct(StatusProduct.FINALIZADO);
+            group.setUpdateDate(LocalDateTime.now().toString());
+        });
+
+        try {
+            photoClient.savePhotosManager(photosManager);
+            return PhotoError.SUCESSO_AO_SALVAR.getErrorMessage();
+        } catch (AmazonDynamoDBException e){
+            throw new RepassaException(PhotoError.ERRO_AO_SALVAR_NO_DYNAMO);
         }
     }
 

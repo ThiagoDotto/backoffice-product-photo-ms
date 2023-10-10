@@ -2,7 +2,6 @@ package br.com.repassa.entity;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import br.com.repassa.enums.StatusManagerPhotos;

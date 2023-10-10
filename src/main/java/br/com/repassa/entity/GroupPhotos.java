@@ -25,7 +25,8 @@ public class GroupPhotos implements Serializable {
 
     private String id;
     private String productId;
-    private TypeError typeError;
+    private String imageError;
+    private String idError;
     private StatusProduct statusProduct;
     private List<Photo> photos;
     private String updateDate;

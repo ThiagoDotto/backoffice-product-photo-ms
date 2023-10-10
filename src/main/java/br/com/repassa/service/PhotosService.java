@@ -12,10 +12,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 
-import br.com.repassa.entity.GroupPhotos;
-import br.com.repassa.entity.Photo;
-import br.com.repassa.entity.PhotosManager;
-import br.com.repassa.enums.StatusManagerPhotos;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +21,12 @@ import br.com.repassa.client.PhotoClient;
 import br.com.repassa.dto.IdentificatorsDTO;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.entity.GroupPhotos;
+import br.com.repassa.entity.Photo;
+import br.com.repassa.entity.PhotosManager;
+import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.exception.PhotoError;
+import br.com.repassa.resource.client.ProductRestClient;
 
 @ApplicationScoped
 public class PhotosService {
@@ -32,6 +34,9 @@ public class PhotosService {
     private static final Logger LOG = LoggerFactory.getLogger(PhotosService.class);
 
     private static final String URL_ERROR_IMAGE = "https://backoffice-triage-photo-dev.s3.amazonaws.com/invalidPhoto.png";
+
+    @RestClient
+    ProductRestClient productRestClient;
 
     @Inject
     PhotoClient photoClient;
@@ -92,11 +97,19 @@ public class PhotosService {
 
         identificators.forEach(identificator -> {
             try {
+                // ProductDTO productDTO =
+                // productRestClient.validateProductId(identificator.getProductId());
+
+                // System.out.println("AQUI: " + productDTO.toString());
+
                 PhotosManager photosManager = photoClient.findByProductId(identificator.getProductId());
 
                 if (photosManager == null) {
                     identificator.setValid(true);
                     identificator.setMessage("ID Disponível");
+
+
+
                     LOG.info("ProductiID " + identificator.getProductId() + " não encontrado.");
                 } else {
                     if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.STARTED) {

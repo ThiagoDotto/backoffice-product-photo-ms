@@ -2,24 +2,30 @@ package br.com.repassa;
 
 
 
-import java.util.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import br.com.repassa.service.PhotosService;
-import br.com.repassa.client.DynamoDbClient;
-import br.com.repassa.client.PhotoClient;
-import br.com.repassa.client.PhotoClientInterface;
-import br.com.repassa.dto.PhotoFilterDTO;
-import br.com.repassa.dto.PhotoFilterResponseDTO;
-import br.com.repassa.repository.PhotosManagerRepository;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static org.mockito.Mockito.*;
+import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
+import br.com.repassa.client.DynamoClient;
+import br.com.repassa.client.PhotoClient;
+import br.com.repassa.client.PhotoClientInterface;
+import br.com.repassa.dto.PhotoFilterDTO;
+import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.service.PhotosService;
 
 
 public class PhotosServiceTest {
@@ -27,13 +33,10 @@ public class PhotosServiceTest {
     PhotosService photosService;
 
     @InjectMocks
-    DynamoDbClient dynamoDbClient;
+    DynamoClient dynamoDbClient;
 
     @Mock
     private PhotoClient photoClient = mock(PhotoClient.class);
-
-    @Mock
-    PhotosManagerRepository photosManagerRepository;
 
     List<PhotoFilterResponseDTO> listPhotoFilter = new ArrayList<>();
 

@@ -106,10 +106,35 @@
       <artifactId>mapstruct</artifactId>
       <version>1.5.5.Final</version>
     </dependency>
+     <dependency>
+	    <groupId>software.amazon.awssdk</groupId>
+	    <artifactId>rekognition</artifactId>
+	    <version>2.20.160</version>
+	</dependency>
     <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk-dynamodb</artifactId>
-      <version>1.12.553</version>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>dynamodb</artifactId>
+        <version>2.20.160</version>
+    </dependency>
+    <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>aws-core</artifactId>
+        <version>2.20.160</version>
+    </dependency>
+     <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>sdk-core</artifactId>
+        <version>2.20.160</version>
+    </dependency>
+    <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>profiles</artifactId>
+        <version>2.20.160</version>
+    </dependency>
+    <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>utils</artifactId>
+        <version>2.20.160</version>
     </dependency>
     <dependency>
       <groupId>org.assertj</groupId>
@@ -161,11 +186,6 @@
       <groupId>org.eclipse.microprofile.openapi</groupId>
       <artifactId>microprofile-openapi-api</artifactId>
       <version>3.1.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.derjust</groupId>
-      <artifactId>spring-data-dynamodb</artifactId>
-      <version>5.1.0</version>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>

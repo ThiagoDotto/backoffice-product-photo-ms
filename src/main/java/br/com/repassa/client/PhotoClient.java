@@ -108,11 +108,11 @@ public class PhotoClient {
         	for (Map<String, AttributeValue> item : items.items()) {
         		
         		 responseDTO = new PhotosManager();
-                 responseDTO.setId(item.get("id").toString());
-                 responseDTO.setDate(item.get("upload_date").toString());
-                 responseDTO.setEditor(item.get("editor").toString());
-                 responseDTO.setStatusManagerPhotos(StatusManagerPhotos.valueOf(item.get("statusManagerPhotos").toString()));
-                 String json = item.get("groupPhotos").toString();
+                 responseDTO.setId(item.get("id").s());
+                 responseDTO.setDate(item.get("upload_date").s());
+                 responseDTO.setEditor(item.get("editor").s());
+                 responseDTO.setStatusManagerPhotos(StatusManagerPhotos.valueOf(item.get("statusManagerPhotos").s()));
+                 String json = item.get("groupPhotos").s();
                  ObjectMapper objectMapper = new ObjectMapper();
                  List<GroupPhotos> readValue = null;
 				try {
@@ -142,11 +142,11 @@ public class PhotoClient {
         
         for (Map<String, AttributeValue> item : items.items()) {
         	   responseDTO = new PhotosManager();
-               responseDTO.setId(item.get("id").toString());
-               responseDTO.setDate(item.get("upload_date").toString());
-               responseDTO.setEditor(item.get("editor").toString());
-               responseDTO.setStatusManagerPhotos(StatusManagerPhotos.valueOf(item.get("statusManagerPhotos").toString()));
-               String json = item.get("groupPhotos").toString();
+               responseDTO.setId(item.get("id").s());
+               responseDTO.setDate(item.get("upload_date").s());
+               responseDTO.setEditor(item.get("editor").s());
+               responseDTO.setStatusManagerPhotos(StatusManagerPhotos.valueOf(item.get("statusManagerPhotos").s()));
+               String json = item.get("groupPhotos").s();
                ObjectMapper objectMapper = new ObjectMapper();
                List<GroupPhotos> readValue = objectMapper.readValue(json, new TypeReference<List<GroupPhotos>>() {
                });
@@ -162,23 +162,23 @@ public class PhotoClient {
         
         
         scanResponse.items().forEach(item -> {
-        	  String imageName = item.get("imagem_name").toString();
+        	  String imageName = item.get("imagem_name").s();
 
               if (imageName == null) {
                   imageName = "undefined";
               }
               
              PhotoFilterResponseDTO responseDTO = new PhotoFilterResponseDTO();
-             responseDTO.setBagId(item.get("bag_id").toString());
-             responseDTO.setEditedBy(item.get("edited_by").toString());
+             responseDTO.setBagId(item.get("bag_id").s());
+             responseDTO.setEditedBy(item.get("edited_by").s());
              responseDTO.setImageName(imageName);
-             responseDTO.setId(item.get("id").toString());
-             responseDTO.setImageId(item.get("image_id").toString());
-             responseDTO.setIsValid(item.get("is_valid").toString());
-             responseDTO.setOriginalImageUrl(item.get("original_image_url").toString());
-             responseDTO.setSizePhoto(item.get("size_photo").toString());
-             responseDTO.setThumbnailBase64(item.get("thumbnail_base64").toString());
-             responseDTO.setUploadDate(item.get("upload_date").toString());
+             responseDTO.setId(item.get("id").s());
+             responseDTO.setImageId(item.get("image_id").s());
+             responseDTO.setIsValid(item.get("is_valid").s());
+             responseDTO.setOriginalImageUrl(item.get("original_image_url").s());
+             responseDTO.setSizePhoto(item.get("size_photo").s());
+             responseDTO.setThumbnailBase64(item.get("thumbnail_base64").s());
+             responseDTO.setUploadDate(item.get("upload_date").s());
 
              resultList.add(responseDTO);
         });

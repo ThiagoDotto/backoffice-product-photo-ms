@@ -28,7 +28,7 @@ public class ManagerGroupPhotos {
         groupPhotos1.setPhotos(new ArrayList<>(photos));
 
         if(!isValid) {
-            groupPhotos1.setTypeError(TypeError.IMAGE_ERROR);
+            groupPhotos1.setImageError(TypeError.IMAGE_ERROR.name());
         }
 
         groupPhotos.add(groupPhotos1);

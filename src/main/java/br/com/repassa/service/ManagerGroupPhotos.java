@@ -8,6 +8,7 @@ import br.com.repassa.enums.TypeError;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class ManagerGroupPhotos {
 
@@ -23,6 +24,7 @@ public class ManagerGroupPhotos {
         GroupPhotos groupPhotos1 = new GroupPhotos();
         groupPhotos1.setStatusProduct(StatusProduct.EM_ANDAMENTO);
         groupPhotos1.setUpdateDate(LocalDateTime.now().toString());
+        groupPhotos1.setId(UUID.randomUUID().toString());
         groupPhotos1.setPhotos(new ArrayList<>(photos));
 
         if(!isValid) {

@@ -157,7 +157,7 @@ public class PhotosService {
             photos.add(photo);
 
             if (photos.size() == 4) {
-                managerGroupPhotos.addPhotos(photos, true);
+                managerGroupPhotos.addPhotos(photos, Boolean.valueOf(photosFilter.getIsValid()));
                 photos.clear();
 
             } else if (photos.size() < 4
@@ -166,7 +166,7 @@ public class PhotosService {
                 while (photos.size() < 4) {
                     createPhotosError(photos);
                 }
-                managerGroupPhotos.addPhotos(photos, false);
+                managerGroupPhotos.addPhotos(photos, Boolean.valueOf(photosFilter.getIsValid()));
 
             }
         });
@@ -175,10 +175,6 @@ public class PhotosService {
         photoManager.setGroupPhotos(groupPhotos);
 
         try {
-            photoManager.getGroupPhotos().forEach(x -> {
-                x.setId(UUID.randomUUID().toString());
-            });
-
             photoClient.savePhotosManager(photoManager);
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);

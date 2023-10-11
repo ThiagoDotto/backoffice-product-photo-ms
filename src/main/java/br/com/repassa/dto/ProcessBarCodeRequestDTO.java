@@ -12,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProcessBarCodeRequestDTO {
-	private String data;
+	private String date;
 	private List<GroupPhoto> groupPhotos;
 
 	@Getter

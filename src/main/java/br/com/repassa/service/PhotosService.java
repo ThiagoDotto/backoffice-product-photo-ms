@@ -27,6 +27,7 @@ import br.com.repassa.client.RekognitionBarClient;
 import br.com.repassa.dto.IdentificatorsDTO;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.dto.ProcessBarCodeRequestDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -40,6 +41,11 @@ import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.exception.PhotoError;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.rekognition.RekognitionClient;
+import software.amazon.awssdk.services.rekognition.model.DetectTextRequest;
+import software.amazon.awssdk.services.rekognition.model.DetectTextResponse;
+import software.amazon.awssdk.services.rekognition.model.Image;
+import software.amazon.awssdk.services.rekognition.model.S3Object;
+import software.amazon.awssdk.services.rekognition.model.TextDetection;
 import br.com.repassa.resource.client.ProductRestClient;
 
 @ApplicationScoped
@@ -77,7 +83,59 @@ public class PhotosService {
 
     public void processBarImages() {
         RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
+    }
+    
+    public PhotosManager processBarCode(ProcessBarCodeRequestDTO req, String user) {
+    	
+    	RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
+    	
+    	List<IdentificatorsDTO> validateIds = new ArrayList<IdentificatorsDTO>();
+    	
+    	req.getGroupPhotos().forEach(item -> {
+    		String url = item.getPhotos().getUrlPhotoBarCode();
+    		String bucket = url.split("\\.")[0].replace("https://", "");
+    	    String pathImage = url.split("\\.com/")[1].replace("+", " ");
+    	    
+    	    DetectTextRequest decReq = DetectTextRequest.builder()
+                    .image(Image.builder()
+                        .s3Object(S3Object.builder()
+                            .bucket(bucket)
+                            .name(pathImage)
+                            .build())
+                        .build())
+                    .build();
 
+                DetectTextResponse decRes = rekognitionClient.detectText(decReq);
+
+                boolean foundText = false;
+                for (TextDetection s : decRes.textDetections()) {
+                	validateIds.add(IdentificatorsDTO.builder()
+                			.groupId(item.getId())
+                			.productId(s.detectedText().toString())
+                			.build());
+                	foundText = true;
+                    break;
+                }
+                
+                if (!foundText) {
+                	validateIds.add(IdentificatorsDTO.builder()
+                			.groupId(item.getId())
+                			.productId("error when read the imagem bar")
+                			.build());
+                }
+    		
+    	});
+    	
+    	rekognitionClient.close();
+    	
+    	try {
+			validateIdentificators(validateIds);
+		} catch (Exception e) {
+			e.printStackTrace();
+            return null;
+		}
+    	
+    	return searchPhotos(req.getDate(), user);
     }
 
     public PhotosManager searchPhotos(String date, String name) {

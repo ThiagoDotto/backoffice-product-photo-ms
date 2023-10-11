@@ -36,7 +36,7 @@ public class PhotoClient {
     private static final String TABLE_NAME_PHOTOS = "PhotosManager";
 
     public void savePhotosManager(PhotosManager manager) {
-        DynamoDbClient dynamoDB = new DynamoClient().openDynamoDBConnection();
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
         PhotosManagerRepositoryImpl impl = new PhotosManagerRepositoryImpl(dynamoDB);
         impl.save(manager);
     }
@@ -44,7 +44,7 @@ public class PhotoClient {
     public List<PhotoFilterResponseDTO> listItem(Map<String, AttributeValue> expressionAttributeValues)
             throws RepassaException {
 
-        DynamoDbClient dynamoDB = new DynamoClient().openDynamoDBConnection();
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
 
         try {
 
@@ -115,10 +115,10 @@ public class PhotoClient {
 
     public PhotosManager getPhotos(Map<String, AttributeValue> expressionAttributeValues)
             throws RepassaException {
-        PhotosManager responseDTO = null;
-
-        DynamoDbClient dynamoDB = new DynamoClient().openDynamoDBConnection();
-
+    	PhotosManager responseDTO = null;
+    	
+    	DynamoDbClient dynamoDB = new DynamoClient().openDynamoDBConnection();
+    	
         try {
 
             ScanRequest scanRequest = ScanRequest.builder()
@@ -161,7 +161,7 @@ public class PhotoClient {
     private PhotosManager parseJsonToObject(ScanResponse items) throws RepassaException, Exception {
         PhotosManager responseDTO = null;
 
-        if (items.items().size() > 0) {
+        if (items.count() == 0) {
             return null;
         }
 

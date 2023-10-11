@@ -73,14 +73,10 @@ public class PhotosService {
 
         persistPhotoManager(photoFilterResponseDTOS);
     }
-    
-    
-    
     public void processBarImages() {
-    	RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
-    	
+        RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
+
     }
-    
 
     public PhotosManager searchPhotos(String date, String name) {
 
@@ -92,7 +88,8 @@ public class PhotosService {
         LOG.info("Fetered by Name: " + username.toString());
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
-        expressionAttributeValues.put(":statusManagerPhotos", AttributeValue.builder().s( StatusManagerPhotos.STARTED.name()).build());
+        expressionAttributeValues.put(":statusManagerPhotos",
+                AttributeValue.builder().s(StatusManagerPhotos.STARTED.name()).build());
         expressionAttributeValues.put(":editor", AttributeValue.builder().s(username).build());
         expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(date).build());
 
@@ -210,6 +207,26 @@ public class PhotosService {
             photoClient.savePhotosManager(photoManager);
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
+        }
+    }
+
+    @Transactional
+    public String finishManagerPhotos(PhotosManager photosManager) throws RepassaException {
+
+        if (Objects.isNull(photosManager)) {
+            throw new RepassaException(PhotoError.OBJETO_VAZIO);
+        }
+        photosManager.setStatusManagerPhotos(StatusManagerPhotos.FINISHED);
+        photosManager.getGroupPhotos().forEach(group -> {
+            group.setStatusProduct(StatusProduct.FINALIZADO);
+            group.setUpdateDate(LocalDateTime.now().toString());
+        });
+
+        try {
+            photoClient.savePhotosManager(photosManager);
+            return PhotoError.SUCESSO_AO_SALVAR.getErrorMessage();
+        } catch (Exception e) {
+            throw new RepassaException(PhotoError.ERRO_AO_SALVAR_NO_DYNAMO);
         }
     }
 

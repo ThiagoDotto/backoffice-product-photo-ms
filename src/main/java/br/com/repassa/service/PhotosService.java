@@ -69,8 +69,8 @@ public class PhotosService {
     	
     
     public PhotosManager processBarCode(ProcessBarCodeRequestDTO req, String user) {
-    	RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
     	
+    	RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
     	
     	List<IdentificatorsDTO> validateIds = new ArrayList<IdentificatorsDTO>();
     	
@@ -108,6 +108,8 @@ public class PhotosService {
                 }
     		
     	});
+    	
+    	rekognitionClient.close();
     	
     	try {
 			validateIdentificators(validateIds);

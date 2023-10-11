@@ -90,12 +90,21 @@ public class PhotosService {
 
                 DetectTextResponse decRes = rekognitionClient.detectText(decReq);
 
+                boolean foundText = false;
                 for (TextDetection s : decRes.textDetections()) {
                 	validateIds.add(IdentificatorsDTO.builder()
                 			.groupId(item.getId())
                 			.productId(s.detectedText().toString())
                 			.build());
+                	foundText = true;
                     break;
+                }
+                
+                if (!foundText) {
+                	validateIds.add(IdentificatorsDTO.builder()
+                			.groupId(item.getId())
+                			.productId("error when read the imagem bar")
+                			.build());
                 }
     		
     	});

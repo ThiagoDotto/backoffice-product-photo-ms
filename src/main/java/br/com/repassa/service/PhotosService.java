@@ -23,6 +23,7 @@ import br.com.repassa.client.RekognitionBarClient;
 import br.com.repassa.dto.IdentificatorsDTO;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.dto.ProcessBarCodeRequestDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -31,6 +32,11 @@ import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.exception.PhotoError;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.rekognition.RekognitionClient;
+import software.amazon.awssdk.services.rekognition.model.DetectTextRequest;
+import software.amazon.awssdk.services.rekognition.model.DetectTextResponse;
+import software.amazon.awssdk.services.rekognition.model.Image;
+import software.amazon.awssdk.services.rekognition.model.S3Object;
+import software.amazon.awssdk.services.rekognition.model.TextDetection;
 
 @ApplicationScoped
 public class PhotosService {
@@ -60,12 +66,48 @@ public class PhotosService {
 
         persistPhotoManager(photoFilterResponseDTOS);
     }
+    	
     
-    
-    
-    public void processBarImages() {
+    public PhotosManager processBarCode(ProcessBarCodeRequestDTO req, String user) {
     	RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
     	
+    	
+    	List<IdentificatorsDTO> validateIds = new ArrayList<IdentificatorsDTO>();
+    	
+    	req.getGroupPhotos().forEach(item -> {
+    		String url = item.getPhotos().getUrlPhotoBarCode();
+    		String bucket = url.split("\\.")[0].replace("https://", "");
+    	    String pathImage = url.split("\\.com/")[1].replace("+", " ");
+    	    
+    	    DetectTextRequest decReq = DetectTextRequest.builder()
+                    .image(Image.builder()
+                        .s3Object(S3Object.builder()
+                            .bucket(bucket)
+                            .name(pathImage)
+                            .build())
+                        .build())
+                    .build();
+
+                DetectTextResponse decRes = rekognitionClient.detectText(decReq);
+
+                for (TextDetection s : decRes.textDetections()) {
+                	validateIds.add(IdentificatorsDTO.builder()
+                			.groupId(item.getId())
+                			.productId(s.detectedText().toString())
+                			.build());
+                    break;
+                }
+    		
+    	});
+    	
+    	try {
+			validateIdentificators(validateIds);
+		} catch (Exception e) {
+			e.printStackTrace();
+            return null;
+		}
+    	
+    	return searchPhotos(req.getData(), user);
     }
     
 

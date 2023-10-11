@@ -13,7 +13,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import br.com.repassa.entity.PhotosManager;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -28,6 +27,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.dto.IdentificatorsDTO;
 import br.com.repassa.dto.PhotoFilterDTO;
+import br.com.repassa.dto.ProcessBarCodeRequestDTO;
+import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.service.PhotosService;
 
 @Tag(name = "Photos", description = "Gerenciar Photos")
@@ -48,6 +49,15 @@ public class PhotosResource {
         return photosService.searchPhotos(date, token.getClaim("name"));
     }
 
+    @POST
+    @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Processa os IDs das fotos", description = "Processa de forma automatica os IDs atraves dos codigos de barra")
+    @Path("/processBarCode")
+    public PhotosManager processBarCode(@RequestBody ProcessBarCodeRequestDTO req) throws RepassaException {
+        return photosService.processBarCode(req, token.getClaim("name"));
+    }
+    
     @POST
     @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
     @Produces(MediaType.APPLICATION_JSON)

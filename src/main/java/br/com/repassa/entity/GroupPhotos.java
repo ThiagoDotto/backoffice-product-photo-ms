@@ -2,8 +2,10 @@ package br.com.repassa.entity;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.List;
 
+import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.enums.TypeError;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,6 +25,9 @@ public class GroupPhotos implements Serializable {
 
     private String id;
     private String productId;
-    private TypeError typeError;
+    private String imageError;
+    private String idError;
+    private StatusProduct statusProduct;
     private List<Photo> photos;
+    private String updateDate;
 }

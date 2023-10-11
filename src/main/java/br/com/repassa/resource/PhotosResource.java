@@ -90,4 +90,13 @@ public class PhotosResource {
                 .entity(identificatorsValidated)
                 .build();
     }
+
+    @POST
+    @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Finaliza Gerencia de Fotos", description = "endpoint usado para finalizar o procosesso de gerencia de fot")
+    @Path("/finish-manager-bags")
+    public Response finishManagerPhotos(@RequestBody PhotosManager photosManager) throws RepassaException {
+        return Response.ok(photosService.finishManagerPhotos(photosManager)).build();
+    }
 }

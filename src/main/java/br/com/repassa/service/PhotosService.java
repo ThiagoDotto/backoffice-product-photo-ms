@@ -1,10 +1,12 @@
 package br.com.repassa.service;
 
 import java.text.Normalizer;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -20,15 +22,23 @@ import org.slf4j.LoggerFactory;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.client.PhotoClient;
+import br.com.repassa.client.RekognitionBarClient;
 import br.com.repassa.dto.IdentificatorsDTO;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.entity.GroupPhotos;
+import br.com.repassa.entity.Photo;
+import br.com.repassa.entity.PhotosManager;
+import br.com.repassa.enums.StatusManagerPhotos;
+import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.dto.ProductDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.exception.PhotoError;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.rekognition.RekognitionClient;
 import br.com.repassa.resource.client.ProductRestClient;
 
 @ApplicationScoped
@@ -48,7 +58,6 @@ public class PhotosService {
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
 
         LOG.info("Filter", filter.toString());
-        String fieldFiltered = "id, bag_id, edited_by, image_id, imagem_name, is_valid, notes, original_image_url, size_photo, thumbnail_base64, upload_date";
         String username = Normalizer.normalize(name, Normalizer.Form.NFD);
         username = username.toLowerCase();
         username = username.replaceAll("\\s", "+");
@@ -56,21 +65,24 @@ public class PhotosService {
 
         LOG.info("Fetered by Name: " + username.toString());
 
-        Map<String, Object> expressionAttributeValues = new HashMap<String, Object>();
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+        expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(filter.getDate()).build());
+        expressionAttributeValues.put(":edited_by", AttributeValue.builder().s(username).build());
 
-        expressionAttributeValues.put(":upload_date", filter.getDate());
-        expressionAttributeValues.put(":edited_by", username);
-
-        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = this.photoClient.listItem(fieldFiltered,
-                expressionAttributeValues);
+        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = this.photoClient.listItem(expressionAttributeValues);
 
         persistPhotoManager(photoFilterResponseDTOS);
     }
+    
+    
+    
+    public void processBarImages() {
+    	RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
+    	
+    }
+    
 
     public PhotosManager searchPhotos(String date, String name) {
-
-        String fieldFiltered = "id, editor, groupPhotos, upload_date, statusManagerPhotos";
-        Map<String, Object> expressionAttributeValues = new HashMap<String, Object>();
 
         String username = Normalizer.normalize(name, Normalizer.Form.NFD);
         username = username.toLowerCase();
@@ -79,12 +91,13 @@ public class PhotosService {
 
         LOG.info("Fetered by Name: " + username.toString());
 
-        expressionAttributeValues.put(":statusManagerPhotos", StatusManagerPhotos.STARTED.name());
-        expressionAttributeValues.put(":editor", username);
-        expressionAttributeValues.put(":upload_date", date);
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+        expressionAttributeValues.put(":statusManagerPhotos", AttributeValue.builder().s( StatusManagerPhotos.STARTED.name()).build());
+        expressionAttributeValues.put(":editor", AttributeValue.builder().s(username).build());
+        expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(date).build());
 
         try {
-            return photoClient.getPhotos(fieldFiltered, expressionAttributeValues);
+            return photoClient.getPhotos(expressionAttributeValues);
         } catch (RepassaException e) {
             e.printStackTrace();
             return null;
@@ -176,7 +189,7 @@ public class PhotosService {
             photos.add(photo);
 
             if (photos.size() == 4) {
-                managerGroupPhotos.addPhotos(photos, true);
+                managerGroupPhotos.addPhotos(photos, Boolean.valueOf(photosFilter.getIsValid()));
                 photos.clear();
 
             } else if (photos.size() < 4
@@ -186,6 +199,7 @@ public class PhotosService {
                     createPhotosError(photos);
                 }
                 managerGroupPhotos.addPhotos(photos, false);
+
             }
         });
 
@@ -193,23 +207,9 @@ public class PhotosService {
         photoManager.setGroupPhotos(groupPhotos);
 
         try {
-            photoManager.getGroupPhotos().forEach(x -> {
-                x.setId(UUID.randomUUID().toString());
-            });
-
             photoClient.savePhotosManager(photoManager);
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
-        }
-    }
-
-    private ProductDTO validateProductIDResponse(String productId, String tokenAuth) throws RepassaException {
-        try {
-            Response response = productRestClient.validateProductId(productId, tokenAuth);
-
-            return response.readEntity(ProductDTO.class);
-        } catch (ClientWebApplicationException e) {
-            throw new RepassaException(PhotoError.PRODUCT_ID_INVALIDO);
         }
     }
 

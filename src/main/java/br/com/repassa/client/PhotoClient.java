@@ -79,7 +79,7 @@ public class PhotoClient {
     	
     	ScanRequest scanRequest = ScanRequest.builder()
 	            .tableName(TABLE_NAME_PHOTOS)
-	            .filterExpression("groupPhotos = :groupPhotos")
+	            .filterExpression("contains(groupPhotos, :groupPhotos)")
 	            .expressionAttributeValues(expressionAttributeValues)
 	            .build();
     	
@@ -136,7 +136,7 @@ public class PhotoClient {
     private PhotosManager parseJsonToObject(ScanResponse items) throws RepassaException, Exception {
         PhotosManager responseDTO = null;
         
-        if (items.items().size() > 0) {
+        if (items.count() == 0) {
             return null;
         }
         

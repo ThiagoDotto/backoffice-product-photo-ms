@@ -1,4 +1,4 @@
-package br.com.repassa.client;
+package br.com.repassa.resource.client;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;

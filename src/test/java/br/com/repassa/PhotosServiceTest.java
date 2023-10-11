@@ -5,9 +5,9 @@ package br.com.repassa;
 import java.util.*;
 
 import br.com.repassa.service.PhotosService;
-import br.com.repassa.client.DynamoDbClient;
-import br.com.repassa.client.PhotoClient;
-import br.com.repassa.client.PhotoClientInterface;
+import br.com.repassa.resource.client.DynamoDbClient;
+import br.com.repassa.resource.client.PhotoClient;
+import br.com.repassa.resource.client.PhotoClientInterface;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.repository.PhotosManagerRepository;

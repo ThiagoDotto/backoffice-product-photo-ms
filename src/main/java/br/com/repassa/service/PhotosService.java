@@ -9,7 +9,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 
-import br.com.repassa.client.DynamoDbClient;
+import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.client.PhotoClient;
+import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.dto.IdentificatorsDTO;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
@@ -35,6 +35,9 @@ public class PhotosService {
 
     @Inject
     PhotoClient photoClient;
+
+    @Inject
+    HistoryService historyService;
 
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
 
@@ -186,9 +189,9 @@ public class PhotosService {
     }
 
     @Transactional
-    public String finishManagerPhotos(PhotosManager photosManager) throws RepassaException {
+    public String finishManagerPhotos(PhotosManager photosManager, UserPrincipalDTO loggerUser) throws RepassaException {
 
-        if(Objects.isNull(photosManager)){
+        if (Objects.isNull(photosManager)) {
             throw new RepassaException(PhotoError.OBJETO_VAZIO);
         }
         photosManager.setStatusManagerPhotos(StatusManagerPhotos.FINISHED);
@@ -198,9 +201,10 @@ public class PhotosService {
         });
 
         try {
-            photoClient.savePhotosManager(photosManager);
+//            photoClient.savePhotosManager(photosManager);
+            historyService.save(photosManager, loggerUser);
             return PhotoError.SUCESSO_AO_SALVAR.getErrorMessage();
-        } catch (AmazonDynamoDBException e){
+        } catch (AmazonDynamoDBException e) {
             throw new RepassaException(PhotoError.ERRO_AO_SALVAR_NO_DYNAMO);
         }
     }

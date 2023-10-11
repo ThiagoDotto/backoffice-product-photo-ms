@@ -13,7 +13,11 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import br.com.backoffice_repassa_utils_lib.authentication.LoggedUser;
+import br.com.backoffice_repassa_utils_lib.authentication.UserRepassa;
+import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.repassa.entity.PhotosManager;
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -39,8 +43,9 @@ public class PhotosResource {
     @Inject
     JsonWebToken token;
 
+
     @GET
-    @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
+    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Busca por photos", description = "Buscar todas as Photos.")
     @Path("/search")
@@ -49,7 +54,7 @@ public class PhotosResource {
     }
 
     @POST
-    @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
+    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Buscar fotos por filtro", description = "As fotos existentes no Bucket, poderá ser buscadas através de filtros pré-configurados.")
     @Path("/filter-and-persist")
@@ -86,11 +91,17 @@ public class PhotosResource {
     }
 
     @POST
-    @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
+//    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Finaliza Gerencia de Fotos", description = "endpoint usado para finalizar o procosesso de gerencia de fot")
+    @Operation(summary = "Finaliza Gerencia de Fotos",
+            description = "endpoint usado para finalizar o procosesso de gerencia de fotos")
     @Path("/finish-manager-bags")
     public Response finishManagerPhotos(@RequestBody PhotosManager photosManager) throws RepassaException {
-        return Response.ok(photosService.finishManagerPhotos(photosManager)).build();
+        UserPrincipalDTO userPrincipalDTO = UserPrincipalDTO.builder()
+                .id(this.token.getClaim(Claims.sub))
+                .email(this.token.getClaim(Claims.email))
+                .firtName(this.token.getName())
+                .build();
+        return Response.ok(photosService.finishManagerPhotos(photosManager, userPrincipalDTO)).build();
     }
 }

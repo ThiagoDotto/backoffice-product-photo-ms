@@ -11,8 +11,10 @@ import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
+import javax.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +23,7 @@ import br.com.repassa.client.PhotoClient;
 import br.com.repassa.dto.IdentificatorsDTO;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.dto.ProductDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -35,6 +38,7 @@ public class PhotosService {
 
     private static final String URL_ERROR_IMAGE = "https://backoffice-triage-photo-dev.s3.amazonaws.com/invalidPhoto.png";
 
+    @Inject
     @RestClient
     ProductRestClient productRestClient;
 
@@ -88,7 +92,8 @@ public class PhotosService {
     }
 
     @Transactional
-    public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators) throws Exception {
+    public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth)
+            throws Exception {
         if (identificators.isEmpty()) {
             throw new RepassaException(PhotoError.VALIDATE_IDENTIFICATORS_EMPTY);
         }
@@ -98,17 +103,15 @@ public class PhotosService {
         identificators.forEach(identificator -> {
             try {
                 // ProductDTO productDTO =
-                // productRestClient.validateProductId(identificator.getProductId());
+                // validateProductIDResponse(identificator.getProductId(), tokenAuth);
 
-                // System.out.println("AQUI: " + productDTO.toString());
+                // System.out.println("AQUI: " + productDTO.getProductId());
 
                 PhotosManager photosManager = photoClient.findByProductId(identificator.getProductId());
 
                 if (photosManager == null) {
                     identificator.setValid(true);
                     identificator.setMessage("ID Disponível");
-
-
 
                     LOG.info("ProductiID " + identificator.getProductId() + " não encontrado.");
                 } else {
@@ -137,6 +140,9 @@ public class PhotosService {
                     }
                 }
 
+                response.add(identificator);
+            } catch (RepassaException repassaException) {
+                identificator.setMessage("O ID " + identificator.getProductId() + " é inválido");
                 response.add(identificator);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -180,7 +186,6 @@ public class PhotosService {
                     createPhotosError(photos);
                 }
                 managerGroupPhotos.addPhotos(photos, false);
-
             }
         });
 
@@ -195,6 +200,16 @@ public class PhotosService {
             photoClient.savePhotosManager(photoManager);
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
+        }
+    }
+
+    private ProductDTO validateProductIDResponse(String productId, String tokenAuth) throws RepassaException {
+        try {
+            Response response = productRestClient.validateProductId(productId, tokenAuth);
+
+            return response.readEntity(ProductDTO.class);
+        } catch (ClientWebApplicationException e) {
+            throw new RepassaException(PhotoError.PRODUCT_ID_INVALIDO);
         }
     }
 

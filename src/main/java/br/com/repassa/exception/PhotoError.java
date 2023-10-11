@@ -8,11 +8,19 @@ public class PhotoError implements RepassaUtilError {
     private final String errorMessage;
 
     public static final RepassaUtilError ERRO_AO_PERSISTIR = new PhotoError("001", "Erro ao inserir entidade no banco");
-    public static final RepassaUtilError QUANTIDADE_FOTO = new PhotoError("002","A quantidade de fotos, é diferente de 4.");
-    public static final RepassaUtilError BUSCAR_DYNAMODB = new PhotoError("003","Erro ao consultar as informações no banco DynamoDB.");
-    public static final RepassaUtilError FOTOS_NAO_ENCONTRADA = new PhotoError("004","Não há itens encontrados para a data informada. Selecione uma nova data ou tente novamente");
-    public static final RepassaUtilError ERRO_AO_BUSCAR_IMAGENS = new PhotoError("005","Erro nao esperado ao buscar as Fotoso no DynamoDB");
-    public static final RepassaUtilError VALIDATE_IDENTIFICATORS_EMPTY = new PhotoError("005","A lista para validar os ID's se encontra vazia.");
+    public static final RepassaUtilError QUANTIDADE_FOTO = new PhotoError("002",
+            "A quantidade de fotos, é diferente de 4.");
+    public static final RepassaUtilError BUSCAR_DYNAMODB = new PhotoError("003",
+            "Erro ao consultar as informações no banco DynamoDB.");
+    public static final RepassaUtilError FOTOS_NAO_ENCONTRADA = new PhotoError("004",
+            "Não há itens encontrados para a data informada. Selecione uma nova data ou tente novamente");
+    public static final RepassaUtilError ERRO_AO_BUSCAR_IMAGENS = new PhotoError("005",
+            "Erro nao esperado ao buscar as Fotoso no DynamoDB");
+    public static final RepassaUtilError VALIDATE_IDENTIFICATORS_EMPTY = new PhotoError("006",
+            "A lista para validar os ID's se encontra vazia.");
+    public static final RepassaUtilError PRODUCT_ID_INVALIDO = new PhotoError("007",
+            "Erro ao verificar se o PRODUCT_ID é válido.");
+
     public PhotoError(String errorCode, String errorMessage) {
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;

@@ -73,6 +73,7 @@ public class PhotosService {
 
         persistPhotoManager(photoFilterResponseDTOS);
     }
+
     public void processBarImages() {
         RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
 
@@ -112,10 +113,9 @@ public class PhotosService {
 
         identificators.forEach(identificator -> {
             try {
-                // ProductDTO productDTO =
-                // validateProductIDResponse(identificator.getProductId(), tokenAuth);
+                ProductDTO productDTO = validateProductIDResponse(identificator.getProductId(), tokenAuth);
 
-                // System.out.println("AQUI: " + productDTO.getProductId());
+                System.out.println("AQUI: " + productDTO.getProductId());
 
                 PhotosManager photosManager = photoClient.findByProductId(identificator.getProductId());
 
@@ -136,10 +136,12 @@ public class PhotosService {
                         if (foundGroupPhotos.size() >= 2) {
                             identificator.setMessage(
                                     "O ID " + identificator.getProductId() + " está sendo utilizando em outro Grupo.");
+
                         } else if (foundGroupPhotos.size() == 1
                                 && !foundGroupPhotos.get(0).getId().equals(identificator.getGroupId())) {
                             identificator.setMessage(
                                     "O ID " + identificator.getProductId() + " está sendo utilizando em outro Grupo.");
+
                         } else {
                             identificator.setValid(true);
                             identificator.setMessage("ID Disponível");
@@ -148,6 +150,9 @@ public class PhotosService {
                         identificator.setMessage("O ID " + identificator.getProductId()
                                 + " está sendo utilizando em outro Grupo com status Finalizado.");
                     }
+
+                    // Persistir dados no DynamoDB
+
                 }
 
                 response.add(identificator);
@@ -227,6 +232,16 @@ public class PhotosService {
             return PhotoError.SUCESSO_AO_SALVAR.getErrorMessage();
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_SALVAR_NO_DYNAMO);
+        }
+    }
+
+    private ProductDTO validateProductIDResponse(String productId, String tokenAuth) throws RepassaException {
+        try {
+            Response response = productRestClient.validateProductId(productId, tokenAuth);
+            System.out.println("AQUI: " + response);
+            return response.readEntity(ProductDTO.class);
+        } catch (ClientWebApplicationException e) {
+            throw new RepassaException(PhotoError.PRODUCT_ID_INVALIDO);
         }
     }
 

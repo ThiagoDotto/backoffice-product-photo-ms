@@ -45,7 +45,7 @@ public class PhotosResource {
 
 
     @GET
-    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
+//    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Busca por photos", description = "Buscar todas as Photos.")
     @Path("/search")

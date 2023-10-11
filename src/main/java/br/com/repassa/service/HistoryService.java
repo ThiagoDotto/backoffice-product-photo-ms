@@ -7,6 +7,8 @@ import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.resource.client.HistoryClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -16,6 +18,8 @@ import java.util.List;
 
 @ApplicationScoped
 public class HistoryService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HistoryService.class);
 
     HistoryClient historyClient;
 
@@ -31,6 +35,7 @@ public class HistoryService {
         List<HistoryDTO> histories = new ArrayList<>();
 
         List<HistoryDTO> historyDTOS = historiesObjsBuilder(loggerUser, groupPhotos, histories);
+        LOGGER.debug("Salvando no History as photos");
         historyDTOS.stream().forEach(historyDTO ->
                 historyClient.updateHistory(historyDTO));
     }
@@ -40,12 +45,11 @@ public class HistoryService {
                 .stream()
                 .forEach(groupPhoto -> {
                     String productId = groupPhoto.getProductId();
-                    String bagID = productId.substring(0, productId.length() - 3);
+                    String bagID = productId.substring(1, productId.length() - 3);
                     List<Photo> photos = groupPhoto.getPhotos();
 
                     List<PhotoDTO> foto = new ArrayList<>();
-                    photos
-                            .stream()
+                    photos.stream()
                             .forEach(photo -> {
                                 PhotoDTO photoDTO = new PhotoDTO();
                                 photoDTO.setName(photo.getNamePhoto());
@@ -58,7 +62,7 @@ public class HistoryService {
                     PhotographyDTO photographyDTO = PhotographyDTO.builder()
                             .date(LocalDateTime.now().toString())
                             .photos(foto)
-                            .productId(Long.valueOf(bagID))
+                            .productId(Long.valueOf(productId))
                             .userSystem(UserSystem.builder()
                                     .id(loggerUser.getId())
                                     .build())

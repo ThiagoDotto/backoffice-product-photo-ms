@@ -13,6 +13,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.entity.GroupPhotos;
@@ -28,6 +31,7 @@ import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 @Slf4j
 @ApplicationScoped
 public class PhotoClient {
+    private static final Logger LOG = LoggerFactory.getLogger(PhotoClient.class);
     private static final String TABLE_NAME = "PhotoProcessingTable";
     private static final String TABLE_NAME_PHOTOS = "PhotosManager";
 
@@ -75,8 +79,28 @@ public class PhotoClient {
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
 
+        expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"productId\":\"" + productId + "\"").build());
+
+        ScanRequest scanRequest = ScanRequest.builder()
+                .tableName(TABLE_NAME_PHOTOS)
+                .filterExpression("contains(groupPhotos, :groupPhotos)")
+                .expressionAttributeValues(expressionAttributeValues)
+                .build();
+
+        ScanResponse items = dynamoDB.scan(scanRequest);
+
+        return parseJsonToObject(items);
+    }
+
+    public PhotosManager findByGroupId(String groupId) throws Exception {
+
+        DynamoDbClient dynamoDB = new DynamoClient().openDynamoDBConnection();
+
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+
+        System.out.println("\"id\":\"" + groupId + "\"");
         expressionAttributeValues.put(":groupPhotos",
-                AttributeValue.builder().s("\"productId\":\"" + productId + "\"").build());
+                AttributeValue.builder().s(groupId).build());
 
         ScanRequest scanRequest = ScanRequest.builder()
                 .tableName(TABLE_NAME_PHOTOS)
@@ -141,6 +165,8 @@ public class PhotoClient {
             return null;
         }
 
+        LOG.info("Retorno 0: " + items.items().toString());
+
         for (Map<String, AttributeValue> item : items.items()) {
             responseDTO = new PhotosManager();
             responseDTO.setId(item.get("id").s());
@@ -153,6 +179,8 @@ public class PhotoClient {
             });
             responseDTO.setGroupPhotos(readValue);
         }
+
+        LOG.info("Retorno: " + responseDTO);
 
         return responseDTO;
     }

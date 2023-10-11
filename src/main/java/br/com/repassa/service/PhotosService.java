@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import br.com.repassa.enums.TypeError;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -115,19 +116,15 @@ public class PhotosService {
             try {
                 ProductDTO productDTO = validateProductIDResponse(identificator.getProductId(), tokenAuth);
 
-                System.out.println("AQUI: " + productDTO.getProductId());
+                PhotosManager photosManagerProduct = photoClient.findByProductId(identificator.getProductId());
 
-                PhotosManager photosManager = photoClient.findByProductId(identificator.getProductId());
-
-                if (photosManager == null) {
+                if (photosManagerProduct == null) {
                     identificator.setValid(true);
                     identificator.setMessage("ID Disponível");
-
-                    LOG.info("ProductiID " + identificator.getProductId() + " não encontrado.");
                 } else {
-                    if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.STARTED) {
+                    if (photosManagerProduct.getStatusManagerPhotos() == StatusManagerPhotos.STARTED) {
                         // Verifica se encontrou outro Grupo com o mesmo ID
-                        List<GroupPhotos> foundGroupPhotos = photosManager.getGroupPhotos()
+                        List<GroupPhotos> foundGroupPhotos = photosManagerProduct.getGroupPhotos()
                                 .stream()
                                 .filter(group -> identificator.getProductId().equals(group.getProductId())
                                         && group.getId() != identificator.getGroupId())
@@ -146,13 +143,20 @@ public class PhotosService {
                             identificator.setValid(true);
                             identificator.setMessage("ID Disponível");
                         }
-                    } else if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
+                    } else if (photosManagerProduct.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
                         identificator.setMessage("O ID " + identificator.getProductId()
                                 + " está sendo utilizando em outro Grupo com status Finalizado.");
                     }
+                }
 
-                    // Persistir dados no DynamoDB
-
+                // Se não econtrar um PHOTO_MANAGER com base no PRODUCT_ID informado, será feito uma nova busca, informando o GROUP_ID
+                if(photosManagerProduct == null) {
+                    LOG.info("GroupID 1: " + identificator.getGroupId());
+                    PhotosManager photoManagerGroup = photoClient.findByGroupId(identificator.getGroupId());
+                    updatePhotoManager(photoManagerGroup, identificator);
+                } else {
+                    LOG.info("PhotoManager 2: " + photosManagerProduct);
+                    updatePhotoManager(photosManagerProduct, identificator);
                 }
 
                 response.add(identificator);
@@ -165,6 +169,21 @@ public class PhotosService {
         });
 
         return response;
+    }
+
+    private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator) {
+        LOG.info("PhotoManager: " + photoManager);
+        photoManager.getGroupPhotos().forEach(group -> {
+            if(group.getId() == identificator.getGroupId()) {
+                group.setProductId(identificator.getProductId());
+
+                if(!identificator.getValid()) {
+                    group.setIdError(TypeError.ID_ERROR.name());
+                }
+            }
+        });
+
+        photoClient.savePhotosManager(photoManager);
     }
 
     @Transactional
@@ -208,11 +227,8 @@ public class PhotosService {
         photoManager.setStatusManagerPhotos(StatusManagerPhotos.STARTED);
         photoManager.setGroupPhotos(groupPhotos);
 
-        try {
-            photoClient.savePhotosManager(photoManager);
-        } catch (Exception e) {
-            throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
-        }
+        persistPhotoManagerDynamoDB(photoManager);
+
     }
 
     @Transactional
@@ -235,10 +251,18 @@ public class PhotosService {
         }
     }
 
+    private void persistPhotoManagerDynamoDB(PhotosManager photosManager) throws RepassaException {
+        try {
+            photoClient.savePhotosManager(photosManager);
+        } catch (Exception e) {
+            throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
+        }
+    }
+
     private ProductDTO validateProductIDResponse(String productId, String tokenAuth) throws RepassaException {
         try {
             Response response = productRestClient.validateProductId(productId, tokenAuth);
-            System.out.println("AQUI: " + response);
+            
             return response.readEntity(ProductDTO.class);
         } catch (ClientWebApplicationException e) {
             throw new RepassaException(PhotoError.PRODUCT_ID_INVALIDO);

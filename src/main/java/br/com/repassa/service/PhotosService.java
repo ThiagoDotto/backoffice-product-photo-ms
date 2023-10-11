@@ -118,7 +118,7 @@ public class PhotosService {
             return null;
 		}
     	
-    	return searchPhotos(req.getData(), user);
+    	return searchPhotos(req.getDate(), user);
     }
     
 

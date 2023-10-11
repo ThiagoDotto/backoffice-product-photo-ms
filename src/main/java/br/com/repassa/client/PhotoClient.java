@@ -32,7 +32,7 @@ public class PhotoClient {
     private static final String TABLE_NAME_PHOTOS = "PhotosManager";
 
     public void savePhotosManager(PhotosManager manager) {
-    	DynamoDbClient dynamoDB = new DynamoClient().openDynamoDBConnection();
+    	DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
     	PhotosManagerRepositoryImpl impl = new PhotosManagerRepositoryImpl(dynamoDB);
     	impl.save(manager);
     }
@@ -40,7 +40,7 @@ public class PhotoClient {
     public List<PhotoFilterResponseDTO> listItem(Map<String, AttributeValue> expressionAttributeValues)
             throws RepassaException {
 
-    	DynamoDbClient dynamoDB = new DynamoClient().openDynamoDBConnection();
+    	DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
     	
         try {
         
@@ -71,7 +71,7 @@ public class PhotoClient {
 
     public PhotosManager findByProductId(String productId) throws Exception {
     	
-    	DynamoDbClient dynamoDB = new DynamoClient().openDynamoDBConnection();
+    	DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
     	
     	Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
     	
@@ -79,7 +79,7 @@ public class PhotoClient {
     	
     	ScanRequest scanRequest = ScanRequest.builder()
 	            .tableName(TABLE_NAME_PHOTOS)
-	            .filterExpression("statusManagerPhotos = :statusManagerPhotos and contains(upload_date, :upload_date) and editor = :editor")
+	            .filterExpression("groupPhotos = :groupPhotos")
 	            .expressionAttributeValues(expressionAttributeValues)
 	            .build();
     	
@@ -92,7 +92,7 @@ public class PhotoClient {
             throws RepassaException {
     	PhotosManager responseDTO = null;
     	
-    	DynamoDbClient dynamoDB = new DynamoClient().openDynamoDBConnection();
+    	DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
     	
         try {
         	

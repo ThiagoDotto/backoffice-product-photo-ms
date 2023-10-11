@@ -85,7 +85,7 @@ public class PhotosService {
         RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
     }
     
-    public PhotosManager processBarCode(ProcessBarCodeRequestDTO req, String user) {
+    public PhotosManager processBarCode(ProcessBarCodeRequestDTO req, String user, String tokenAuth) {
     	
     	RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
     	
@@ -120,7 +120,7 @@ public class PhotosService {
                 if (!foundText) {
                 	validateIds.add(IdentificatorsDTO.builder()
                 			.groupId(item.getId())
-                			.productId("error when read the imagem bar")
+                			.productId(null)
                 			.build());
                 }
     		
@@ -129,7 +129,7 @@ public class PhotosService {
     	rekognitionClient.close();
     	
     	try {
-			validateIdentificators(validateIds);
+			validateIdentificators(validateIds, tokenAuth);
 		} catch (Exception e) {
 			e.printStackTrace();
             return null;
@@ -172,49 +172,54 @@ public class PhotosService {
 
         identificators.forEach(identificator -> {
             try {
-                ProductDTO productDTO = validateProductIDResponse(identificator.getProductId(), tokenAuth);
+                PhotosManager photosManager = null;
 
-                PhotosManager photosManagerProduct = photoClient.findByProductId(identificator.getProductId());
-
-                if (photosManagerProduct == null) {
-                    identificator.setValid(true);
-                    identificator.setMessage("ID Disponível");
+                if(identificator.getProductId() == null) {
+                    identificator.setMessage("ID não encontrado na imagem.");
                 } else {
-                    if (photosManagerProduct.getStatusManagerPhotos() == StatusManagerPhotos.STARTED) {
-                        // Verifica se encontrou outro Grupo com o mesmo ID
-                        List<GroupPhotos> foundGroupPhotos = photosManagerProduct.getGroupPhotos()
-                                .stream()
-                                .filter(group -> identificator.getProductId().equals(group.getProductId())
-                                        && group.getId() != identificator.getGroupId())
-                                .collect(Collectors.toList());
+                    ProductDTO productDTO = validateProductIDResponse(identificator.getProductId(), tokenAuth);
 
-                        if (foundGroupPhotos.size() >= 2) {
-                            identificator.setMessage(
-                                    "O ID " + identificator.getProductId() + " está sendo utilizando em outro Grupo.");
+                    photosManager = photoClient.findByProductId(identificator.getProductId());
 
-                        } else if (foundGroupPhotos.size() == 1
-                                && !foundGroupPhotos.get(0).getId().equals(identificator.getGroupId())) {
-                            identificator.setMessage(
-                                    "O ID " + identificator.getProductId() + " está sendo utilizando em outro Grupo.");
+                    if (photosManager == null) {
+                        identificator.setValid(true);
+                        identificator.setMessage("ID Disponível");
+                    } else {
+                        if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.STARTED) {
+                            // Verifica se encontrou outro Grupo com o mesmo ID
+                            List<GroupPhotos> foundGroupPhotos = photosManager.getGroupPhotos()
+                                    .stream()
+                                    .filter(group -> identificator.getProductId().equals(group.getProductId()) && !identificator.getGroupId().equals(group.getId()))
+                                    .collect(Collectors.toList());
 
-                        } else {
-                            identificator.setValid(true);
-                            identificator.setMessage("ID Disponível");
+                            if (foundGroupPhotos.size() >= 2) {
+                                identificator.setMessage(
+                                        "O ID " + identificator.getProductId() + " está sendo utilizado em outro Grupo.");
+                                photosManager = photoClient.findByGroupId(identificator.getGroupId());
+
+                            } else if (foundGroupPhotos.size() == 1
+                                    && !foundGroupPhotos.get(0).getId().equals(identificator.getGroupId())) {
+                                identificator.setMessage(
+                                        "O ID " + identificator.getProductId() + " está sendo utilizado em outro Grupo.");
+
+                                photosManager = photoClient.findByGroupId(identificator.getGroupId());
+                            } else {
+                                identificator.setValid(true);
+                                identificator.setMessage("ID Disponível");
+                            }
+                        } else if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
+                            identificator.setMessage("O ID " + identificator.getProductId()
+                                    + " está sendo utilizado em outro Grupo com status Finalizado.");
                         }
-                    } else if (photosManagerProduct.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
-                        identificator.setMessage("O ID " + identificator.getProductId()
-                                + " está sendo utilizando em outro Grupo com status Finalizado.");
                     }
                 }
 
                 // Se não econtrar um PHOTO_MANAGER com base no PRODUCT_ID informado, será feito uma nova busca, informando o GROUP_ID
-                if(photosManagerProduct == null) {
-                    LOG.info("GroupID 1: " + identificator.getGroupId());
+                if(photosManager == null) {
                     PhotosManager photoManagerGroup = photoClient.findByGroupId(identificator.getGroupId());
                     updatePhotoManager(photoManagerGroup, identificator);
                 } else {
-                    LOG.info("PhotoManager 2: " + photosManagerProduct);
-                    updatePhotoManager(photosManagerProduct, identificator);
+                    updatePhotoManager(photosManager, identificator);
                 }
 
                 response.add(identificator);
@@ -230,9 +235,8 @@ public class PhotosService {
     }
 
     private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator) {
-        LOG.info("PhotoManager: " + photoManager);
         photoManager.getGroupPhotos().forEach(group -> {
-            if(group.getId() == identificator.getGroupId()) {
+            if(group.getId().equals(identificator.getGroupId())) {
                 group.setProductId(identificator.getProductId());
 
                 if(!identificator.getValid()) {

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -74,8 +75,7 @@ public class PhotoClient {
     }
 
     public PhotosManager findByProductId(String productId) throws Exception {
-
-        DynamoDbClient dynamoDB = new DynamoClient().openDynamoDBConnection();
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
 
@@ -94,13 +94,11 @@ public class PhotoClient {
 
     public PhotosManager findByGroupId(String groupId) throws Exception {
 
-        DynamoDbClient dynamoDB = new DynamoClient().openDynamoDBConnection();
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
 
-        System.out.println("\"id\":\"" + groupId + "\"");
-        expressionAttributeValues.put(":groupPhotos",
-                AttributeValue.builder().s(groupId).build());
+        expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + groupId + "\"").build());
 
         ScanRequest scanRequest = ScanRequest.builder()
                 .tableName(TABLE_NAME_PHOTOS)
@@ -117,7 +115,7 @@ public class PhotoClient {
             throws RepassaException {
     	PhotosManager responseDTO = null;
     	
-    	DynamoDbClient dynamoDB = new DynamoClient().openDynamoDBConnection();
+    	DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
     	
         try {
 
@@ -165,8 +163,6 @@ public class PhotoClient {
             return null;
         }
 
-        LOG.info("Retorno 0: " + items.items().toString());
-
         for (Map<String, AttributeValue> item : items.items()) {
             responseDTO = new PhotosManager();
             responseDTO.setId(item.get("id").s());
@@ -179,8 +175,6 @@ public class PhotoClient {
             });
             responseDTO.setGroupPhotos(readValue);
         }
-
-        LOG.info("Retorno: " + responseDTO);
 
         return responseDTO;
     }

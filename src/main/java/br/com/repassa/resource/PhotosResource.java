@@ -60,7 +60,8 @@ public class PhotosResource {
     @Operation(summary = "Processa os IDs das fotos", description = "Processa de forma automatica os IDs atraves dos codigos de barra")
     @Path("/processBarCode")
     public PhotosManager processBarCode(@RequestBody ProcessBarCodeRequestDTO req) throws RepassaException {
-        return photosService.processBarCode(req, token.getClaim("name"));
+        String tokenAuth = headers.getHeaderString("Authorization");
+        return photosService.processBarCode(req, token.getClaim("name"), tokenAuth);
     }
     
     @POST

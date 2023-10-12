@@ -6,10 +6,10 @@ quarkus:
     always-include: true
 
   http:
-    root-path: /${project.artifactId}
+    root-path: /backoffice-product-photo-ms
 
   application:
-    name: @project.artifactId@ # nome da aplicação será usando para definir o repositório de configura para o config-server
+    name: backoffice-product-photo-ms # nome da aplicação será usando para definir o repositório de configura para o config-server
 
   spring-cloud-config:
     enabled: true # conexão com o config-server está disabilitado por padrão

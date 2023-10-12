@@ -10,6 +10,8 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -40,6 +42,9 @@ public class PhotosResource {
     @Inject
     JsonWebToken token;
 
+    @Context
+    HttpHeaders headers;
+
     @GET
     @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
     @Produces(MediaType.APPLICATION_JSON)
@@ -55,7 +60,8 @@ public class PhotosResource {
     @Operation(summary = "Processa os IDs das fotos", description = "Processa de forma automatica os IDs atraves dos codigos de barra")
     @Path("/processBarCode")
     public PhotosManager processBarCode(@RequestBody ProcessBarCodeRequestDTO req) throws RepassaException {
-        return photosService.processBarCode(req, token.getClaim("name"));
+        String tokenAuth = headers.getHeaderString("Authorization");
+        return photosService.processBarCode(req, token.getClaim("name"), tokenAuth);
     }
     
     @POST
@@ -79,7 +85,8 @@ public class PhotosResource {
     })
     @Path("/validate-identificators")
     public Response validateIds(@RequestBody List<IdentificatorsDTO> identificators) throws Exception {
-        List<IdentificatorsDTO> identificatorsValidated = photosService.validateIdentificators(identificators);
+        String tokenAuth = headers.getHeaderString("Authorization");
+        List<IdentificatorsDTO> identificatorsValidated = photosService.validateIdentificators(identificators, tokenAuth);
 
         List<IdentificatorsDTO> response = identificatorsValidated.stream()
                 .filter(identificator -> !identificator.getValid()).collect(Collectors.toList());

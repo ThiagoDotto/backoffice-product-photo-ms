@@ -353,4 +353,28 @@
       </properties>
     </profile>
   </profiles>
+  <distributionManagement>
+    <repository>
+      <id>BackofficeJava</id>
+      <url>https://pkgs.dev.azure.com/repassa/ReNova/_packaging/BackofficeJava/maven/v1</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </distributionManagement>
+  <repositories>
+    <repository>
+      <id>BackofficeJava</id>
+      <url>https://pkgs.dev.azure.com/repassa/ReNova/_packaging/BackofficeJava/maven/v1</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
 </project>

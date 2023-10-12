@@ -1,122 +1,56 @@
 package br.com.repassa.client;
 
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 
-import br.com.repassa.entity.PhotosManager;
-import br.com.repassa.repository.PhotosManagerRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-
-import com.amazonaws.services.dynamodbv2.document.DynamoDB;
-import com.amazonaws.services.dynamodbv2.document.Item;
-import com.amazonaws.services.dynamodbv2.document.Table;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import br.com.repassa.entity.PhotosManager;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 
-public class PhotosManagerRepositoryImpl implements PhotosManagerRepository {
+public class PhotosManagerRepositoryImpl  {
 
-    private final DynamoDB dynamoDB;
+    private final DynamoDbClient dynamoDB;
     private final String TABLE_NAME = "PhotosManager_QA";
 
-    public PhotosManagerRepositoryImpl(DynamoDB dynamoDBClient) {
+    public PhotosManagerRepositoryImpl(DynamoDbClient dynamoDBClient) {
         this.dynamoDB = dynamoDBClient;
     }
 
-    @Override
-    public Iterable<PhotosManager> findAll(Sort sort) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Page<PhotosManager> findAll(Pageable pageable) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public <S extends PhotosManager> S save(S entity) {
-        Table table = dynamoDB.getTable(TABLE_NAME);
 
         ObjectMapper map = new ObjectMapper();
         String writeValueAsString = null;
-        try {
-            writeValueAsString = map.writeValueAsString(entity.getGroupPhotos());
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-        Item item = new Item()
-                .withPrimaryKey("id", entity.getId())
-                .withString("editor", entity.getEditor())
-                .withString("upload_date", entity.getDate())
-                .withString("statusManagerPhotos", entity.getStatusManagerPhotos().toString())
-                .withString("groupPhotos", writeValueAsString);
+		try {
+			writeValueAsString = map.writeValueAsString(entity.getGroupPhotos());
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
 
-        table.putItem(item);
+		 Map<String, AttributeValue> item = new HashMap<>();
+		    item.put("id", AttributeValue.builder().s(entity.getId()).build());
+		    item.put("editor", AttributeValue.builder().s( entity.getEditor()).build());
+		    item.put("upload_date", AttributeValue.builder().s(entity.getDate()).build());
+		    item.put("statusManagerPhotos", AttributeValue.builder().s(entity.getStatusManagerPhotos().toString()).build());
+		    item.put("groupPhotos", AttributeValue.builder().s(writeValueAsString).build());
+
+		    PutItemRequest putItemRequest = PutItemRequest.builder()
+		        .tableName(TABLE_NAME)
+		        .item(item)
+		        .build();
+
+		    try {
+		    	dynamoDB.putItem(putItemRequest);
+		        System.out.println("Item saved successfully!");
+		    } catch (Exception e) {
+		        System.err.println("Unable to save item.");
+		        e.printStackTrace();
+		    }
 
         return entity;
-    }
-
-    @Override
-    public <S extends PhotosManager> Iterable<S> saveAll(Iterable<S> entities) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Optional<PhotosManager> findById(String id) {
-        // TODO Auto-generated method stub
-        return Optional.empty();
-    }
-
-    @Override
-    public boolean existsById(String id) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
-    public Iterable<PhotosManager> findAll() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Iterable<PhotosManager> findAllById(Iterable<String> ids) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public long count() {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    @Override
-    public void deleteById(String id) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void delete(PhotosManager entity) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void deleteAll(Iterable<? extends PhotosManager> entities) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void deleteAll() {
-        // TODO Auto-generated method stub
-
     }
 
 }

@@ -4,6 +4,9 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.enums.TypeError;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,6 +19,7 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class GroupPhotos implements Serializable {
 
     @Serial
@@ -23,6 +27,9 @@ public class GroupPhotos implements Serializable {
 
     private String id;
     private String productId;
-    private TypeError typeError;
+    private String imageError;
+    private String idError;
+    private StatusProduct statusProduct;
     private List<Photo> photos;
+    private String updateDate;
 }

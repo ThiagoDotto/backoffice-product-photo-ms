@@ -19,6 +19,7 @@ public class ManagerGroupPhotos {
     public ManagerGroupPhotos(List<GroupPhotos> groupPhotos) {
         this.groupPhotos = groupPhotos;
     }
+
     public void addPhotos(List<Photo> photos, Boolean isValid) {
 
         GroupPhotos groupPhotos1 = new GroupPhotos();
@@ -27,7 +28,7 @@ public class ManagerGroupPhotos {
         groupPhotos1.setId(UUID.randomUUID().toString());
         groupPhotos1.setPhotos(new ArrayList<>(photos));
 
-        if(!isValid) {
+        if (!isValid) {
             groupPhotos1.setImageError(TypeError.IMAGE_ERROR.name());
         }
 
@@ -35,7 +36,7 @@ public class ManagerGroupPhotos {
         totalPhotos += groupPhotos1.getPhotos().size();
     }
 
-    public int getTotalPhotos(){
+    public int getTotalPhotos() {
         return totalPhotos;
     }
 

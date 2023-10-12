@@ -1,20 +1,13 @@
 package br.com.repassa.resource;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
+import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
+import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
+import br.com.repassa.dto.IdentificatorsDTO;
+import br.com.repassa.dto.PhotoFilterDTO;
+import br.com.repassa.dto.ProcessBarCodeRequestDTO;
+import br.com.repassa.entity.PhotosManager;
+import br.com.repassa.service.PhotosService;
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -26,12 +19,15 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.dto.IdentificatorsDTO;
-import br.com.repassa.dto.PhotoFilterDTO;
-import br.com.repassa.dto.ProcessBarCodeRequestDTO;
-import br.com.repassa.entity.PhotosManager;
-import br.com.repassa.service.PhotosService;
+import javax.annotation.security.RolesAllowed;
+import javax.inject.Inject;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Tag(name = "Photos", description = "Gerenciar Photos")
 @Path("/api/v1/photos")
@@ -46,7 +42,7 @@ public class PhotosResource {
     HttpHeaders headers;
 
     @GET
-    @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
+    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Busca por photos", description = "Buscar todas as Photos.")
     @Path("/search")
@@ -55,7 +51,7 @@ public class PhotosResource {
     }
 
     @POST
-    @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
+    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Processa os IDs das fotos", description = "Processa de forma automatica os IDs atraves dos codigos de barra")
     @Path("/processBarCode")

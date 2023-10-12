@@ -4,6 +4,7 @@ import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.enums.TypeError;
+import br.com.repassa.enums.TypePhoto;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

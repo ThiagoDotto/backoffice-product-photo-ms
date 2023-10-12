@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import br.com.repassa.enums.TypeError;
+
+import br.com.repassa.enums.*;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -31,12 +33,7 @@ import br.com.repassa.dto.ProcessBarCodeRequestDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
-import br.com.repassa.enums.StatusManagerPhotos;
-import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.dto.ProductDTO;
-import br.com.repassa.entity.GroupPhotos;
-import br.com.repassa.entity.Photo;
-import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.exception.PhotoError;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -90,40 +87,52 @@ public class PhotosService {
     	RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
     	
     	List<IdentificatorsDTO> validateIds = new ArrayList<IdentificatorsDTO>();
-    	
-    	req.getGroupPhotos().forEach(item -> {
-    		String url = item.getPhotos().getUrlPhotoBarCode();
-    		String bucket = url.split("\\.")[0].replace("https://", "");
-    	    String pathImage = url.split("\\.com/")[1].replace("+", " ");
-    	    
-    	    DetectTextRequest decReq = DetectTextRequest.builder()
-                    .image(Image.builder()
-                        .s3Object(S3Object.builder()
-                            .bucket(bucket)
-                            .name(pathImage)
-                            .build())
-                        .build())
-                    .build();
 
-                DetectTextResponse decRes = rekognitionClient.detectText(decReq);
+        req.getGroupPhotos().forEach(item -> {
+            item.getPhotos().forEach(photo -> {
+                if(Objects.equals(photo.getTypePhoto(), TypePhoto.ETIQUETA)){
+                    String url = photo.getUrlPhotoBarCode();
+                    String bucket = url.split("\\.")[0].replace("https://", "");
+                    String pathImage = url.split("\\.com/")[1].replace("+", " ");
 
-                boolean foundText = false;
-                for (TextDetection s : decRes.textDetections()) {
-                	validateIds.add(IdentificatorsDTO.builder()
-                			.groupId(item.getId())
-                			.productId(s.detectedText().toString())
-                			.build());
-                	foundText = true;
-                    break;
+                    DetectTextRequest decReq = DetectTextRequest.builder()
+                            .image(Image.builder()
+                                    .s3Object(S3Object.builder()
+                                            .bucket(bucket)
+                                            .name(pathImage)
+                                            .build())
+                                    .build())
+                            .build();
+
+                    DetectTextResponse decRes = rekognitionClient.detectText(decReq);
+
+                    boolean foundText = false;
+                    for (TextDetection s : decRes.textDetections()) {
+                        validateIds.add(IdentificatorsDTO.builder()
+                                .groupId(item.getId())
+                                .productId(s.detectedText().toString())
+                                .build());
+                        foundText = true;
+                        break;
+                    }
+
+                    if (!foundText) {
+                        try {
+                            var photoManager = photoClient.findByImageId(photo.getIdPhoto());
+                            updatePhotoManagerByPhoto(photoManager, item.getId(),photo.getIdPhoto(), photo.getTypePhoto().name());
+                            validateIds.add(IdentificatorsDTO.builder()
+                                    .groupId(item.getId())
+                                    .productId(null)
+                                    .valid(false)
+                                    .build());
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+
+                    }
                 }
-                
-                if (!foundText) {
-                	validateIds.add(IdentificatorsDTO.builder()
-                			.groupId(item.getId())
-                			.productId(null)
-                            .valid(false)
-                			.build());
-                }
+            });
+
     		
     	});
     	
@@ -249,6 +258,20 @@ public class PhotosService {
         photoClient.savePhotosManager(photoManager);
     }
 
+    private void updatePhotoManagerByPhoto(PhotosManager photoManager, String groupId, String photoId, String typePhoto) {
+        photoManager.getGroupPhotos().forEach(group -> {
+            if(group.getId().equals(groupId)) {
+                group.getPhotos().forEach(photo -> {
+                    if(photo.getId().equals(photoId)){
+                        photo.setTypePhoto(TypePhoto.valueOf(typePhoto));
+                    }
+                });
+            }
+        });
+
+        photoClient.savePhotosManager(photoManager);
+    }
+
     @Transactional
     public void persistPhotoManager(List<PhotoFilterResponseDTO> resultList) throws RepassaException {
         LOG.info("Iniciando processo de persistencia");
@@ -258,11 +281,14 @@ public class PhotosService {
         List<Photo> photos = new ArrayList<>(4);
         var managerGroupPhotos = new ManagerGroupPhotos(groupPhotos);
 
+        AtomicInteger count = new AtomicInteger();
+
         resultList.forEach(photosFilter -> {
 
             var photo = Photo.builder().namePhoto(photosFilter.getImageName())
                     .sizePhoto(photosFilter.getSizePhoto())
                     .id(photosFilter.getId())
+                    .typePhoto(TypePhoto.getPosition(count.get()))
                     .urlPhoto(photosFilter.getOriginalImageUrl())
                     .base64(photosFilter.getThumbnailBase64()).build();
 
@@ -275,6 +301,7 @@ public class PhotosService {
             if (photos.size() == 4) {
                 managerGroupPhotos.addPhotos(photos, Boolean.valueOf(photosFilter.getIsValid()));
                 photos.clear();
+                count.set(0);
 
             } else if (photos.size() < 4
                     && (resultList.size() - managerGroupPhotos.getTotalPhotos()) == photos.size()) {
@@ -283,6 +310,7 @@ public class PhotosService {
                     createPhotosError(photos);
                 }
                 managerGroupPhotos.addPhotos(photos, false);
+                count.set(count.get() + 1);
 
             }
         });

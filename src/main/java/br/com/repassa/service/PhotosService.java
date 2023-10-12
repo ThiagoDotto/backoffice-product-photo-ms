@@ -81,71 +81,67 @@ public class PhotosService {
     public void processBarImages() {
         RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
     }
-    
-    public PhotosManager processBarCode(ProcessBarCodeRequestDTO req, String user, String tokenAuth) {
-    	
-    	RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
-    	
-    	List<IdentificatorsDTO> validateIds = new ArrayList<IdentificatorsDTO>();
 
-        req.getGroupPhotos().forEach(item -> {
-            item.getPhotos().forEach(photo -> {
-                if(Objects.equals(photo.getTypePhoto(), TypePhoto.ETIQUETA)){
-                    String url = photo.getUrlPhotoBarCode();
-                    String bucket = url.split("\\.")[0].replace("https://", "");
-                    String pathImage = url.split("\\.com/")[1].replace("+", " ");
+    public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user, String tokenAuth) {
 
-                    DetectTextRequest decReq = DetectTextRequest.builder()
-                            .image(Image.builder()
-                                    .s3Object(S3Object.builder()
-                                            .bucket(bucket)
-                                            .name(pathImage)
-                                            .build())
-                                    .build())
-                            .build();
+        RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
+        List<IdentificatorsDTO> validateIds = new ArrayList<>();
 
-                    DetectTextResponse decRes = rekognitionClient.detectText(decReq);
+        processBarCodeRequestDTO.getGroupPhotos().forEach(item ->
+                item.getPhotos().forEach(photo -> {
+                    if (Objects.equals(photo.getTypePhoto(), TypePhoto.ETIQUETA)) {
+                        String url = photo.getUrlPhotoBarCode();
+                        String bucket = url.split("\\.")[0].replace("https://", "");
+                        String pathImage = url.split("\\.com/")[1].replace("+", " ");
 
-                    boolean foundText = false;
-                    for (TextDetection s : decRes.textDetections()) {
-                        validateIds.add(IdentificatorsDTO.builder()
-                                .groupId(item.getId())
-                                .productId(s.detectedText().toString())
-                                .build());
-                        foundText = true;
-                        break;
-                    }
+                        DetectTextRequest decReq = DetectTextRequest.builder()
+                                .image(Image.builder()
+                                        .s3Object(S3Object.builder()
+                                                .bucket(bucket)
+                                                .name(pathImage)
+                                                .build())
+                                        .build())
+                                .build();
 
-                    if (!foundText) {
-                        try {
-                            var photoManager = photoClient.findByImageId(photo.getIdPhoto());
-                            updatePhotoManagerByPhoto(photoManager, item.getId(),photo.getIdPhoto(), photo.getTypePhoto().name());
+                        DetectTextResponse decRes = rekognitionClient.detectText(decReq);
+
+                        boolean foundText = false;
+                        for (TextDetection textDetection : decRes.textDetections()) {
                             validateIds.add(IdentificatorsDTO.builder()
                                     .groupId(item.getId())
-                                    .productId(null)
-                                    .valid(false)
+                                    .productId(textDetection.detectedText())
                                     .build());
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
+                            foundText = true;
+                            break;
                         }
 
-                    }
-                }
-            });
+                        if (!foundText) {
+                            try {
+                                var photoManager = photoClient.findByImageId(photo.getIdPhoto());
+                                updatePhotoManagerByPhoto(photoManager, item.getId(), photo.getIdPhoto(), photo.getTypePhoto().name());
+                                validateIds.add(IdentificatorsDTO.builder()
+                                        .groupId(item.getId())
+                                        .productId(null)
+                                        .valid(false)
+                                        .build());
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
 
-    		
-    	});
-    	
-    	rekognitionClient.close();
-    	
-    	try {
-			validateIdentificators(validateIds, tokenAuth);
-		} catch (Exception e) {
-			e.printStackTrace();
+                        }
+                    }
+                }));
+
+        rekognitionClient.close();
+
+        try {
+            validateIdentificators(validateIds, tokenAuth);
+        } catch (Exception e) {
+            e.printStackTrace();
             return null;
-		}
-    	
-    	return searchPhotos(req.getDate(), user);
+        }
+
+        return searchPhotos(processBarCodeRequestDTO.getDate(), user);
     }
 
     public PhotosManager searchPhotos(String date, String name) {
@@ -184,7 +180,7 @@ public class PhotosService {
             try {
                 PhotosManager photosManager = null;
 
-                if(identificator.getProductId() == null) {
+                if (identificator.getProductId() == null) {
                     identificator.setMessage("ID não encontrado na imagem.");
                 } else {
                     ProductDTO productDTO = validateProductIDResponse(identificator.getProductId(), tokenAuth);
@@ -225,7 +221,7 @@ public class PhotosService {
                 }
 
                 // Se não econtrar um PHOTO_MANAGER com base no PRODUCT_ID informado, será feito uma nova busca, informando o GROUP_ID
-                if(photosManager == null) {
+                if (photosManager == null) {
                     PhotosManager photoManagerGroup = photoClient.findByGroupId(identificator.getGroupId());
                     updatePhotoManager(photoManagerGroup, identificator);
                 } else {
@@ -246,10 +242,10 @@ public class PhotosService {
 
     private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator) {
         photoManager.getGroupPhotos().forEach(group -> {
-            if(group.getId().equals(identificator.getGroupId())) {
+            if (group.getId().equals(identificator.getGroupId())) {
                 group.setProductId(identificator.getProductId());
 
-                if(!identificator.getValid()) {
+                if (!identificator.getValid()) {
                     group.setIdError(TypeError.ID_ERROR.name());
                 }
             }
@@ -260,9 +256,9 @@ public class PhotosService {
 
     private void updatePhotoManagerByPhoto(PhotosManager photoManager, String groupId, String photoId, String typePhoto) {
         photoManager.getGroupPhotos().forEach(group -> {
-            if(group.getId().equals(groupId)) {
+            if (group.getId().equals(groupId)) {
                 group.getPhotos().forEach(photo -> {
-                    if(photo.getId().equals(photoId)){
+                    if (photo.getId().equals(photoId)) {
                         photo.setTypePhoto(TypePhoto.valueOf(typePhoto));
                     }
                 });
@@ -353,7 +349,7 @@ public class PhotosService {
     private ProductDTO validateProductIDResponse(String productId, String tokenAuth) throws RepassaException {
         try {
             Response response = productRestClient.validateProductId(productId, tokenAuth);
-            
+
             return response.readEntity(ProductDTO.class);
         } catch (ClientWebApplicationException e) {
             throw new RepassaException(PhotoError.PRODUCT_ID_INVALIDO);

@@ -16,8 +16,7 @@ public class PhotoError implements RepassaUtilError {
     public static final RepassaUtilError ERRO_AO_SALVAR_NO_DYNAMO = new PhotoError("007","Erro ao salvar as informações. Tente novamente mais tarde.");
     public static final RepassaUtilError OBJETO_VAZIO = new PhotoError("008","Objeto vazio!");
     public static final RepassaUtilError SUCESSO_AO_SALVAR = new PhotoError("009","As edições foram salvas e as imagens foram associadas aos produtos.");
-
-
+    public static final RepassaUtilError PRODUCT_ID_INVALIDO = new PhotoError("010", "Erro ao verificar se o PRODUCT_ID é válido.");
     public PhotoError(String errorCode, String errorMessage) {
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;

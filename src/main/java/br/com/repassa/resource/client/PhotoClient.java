@@ -8,54 +8,54 @@ import java.util.List;
 import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 
-import br.com.repassa.entity.GroupPhotos;
-import br.com.repassa.entity.PhotosManager;
-import br.com.repassa.enums.StatusManagerPhotos;
-import com.amazonaws.services.dynamodbv2.document.Item;
-import com.amazonaws.services.dynamodbv2.document.ItemCollection;
-import com.amazonaws.services.dynamodbv2.document.ScanOutcome;
-import com.amazonaws.services.dynamodbv2.document.Table;
-import com.amazonaws.services.dynamodbv2.model.AmazonDynamoDBException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.entity.GroupPhotos;
+import br.com.repassa.entity.PhotosManager;
+import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.exception.PhotoError;
 import lombok.extern.slf4j.Slf4j;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 
 @Slf4j
 @ApplicationScoped
-public class PhotoClient implements PhotoClientInterface {
+public class PhotoClient {
+    private static final Logger LOG = LoggerFactory.getLogger(PhotoClient.class);
     private static final String TABLE_NAME = "PhotoProcessingTable";
     private static final String TABLE_NAME_PHOTOS = "PhotosManager";
 
-    private DynamoDbClient dynamoDB;
-
-    private PhotosManagerRepositoryImpl impl;
-
-    Table table;
-    Table tablePhotosManager;
-
-    public PhotoClient() {
-        this.dynamoDB = new DynamoDbClient();
-        impl = new PhotosManagerRepositoryImpl(this.dynamoDB.openDynamoDBConnection());
-        this.table = this.dynamoDB.openDynamoDBConnection().getTable(TABLE_NAME);
-        this.tablePhotosManager = this.dynamoDB.openDynamoDBConnection().getTable(TABLE_NAME_PHOTOS);
-    }
-
     public void savePhotosManager(PhotosManager manager) {
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+        PhotosManagerRepositoryImpl impl = new PhotosManagerRepositoryImpl(dynamoDB);
         impl.save(manager);
     }
 
-    public List<PhotoFilterResponseDTO> listItem(String fieldFiltered, Map<String, Object> expressionAttributeValues)
+    public List<PhotoFilterResponseDTO> listItem(Map<String, AttributeValue> expressionAttributeValues)
             throws RepassaException {
 
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+
         try {
-            ItemCollection<ScanOutcome> items = table.scan(
-                    "contains(upload_date, :upload_date) AND edited_by = :edited_by", fieldFiltered, null,
-                    expressionAttributeValues);
+
+            ScanRequest scanRequest = ScanRequest.builder()
+                    .tableName(TABLE_NAME)
+                    .filterExpression("contains(upload_date, :upload_date) AND edited_by = :edited_by")
+                    .expressionAttributeValues(expressionAttributeValues)
+                    .build();
+
+            ScanResponse items = dynamoDB.scan(scanRequest);
 
             List<PhotoFilterResponseDTO> photoFilterResponseDTOS = mapPhotoFilter(items);
 
@@ -65,9 +65,6 @@ public class PhotoClient implements PhotoClientInterface {
             }
 
             return photoFilterResponseDTOS;
-        } catch (AmazonDynamoDBException e) {
-            log.error("Erro ao consultar as informações no banco DynamoDB.");
-            throw new RepassaException(PhotoError.BUSCAR_DYNAMODB);
         } catch (RepassaException e) {
             log.error("Nenhuma foto encontrada para essa data.");
             throw new RepassaException(PhotoError.FOTOS_NAO_ENCONTRADA);
@@ -78,47 +75,80 @@ public class PhotoClient implements PhotoClientInterface {
     }
 
     public PhotosManager findByProductId(String productId) throws Exception {
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
 
-        String fieldFiltered = "id, editor, groupPhotos, statusManagerPhotos, upload_date";
-        Map<String, Object> expressionAttributeValues = new HashMap<String, Object>();
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
 
-        expressionAttributeValues.put(":groupPhotos", "\"productId\":\"" + productId + "\"");
+        expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"productId\":\"" + productId + "\"").build());
 
-        ItemCollection<ScanOutcome> items = this.tablePhotosManager.scan(
-                "contains(groupPhotos, :groupPhotos)", fieldFiltered, null, expressionAttributeValues);
+        ScanRequest scanRequest = ScanRequest.builder()
+                .tableName(TABLE_NAME_PHOTOS)
+                .filterExpression("contains(groupPhotos, :groupPhotos)")
+                .expressionAttributeValues(expressionAttributeValues)
+                .build();
+
+        ScanResponse items = dynamoDB.scan(scanRequest);
 
         return parseJsonToObject(items);
     }
 
-    public PhotosManager getPhotos(String fieldFiltered, Map<String, Object> expressionAttributeValues)
+    public PhotosManager findByGroupId(String groupId) throws Exception {
+
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+
+        expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + groupId + "\"").build());
+
+        ScanRequest scanRequest = ScanRequest.builder()
+                .tableName(TABLE_NAME_PHOTOS)
+                .filterExpression("contains(groupPhotos, :groupPhotos)")
+                .expressionAttributeValues(expressionAttributeValues)
+                .build();
+
+        ScanResponse items = dynamoDB.scan(scanRequest);
+
+        return parseJsonToObject(items);
+    }
+
+    public PhotosManager getPhotos(Map<String, AttributeValue> expressionAttributeValues)
             throws RepassaException {
-        PhotosManager responseDTO = null;
+    	PhotosManager responseDTO = null;
+    	
+    	DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+    	
         try {
 
-            ItemCollection<ScanOutcome> items = tablePhotosManager.scan(
-                    "statusManagerPhotos = :statusManagerPhotos and contains(upload_date, :upload_date) and editor = :editor",
-                    fieldFiltered, null,
-                    expressionAttributeValues);
+            ScanRequest scanRequest = ScanRequest.builder()
+                    .tableName(TABLE_NAME_PHOTOS)
+                    .filterExpression(
+                            "statusManagerPhotos = :statusManagerPhotos and contains(upload_date, :upload_date) and editor = :editor")
+                    .expressionAttributeValues(expressionAttributeValues)
+                    .build();
 
-            for (Item item : items) {
+            ScanResponse items = dynamoDB.scan(scanRequest);
+
+            for (Map<String, AttributeValue> item : items.items()) {
+
                 responseDTO = new PhotosManager();
-                responseDTO.setId(item.getString("id"));
-                responseDTO.setDate(item.getString("upload_date"));
-                responseDTO.setEditor(item.getString("editor"));
-                responseDTO.setStatusManagerPhotos(StatusManagerPhotos.valueOf(item.getString("statusManagerPhotos")));
-                String json = item.getString("groupPhotos");
+                responseDTO.setId(item.get("id").s());
+                responseDTO.setDate(item.get("upload_date").s());
+                responseDTO.setEditor(item.get("editor").s());
+                responseDTO.setStatusManagerPhotos(StatusManagerPhotos.valueOf(item.get("statusManagerPhotos").s()));
+                String json = item.get("groupPhotos").s();
                 ObjectMapper objectMapper = new ObjectMapper();
-                List<GroupPhotos> readValue = objectMapper.readValue(json, new TypeReference<List<GroupPhotos>>() {
-                });
+                List<GroupPhotos> readValue = null;
+                try {
+                    readValue = objectMapper.readValue(json, new TypeReference<List<GroupPhotos>>() {
+                    });
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
                 responseDTO.setGroupPhotos(readValue);
-
+                break;
             }
 
             return responseDTO;
-        } catch (AmazonDynamoDBException e) {
-            log.error("Erro ao consultar as informações no banco DynamoDB.");
-            e.printStackTrace();
-            throw new RepassaException(PhotoError.BUSCAR_DYNAMODB);
         } catch (Exception e) {
             log.error("Erro nao esperado ao buscar as Fotoso no DynamoDB");
             e.printStackTrace();
@@ -126,59 +156,59 @@ public class PhotoClient implements PhotoClientInterface {
         }
     }
 
-    private PhotosManager parseJsonToObject(ItemCollection<ScanOutcome> items) throws RepassaException, Exception {
+    private PhotosManager parseJsonToObject(ScanResponse items) throws RepassaException, Exception {
         PhotosManager responseDTO = null;
 
-        if (items.getAccumulatedItemCount() > 0) {
+        if (items.count() == 0) {
             return null;
         }
 
-        for (Item item : items) {
+        for (Map<String, AttributeValue> item : items.items()) {
             responseDTO = new PhotosManager();
-            responseDTO.setId(item.getString("id"));
-            responseDTO.setDate(item.getString("upload_date"));
-            responseDTO.setEditor(item.getString("editor"));
-            responseDTO.setStatusManagerPhotos(StatusManagerPhotos.valueOf(item.getString("statusManagerPhotos")));
-            String json = item.getString("groupPhotos");
+            responseDTO.setId(item.get("id").s());
+            responseDTO.setDate(item.get("upload_date").s());
+            responseDTO.setEditor(item.get("editor").s());
+            responseDTO.setStatusManagerPhotos(StatusManagerPhotos.valueOf(item.get("statusManagerPhotos").s()));
+            String json = item.get("groupPhotos").s();
             ObjectMapper objectMapper = new ObjectMapper();
             List<GroupPhotos> readValue = objectMapper.readValue(json, new TypeReference<List<GroupPhotos>>() {
             });
             responseDTO.setGroupPhotos(readValue);
-
         }
 
         return responseDTO;
     }
 
-    private List<PhotoFilterResponseDTO> mapPhotoFilter(ItemCollection<ScanOutcome> items) {
+    private List<PhotoFilterResponseDTO> mapPhotoFilter(ScanResponse scanResponse) {
 
         List<PhotoFilterResponseDTO> resultList = new ArrayList<>();
 
-        for (Item item : items) {
-            String imageName = item.getString("imagem_name");
+        scanResponse.items().forEach(item -> {
+            String imageName = item.get("imagem_name").s();
 
             if (imageName == null) {
                 imageName = "undefined";
             }
 
             PhotoFilterResponseDTO responseDTO = new PhotoFilterResponseDTO();
-            responseDTO.setBagId(item.getString("bag_id"));
-            responseDTO.setEditedBy(item.getString("edited_by"));
+            responseDTO.setBagId(item.get("bag_id").s());
+            responseDTO.setEditedBy(item.get("edited_by").s());
             responseDTO.setImageName(imageName);
-            responseDTO.setId(item.getString("id"));
-            responseDTO.setImageId(item.getString("image_id"));
-            responseDTO.setIsValid(item.getString("is_valid"));
-            responseDTO.setOriginalImageUrl(item.getString("original_image_url"));
-            responseDTO.setSizePhoto(item.getString("size_photo"));
-            responseDTO.setThumbnailBase64(item.getString("thumbnail_base64"));
-            responseDTO.setUploadDate(item.getString("upload_date"));
+            responseDTO.setId(item.get("id").s());
+            responseDTO.setImageId(item.get("image_id").s());
+            responseDTO.setIsValid(item.get("is_valid").s());
+            responseDTO.setOriginalImageUrl(item.get("original_image_url").s());
+            responseDTO.setSizePhoto(item.get("size_photo").s());
+            responseDTO.setThumbnailBase64(item.get("thumbnail_base64").s());
+            responseDTO.setUploadDate(item.get("upload_date").s());
 
             resultList.add(responseDTO);
-        }
+        });
 
         Collections.sort(resultList,
                 Comparator.nullsFirst(Comparator.comparing(PhotoFilterResponseDTO::getImageName)));
 
         return resultList;
     }
+
 }

@@ -10,14 +10,11 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import br.com.backoffice_repassa_utils_lib.authentication.LoggedUser;
-import br.com.backoffice_repassa_utils_lib.authentication.UserRepassa;
-import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
-import br.com.repassa.entity.PhotosManager;
-import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -32,6 +29,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.dto.IdentificatorsDTO;
 import br.com.repassa.dto.PhotoFilterDTO;
+import br.com.repassa.dto.ProcessBarCodeRequestDTO;
+import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.service.PhotosService;
 
 @Tag(name = "Photos", description = "Gerenciar Photos")
@@ -43,14 +42,26 @@ public class PhotosResource {
     @Inject
     JsonWebToken token;
 
+    @Context
+    HttpHeaders headers;
 
     @GET
-//    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
+    @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Busca por photos", description = "Buscar todas as Photos.")
     @Path("/search")
     public PhotosManager getAllPhotos(@QueryParam("date") String date) {
         return photosService.searchPhotos(date, token.getClaim("name"));
+    }
+
+    @POST
+    @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Processa os IDs das fotos", description = "Processa de forma automatica os IDs atraves dos codigos de barra")
+    @Path("/processBarCode")
+    public PhotosManager processBarCode(@RequestBody ProcessBarCodeRequestDTO req) throws RepassaException {
+        String tokenAuth = headers.getHeaderString("Authorization");
+        return photosService.processBarCode(req, token.getClaim("name"), tokenAuth);
     }
 
     @POST
@@ -74,7 +85,8 @@ public class PhotosResource {
     })
     @Path("/validate-identificators")
     public Response validateIds(@RequestBody List<IdentificatorsDTO> identificators) throws Exception {
-        List<IdentificatorsDTO> identificatorsValidated = photosService.validateIdentificators(identificators);
+        String tokenAuth = headers.getHeaderString("Authorization");
+        List<IdentificatorsDTO> identificatorsValidated = photosService.validateIdentificators(identificators, tokenAuth);
 
         List<IdentificatorsDTO> response = identificatorsValidated.stream()
                 .filter(identificator -> !identificator.getValid()).collect(Collectors.toList());

@@ -121,6 +121,7 @@ public class PhotosService {
                 	validateIds.add(IdentificatorsDTO.builder()
                 			.groupId(item.getId())
                 			.productId(null)
+                            .valid(false)
                 			.build());
                 }
     		

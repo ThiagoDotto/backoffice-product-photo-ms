@@ -2,6 +2,7 @@ package br.com.repassa.dto;
 
 import java.util.List;
 
+import br.com.repassa.enums.TypePhoto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,7 +20,7 @@ public class ProcessBarCodeRequestDTO {
 	@Setter
 	public static class GroupPhoto {
 		private String id;
-		private Photo photos;
+		private List<Photo> photos;
 	}
 
 	@Getter
@@ -27,5 +28,6 @@ public class ProcessBarCodeRequestDTO {
 	public static class Photo {
 		private String idPhoto;
 		private String urlPhotoBarCode;
+		private TypePhoto typePhoto;
 	}
 }

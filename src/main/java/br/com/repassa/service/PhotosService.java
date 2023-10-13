@@ -234,6 +234,20 @@ public class PhotosService {
             } catch (RepassaException repassaException) {
                 identificator.setMessage("O ID " + identificator.getProductId() + " é inválido");
                 identificator.setValid(false);
+                
+                PhotosManager photosManager = null;
+				try {
+					photosManager = photoClient.findByProductId(identificator.getProductId());
+					 if (photosManager == null) {
+		                    PhotosManager photoManagerGroup = photoClient.findByGroupId(identificator.getGroupId());
+		                    updatePhotoManager(photoManagerGroup, identificator);
+		                } else {
+		                    updatePhotoManager(photosManager, identificator);
+		                }
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+ 
                 response.add(identificator);
             } catch (Exception e) {
                 e.printStackTrace();

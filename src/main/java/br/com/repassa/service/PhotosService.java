@@ -111,19 +111,19 @@ public class PhotosService {
                             break;
                         }
 
-                        if (!foundText) {
+                        if (foundText) {
                             try {
                                 var photoManager = photoClient.findByImageId(photo.getIdPhoto());
                                 updatePhotoManagerByPhoto(photoManager, item.getId(), photo.getIdPhoto(), photo.getTypePhoto().name());
-                                validateIds.add(IdentificatorsDTO.builder()
-                                        .groupId(item.getId())
-                                        .productId(null)
-                                        .valid(false)
-                                        .build());
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
-
+                        } else {
+                            validateIds.add(IdentificatorsDTO.builder()
+                                .groupId(item.getId())
+                                .productId(null)
+                                .valid(false)
+                                .build());
                         }
                     }
                 }));
@@ -179,7 +179,7 @@ public class PhotosService {
                 if (identificator.getProductId() == null) {
                     identificator.setMessage("ID não encontrado na imagem.");
                 } else {
-                    ProductDTO productDTO = validateProductIDResponse(identificator.getProductId(), tokenAuth);
+                    validateProductIDResponse(identificator.getProductId(), tokenAuth);
 
                     photosManager = photoClient.findByProductId(identificator.getProductId());
 

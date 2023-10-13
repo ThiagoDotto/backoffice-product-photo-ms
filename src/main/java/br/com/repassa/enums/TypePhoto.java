@@ -6,5 +6,9 @@ public enum TypePhoto {
     ETIQUETA,
     PRINCIPAL,
     COSTA,
-    DETALHE
+    DETALHE;
+
+    public static TypePhoto getPosition(int count) {
+        return TypePhoto.values()[count];
+    }
 }

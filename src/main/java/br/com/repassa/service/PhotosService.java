@@ -8,10 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import br.com.repassa.enums.*;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -30,12 +29,16 @@ import br.com.repassa.dto.IdentificatorsDTO;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.dto.ProcessBarCodeRequestDTO;
+import br.com.repassa.dto.ProductDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
-import br.com.repassa.dto.ProductDTO;
 import br.com.repassa.enums.StatusManagerPhotos;
+import br.com.repassa.enums.StatusProduct;
+import br.com.repassa.enums.TypeError;
+import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.exception.PhotoError;
+import br.com.repassa.resource.client.ProductRestClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.rekognition.RekognitionClient;
 import software.amazon.awssdk.services.rekognition.model.DetectTextRequest;
@@ -43,7 +46,6 @@ import software.amazon.awssdk.services.rekognition.model.DetectTextResponse;
 import software.amazon.awssdk.services.rekognition.model.Image;
 import software.amazon.awssdk.services.rekognition.model.S3Object;
 import software.amazon.awssdk.services.rekognition.model.TextDetection;
-import br.com.repassa.resource.client.ProductRestClient;
 
 @ApplicationScoped
 public class PhotosService {
@@ -279,6 +281,7 @@ public class PhotosService {
         var managerGroupPhotos = new ManagerGroupPhotos(groupPhotos);
 
         AtomicInteger count = new AtomicInteger();
+        AtomicBoolean isPhotoValid = new AtomicBoolean(Boolean.TRUE);
 
         resultList.forEach(photosFilter -> {
 
@@ -295,11 +298,16 @@ public class PhotosService {
 
             photos.add(photo);
             count.set(count.get() + 1);
+            
+            if (!Boolean.valueOf(photosFilter.getIsValid())) {
+            	isPhotoValid.set(Boolean.FALSE);
+            }
 
             if (photos.size() == 4) {
-                managerGroupPhotos.addPhotos(photos, Boolean.valueOf(photosFilter.getIsValid()));
+                managerGroupPhotos.addPhotos(photos, isPhotoValid);
                 photos.clear();
                 count.set(0);
+                isPhotoValid.set(Boolean.TRUE);
 
             } else if (photos.size() < 4
                     && (resultList.size() - managerGroupPhotos.getTotalPhotos()) == photos.size()) {
@@ -307,7 +315,7 @@ public class PhotosService {
                 while (photos.size() < 4) {
                     createPhotosError(photos);
                 }
-                managerGroupPhotos.addPhotos(photos, false);
+                managerGroupPhotos.addPhotos(photos, new AtomicBoolean(Boolean.FALSE));
             }
         });
 

@@ -47,31 +47,35 @@ public class PhotoClient {
 
         DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
 
-        try {
+        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = new ArrayList<PhotoFilterResponseDTO>();
+        Map<String, AttributeValue> lastEvaluatedKey = null;
 
-            ScanRequest scanRequest = ScanRequest.builder()
+        do {
+
+            ScanRequest.Builder scanRequest = ScanRequest.builder()
                     .tableName(TABLE_NAME)
                     .filterExpression("contains(upload_date, :upload_date) AND edited_by = :edited_by")
-                    .expressionAttributeValues(expressionAttributeValues)
-                    .build();
+                    .expressionAttributeValues(expressionAttributeValues);
 
-            ScanResponse items = dynamoDB.scan(scanRequest);
-
-            List<PhotoFilterResponseDTO> photoFilterResponseDTOS = mapPhotoFilter(items);
-
-            if (photoFilterResponseDTOS.size() == 0) {
-                log.error("Não há itens encontrados para a data informada. Selecione uma nova data ou tente novamente");
-                throw new RepassaException(PhotoError.FOTOS_NAO_ENCONTRADA);
+            if (lastEvaluatedKey != null) {
+                scanRequest.exclusiveStartKey(lastEvaluatedKey);
             }
 
-            return photoFilterResponseDTOS;
-        } catch (RepassaException e) {
-            log.error("Nenhuma foto encontrada para essa data.");
+            ScanResponse items = dynamoDB.scan(scanRequest.build());
+            photoFilterResponseDTOS.addAll(mapPhotoFilter(items));
+            lastEvaluatedKey = items.lastEvaluatedKey();
+
+        } while (lastEvaluatedKey != null && !lastEvaluatedKey.isEmpty());
+
+
+        if (photoFilterResponseDTOS.size() == 0) {
+            log.error("Não há itens encontrados para a data informada. Selecione uma nova data ou tente novamente");
             throw new RepassaException(PhotoError.FOTOS_NAO_ENCONTRADA);
-        } catch (Exception e) {
-            log.error("Erro nao esperado ao buscar as Fotoso no DynamoDB");
-            throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_IMAGENS);
+        } else {
+            Collections.sort(photoFilterResponseDTOS,
+                    Comparator.nullsFirst(Comparator.comparing(PhotoFilterResponseDTO::getImageName)));
         }
+        return photoFilterResponseDTOS;
     }
 
     public PhotosManager findByProductId(String productId) throws Exception {
@@ -222,9 +226,6 @@ public class PhotoClient {
 
             resultList.add(responseDTO);
         });
-
-        Collections.sort(resultList,
-                Comparator.nullsFirst(Comparator.comparing(PhotoFilterResponseDTO::getImageName)));
 
         return resultList;
     }

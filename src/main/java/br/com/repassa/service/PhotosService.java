@@ -28,6 +28,7 @@ import javax.ws.rs.core.Response;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -164,6 +165,7 @@ public class PhotosService {
 
                 if (identificator.getProductId() == null) {
                     identificator.setMessage("ID não encontrado na imagem.");
+                    identificator.setValid(false);
                 } else {
                     validateProductIDResponse(identificator.getProductId(), tokenAuth);
 
@@ -217,6 +219,20 @@ public class PhotosService {
             } catch (RepassaException repassaException) {
                 identificator.setMessage("O ID " + identificator.getProductId() + " é inválido");
                 identificator.setValid(false);
+
+                PhotosManager photosManager = null;
+				try {
+					photosManager = photoClient.findByProductId(identificator.getProductId());
+					 if (photosManager == null) {
+		                    PhotosManager photoManagerGroup = photoClient.findByGroupId(identificator.getGroupId());
+		                    updatePhotoManager(photoManagerGroup, identificator);
+		                } else {
+		                    updatePhotoManager(photosManager, identificator);
+		                }
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
                 response.add(identificator);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -264,6 +280,7 @@ public class PhotosService {
         var managerGroupPhotos = new ManagerGroupPhotos(groupPhotos);
 
         AtomicInteger count = new AtomicInteger();
+        AtomicBoolean isPhotoValid = new AtomicBoolean(Boolean.TRUE);
 
         resultList.forEach(photosFilter -> {
 
@@ -281,10 +298,15 @@ public class PhotosService {
             photos.add(photo);
             count.set(count.get() + 1);
 
+            if (!Boolean.valueOf(photosFilter.getIsValid())) {
+            	isPhotoValid.set(Boolean.FALSE);
+            }
+
             if (photos.size() == 4) {
-                managerGroupPhotos.addPhotos(photos, Boolean.valueOf(photosFilter.getIsValid()));
+                managerGroupPhotos.addPhotos(photos, isPhotoValid);
                 photos.clear();
                 count.set(0);
+                isPhotoValid.set(Boolean.TRUE);
 
             } else if (photos.size() < 4
                     && (resultList.size() - managerGroupPhotos.getTotalPhotos()) == photos.size()) {
@@ -292,7 +314,7 @@ public class PhotosService {
                 while (photos.size() < 4) {
                     createPhotosError(photos);
                 }
-                managerGroupPhotos.addPhotos(photos, false);
+                managerGroupPhotos.addPhotos(photos, new AtomicBoolean(Boolean.FALSE));
             }
         });
 

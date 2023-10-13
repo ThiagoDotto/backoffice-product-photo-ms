@@ -78,10 +78,6 @@ public class PhotosService {
         persistPhotoManager(photoFilterResponseDTOS);
     }
 
-    public void processBarImages() {
-        RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
-    }
-
     public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user, String tokenAuth) {
 
         RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();

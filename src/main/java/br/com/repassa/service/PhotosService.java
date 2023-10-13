@@ -178,6 +178,7 @@ public class PhotosService {
 
                 if (identificator.getProductId() == null) {
                     identificator.setMessage("ID não encontrado na imagem.");
+                    identificator.setValid(false);
                 } else {
                     validateProductIDResponse(identificator.getProductId(), tokenAuth);
 

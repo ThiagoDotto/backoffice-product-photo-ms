@@ -1,39 +1,15 @@
 package br.com.repassa.service;
 
-import java.text.Normalizer;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import br.com.repassa.enums.*;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.transaction.Transactional;
-import javax.ws.rs.core.Response;
-
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.resteasy.reactive.ClientWebApplicationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.dto.*;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
-import br.com.repassa.dto.ProductDTO;
-import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.enums.TypeError;
+import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.resource.client.ProductRestClient;
@@ -53,6 +29,7 @@ import javax.ws.rs.core.Response;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @ApplicationScoped

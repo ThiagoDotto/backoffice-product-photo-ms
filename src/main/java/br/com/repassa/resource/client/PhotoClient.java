@@ -83,6 +83,24 @@ public class PhotoClient {
         return parseJsonToObject(items);
     }
 
+    public PhotosManager findByImageId(String imageId) throws Exception {
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+
+        expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + imageId + "\"").build());
+
+        ScanRequest scanRequest = ScanRequest.builder()
+                .tableName(TABLE_NAME_PHOTOS)
+                .filterExpression("contains(groupPhotos, :groupPhotos)")
+                .expressionAttributeValues(expressionAttributeValues)
+                .build();
+
+        ScanResponse items = dynamoDB.scan(scanRequest);
+
+        return parseJsonToObject(items);
+    }
+
     public PhotosManager findByGroupId(String groupId) throws Exception {
 
         DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();

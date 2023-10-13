@@ -197,12 +197,14 @@ public class PhotosService {
                             if (foundGroupPhotos.size() >= 2) {
                                 identificator.setMessage(
                                         "O ID " + identificator.getProductId() + " está sendo utilizado em outro Grupo.");
+                                identificator.setValid(false);
                                 photosManager = photoClient.findByGroupId(identificator.getGroupId());
 
                             } else if (foundGroupPhotos.size() == 1
                                     && !foundGroupPhotos.get(0).getId().equals(identificator.getGroupId())) {
                                 identificator.setMessage(
                                         "O ID " + identificator.getProductId() + " está sendo utilizado em outro Grupo.");
+                                identificator.setValid(false);
 
                                 photosManager = photoClient.findByGroupId(identificator.getGroupId());
                             } else {
@@ -212,6 +214,7 @@ public class PhotosService {
                         } else if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
                             identificator.setMessage("O ID " + identificator.getProductId()
                                     + " está sendo utilizado em outro Grupo com status Finalizado.");
+                            identificator.setValid(false);
                         }
                     }
                 }
@@ -227,6 +230,7 @@ public class PhotosService {
                 response.add(identificator);
             } catch (RepassaException repassaException) {
                 identificator.setMessage("O ID " + identificator.getProductId() + " é inválido");
+                identificator.setValid(false);
                 response.add(identificator);
             } catch (Exception e) {
                 e.printStackTrace();

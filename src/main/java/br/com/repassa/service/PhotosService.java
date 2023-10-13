@@ -307,6 +307,7 @@ public class PhotosService {
                 managerGroupPhotos.addPhotos(photos, isPhotoValid);
                 photos.clear();
                 count.set(0);
+                isPhotoValid.set(Boolean.TRUE);
 
             } else if (photos.size() < 4
                     && (resultList.size() - managerGroupPhotos.getTotalPhotos()) == photos.size()) {

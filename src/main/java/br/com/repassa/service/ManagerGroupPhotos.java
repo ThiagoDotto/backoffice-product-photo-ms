@@ -1,15 +1,15 @@
 package br.com.repassa.service;
 
-import br.com.repassa.entity.GroupPhotos;
-import br.com.repassa.entity.Photo;
-import br.com.repassa.enums.StatusProduct;
-import br.com.repassa.enums.TypeError;
-import br.com.repassa.enums.TypePhoto;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import br.com.repassa.entity.GroupPhotos;
+import br.com.repassa.entity.Photo;
+import br.com.repassa.enums.StatusProduct;
+import br.com.repassa.enums.TypeError;
 
 public class ManagerGroupPhotos {
 
@@ -20,7 +20,7 @@ public class ManagerGroupPhotos {
     public ManagerGroupPhotos(List<GroupPhotos> groupPhotos) {
         this.groupPhotos = groupPhotos;
     }
-    public void addPhotos(List<Photo> photos, Boolean isValid) {
+    public void addPhotos(List<Photo> photos, AtomicBoolean isValid) {
 
         GroupPhotos groupPhotos1 = new GroupPhotos();
         groupPhotos1.setStatusProduct(StatusProduct.EM_ANDAMENTO);
@@ -28,7 +28,7 @@ public class ManagerGroupPhotos {
         groupPhotos1.setId(UUID.randomUUID().toString());
         groupPhotos1.setPhotos(new ArrayList<>(photos));
 
-        if(!isValid) {
+        if(!isValid.get()) {
             groupPhotos1.setImageError(TypeError.IMAGE_ERROR.name());
         }
 

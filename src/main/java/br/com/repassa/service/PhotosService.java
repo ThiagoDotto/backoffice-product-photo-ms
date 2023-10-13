@@ -289,6 +289,7 @@ public class PhotosService {
             photoManager.setId(UUID.randomUUID().toString());
 
             photos.add(photo);
+            count.set(count.get() + 1);
 
             if (photos.size() == 4) {
                 managerGroupPhotos.addPhotos(photos, Boolean.valueOf(photosFilter.getIsValid()));
@@ -302,8 +303,6 @@ public class PhotosService {
                     createPhotosError(photos);
                 }
                 managerGroupPhotos.addPhotos(photos, false);
-                count.set(count.get() + 1);
-
             }
         });
 

@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.client.PhotoClient;
 import br.com.repassa.client.RekognitionBarClient;
+import br.com.repassa.dto.ChangeTypePhotoDTO;
 import br.com.repassa.dto.IdentificatorsDTO;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
@@ -80,55 +81,48 @@ public class PhotosService {
         persistPhotoManager(photoFilterResponseDTOS);
     }
 
-    public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user, String tokenAuth) {
+    public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user,
+            String tokenAuth) {
 
         RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
         List<IdentificatorsDTO> validateIds = new ArrayList<>();
 
-        processBarCodeRequestDTO.getGroupPhotos().forEach(item ->
-                item.getPhotos().forEach(photo -> {
-                    if (Objects.equals(photo.getTypePhoto(), TypePhoto.ETIQUETA)) {
-                        String url = photo.getUrlPhotoBarCode();
-                        String bucket = url.split("\\.")[0].replace("https://", "");
-                        String pathImage = url.split("\\.com/")[1].replace("+", " ");
+        processBarCodeRequestDTO.getGroupPhotos().forEach(item -> item.getPhotos().forEach(photo -> {
+            if (Objects.equals(photo.getTypePhoto(), TypePhoto.ETIQUETA)) {
+                String url = photo.getUrlPhotoBarCode();
+                String bucket = url.split("\\.")[0].replace("https://", "");
+                String pathImage = url.split("\\.com/")[1].replace("+", " ");
 
-                        DetectTextRequest decReq = DetectTextRequest.builder()
-                                .image(Image.builder()
-                                        .s3Object(S3Object.builder()
-                                                .bucket(bucket)
-                                                .name(pathImage)
-                                                .build())
+                DetectTextRequest decReq = DetectTextRequest.builder()
+                        .image(Image.builder()
+                                .s3Object(S3Object.builder()
+                                        .bucket(bucket)
+                                        .name(pathImage)
                                         .build())
-                                .build();
+                                .build())
+                        .build();
 
-                        DetectTextResponse decRes = rekognitionClient.detectText(decReq);
+                DetectTextResponse decRes = rekognitionClient.detectText(decReq);
 
-                        boolean foundText = false;
-                        for (TextDetection textDetection : decRes.textDetections()) {
-                            validateIds.add(IdentificatorsDTO.builder()
-                                    .groupId(item.getId())
-                                    .productId(textDetection.detectedText())
-                                    .build());
-                            foundText = true;
-                            break;
-                        }
+                boolean foundText = false;
+                for (TextDetection textDetection : decRes.textDetections()) {
+                    validateIds.add(IdentificatorsDTO.builder()
+                            .groupId(item.getId())
+                            .productId(textDetection.detectedText())
+                            .build());
+                    foundText = true;
+                    break;
+                }
 
-                        if (foundText) {
-                            try {
-                                var photoManager = photoClient.findByImageId(photo.getIdPhoto());
-                                updatePhotoManagerByPhoto(photoManager, item.getId(), photo.getIdPhoto(), photo.getTypePhoto().name());
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        } else {
-                            validateIds.add(IdentificatorsDTO.builder()
-                                .groupId(item.getId())
-                                .productId(null)
-                                .valid(false)
-                                .build());
-                        }
-                    }
-                }));
+                if (!foundText) {
+                    validateIds.add(IdentificatorsDTO.builder()
+                            .groupId(item.getId())
+                            .productId(null)
+                            .valid(false)
+                            .build());
+                }
+            }
+        }));
 
         rekognitionClient.close();
 
@@ -194,19 +188,22 @@ public class PhotosService {
                             // Verifica se encontrou outro Grupo com o mesmo ID
                             List<GroupPhotos> foundGroupPhotos = photosManager.getGroupPhotos()
                                     .stream()
-                                    .filter(group -> identificator.getProductId().equals(group.getProductId()) && !identificator.getGroupId().equals(group.getId()))
+                                    .filter(group -> identificator.getProductId().equals(group.getProductId())
+                                            && !identificator.getGroupId().equals(group.getId()))
                                     .collect(Collectors.toList());
 
                             if (foundGroupPhotos.size() >= 2) {
                                 identificator.setMessage(
-                                        "O ID " + identificator.getProductId() + " está sendo utilizado em outro Grupo.");
+                                        "O ID " + identificator.getProductId()
+                                                + " está sendo utilizado em outro Grupo.");
                                 identificator.setValid(false);
                                 photosManager = photoClient.findByGroupId(identificator.getGroupId());
 
                             } else if (foundGroupPhotos.size() == 1
                                     && !foundGroupPhotos.get(0).getId().equals(identificator.getGroupId())) {
                                 identificator.setMessage(
-                                        "O ID " + identificator.getProductId() + " está sendo utilizado em outro Grupo.");
+                                        "O ID " + identificator.getProductId()
+                                                + " está sendo utilizado em outro Grupo.");
                                 identificator.setValid(false);
 
                                 photosManager = photoClient.findByGroupId(identificator.getGroupId());
@@ -222,7 +219,8 @@ public class PhotosService {
                     }
                 }
 
-                // Se não econtrar um PHOTO_MANAGER com base no PRODUCT_ID informado, será feito uma nova busca, informando o GROUP_ID
+                // Se não econtrar um PHOTO_MANAGER com base no PRODUCT_ID informado, será feito
+                // uma nova busca, informando o GROUP_ID
                 if (photosManager == null) {
                     PhotosManager photoManagerGroup = photoClient.findByGroupId(identificator.getGroupId());
                     updatePhotoManager(photoManagerGroup, identificator);
@@ -234,20 +232,20 @@ public class PhotosService {
             } catch (RepassaException repassaException) {
                 identificator.setMessage("O ID " + identificator.getProductId() + " é inválido");
                 identificator.setValid(false);
-                
+
                 PhotosManager photosManager = null;
-				try {
-					photosManager = photoClient.findByProductId(identificator.getProductId());
-					 if (photosManager == null) {
-		                    PhotosManager photoManagerGroup = photoClient.findByGroupId(identificator.getGroupId());
-		                    updatePhotoManager(photoManagerGroup, identificator);
-		                } else {
-		                    updatePhotoManager(photosManager, identificator);
-		                }
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
- 
+                try {
+                    photosManager = photoClient.findByProductId(identificator.getProductId());
+                    if (photosManager == null) {
+                        PhotosManager photoManagerGroup = photoClient.findByGroupId(identificator.getGroupId());
+                        updatePhotoManager(photoManagerGroup, identificator);
+                    } else {
+                        updatePhotoManager(photosManager, identificator);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
                 response.add(identificator);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -271,18 +269,30 @@ public class PhotosService {
         photoClient.savePhotosManager(photoManager);
     }
 
-    private void updatePhotoManagerByPhoto(PhotosManager photoManager, String groupId, String photoId, String typePhoto) {
-        photoManager.getGroupPhotos().forEach(group -> {
-            if (group.getId().equals(groupId)) {
-                group.getPhotos().forEach(photo -> {
-                    if (photo.getId().equals(photoId)) {
-                        photo.setTypePhoto(TypePhoto.valueOf(typePhoto));
-                    }
-                });
-            }
-        });
+    public ChangeTypePhotoDTO changeStatusPhoto(ChangeTypePhotoDTO data) throws RepassaException {
+        try {
+            PhotosManager photoManager = photoClient.findByImageId(data.getPhotoId());
 
-        photoClient.savePhotosManager(photoManager);
+            photoManager.getGroupPhotos().forEach(group -> {
+                if (group.getId().equals(data.getGroupId())) {
+                    group.getPhotos().forEach(photo -> {
+                        if (photo.getId().equals(data.getPhotoId())) {
+                            photo.setTypePhoto(data.getTypePhoto());
+                        }
+                    });
+                }
+            });
+
+            photoClient.savePhotosManager(photoManager);
+
+            return new ChangeTypePhotoDTO(
+                    data.getPhotoId(),
+                    data.getGroupId(),
+                    data.getTypePhoto(),
+                    "Foto atualizada com sucesso.");
+        } catch (Exception e) {
+            throw new RepassaException(PhotoError.ALTERAR_STATUS_INVALIDO);
+        }
     }
 
     @Transactional
@@ -312,9 +322,9 @@ public class PhotosService {
 
             photos.add(photo);
             count.set(count.get() + 1);
-            
+
             if (!Boolean.valueOf(photosFilter.getIsValid())) {
-            	isPhotoValid.set(Boolean.FALSE);
+                isPhotoValid.set(Boolean.FALSE);
             }
 
             if (photos.size() == 4) {

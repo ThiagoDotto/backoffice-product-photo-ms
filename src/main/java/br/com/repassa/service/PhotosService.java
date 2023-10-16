@@ -274,8 +274,11 @@ public class PhotosService {
             PhotosManager photoManager = photoClient.findByImageId(data.getPhotoId());
 
             photoManager.getGroupPhotos().forEach(group -> {
+
                 if (group.getId().equals(data.getGroupId())) {
+
                     group.getPhotos().forEach(photo -> {
+
                         if (photo.getId().equals(data.getPhotoId())) {
                             photo.setTypePhoto(data.getTypePhoto());
                         }

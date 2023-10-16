@@ -25,8 +25,9 @@ public class PhotoError implements RepassaUtilError {
             "As edições foram salvas e as imagens foram associadas aos produtos.");
     public static final RepassaUtilError PRODUCT_ID_INVALIDO = new PhotoError("010",
             "Erro ao verificar se o PRODUCT_ID é válido.");
-    public static final RepassaUtilError ALTERAR_STATUS_INVALIDO = new PhotoError("011",
-            "Erro ao tentar atualizar o Status da Imagem.");
+    public static final RepassaUtilError ALTERAR_STATUS_INVALIDO = new PhotoError("011","Erro ao tentar atualizar o Status da Imagem.");
+        public static final RepassaUtilError PHOTO_MANAGER_IS_NULL = new PhotoError("012",
+            "Não foi possível encontrar nenhum registro com os dados informado.");
 
     public PhotoError(String errorCode, String errorMessage) {
         this.errorCode = errorCode;

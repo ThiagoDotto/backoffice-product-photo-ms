@@ -271,28 +271,42 @@ public class PhotosService {
 
     public ChangeTypePhotoDTO changeStatusPhoto(ChangeTypePhotoDTO data) throws RepassaException {
         try {
-            PhotosManager photoManager = photoClient.findByImageId(data.getPhotoId());
+            PhotosManager photoManager = photoClient.findByImageAndGroupId(data.getPhotoId(), data.getGroupId());
+            AtomicBoolean updatePhotoManager = new AtomicBoolean(Boolean.FALSE);
+
+            if (photoManager == null) {
+                throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
+            }
 
             photoManager.getGroupPhotos().forEach(group -> {
 
                 if (group.getId().equals(data.getGroupId())) {
 
                     group.getPhotos().forEach(photo -> {
-
                         if (photo.getId().equals(data.getPhotoId())) {
                             photo.setTypePhoto(data.getTypePhoto());
+
+                            updatePhotoManager.set(Boolean.TRUE);
                         }
                     });
                 }
             });
 
-            photoClient.savePhotosManager(photoManager);
+            if (updatePhotoManager.get()) {
+                photoClient.savePhotosManager(photoManager);
+
+                return new ChangeTypePhotoDTO(
+                        data.getPhotoId(),
+                        data.getGroupId(),
+                        data.getTypePhoto(),
+                        "Foto atualizada com sucesso.");
+            }
 
             return new ChangeTypePhotoDTO(
                     data.getPhotoId(),
                     data.getGroupId(),
                     data.getTypePhoto(),
-                    "Foto atualizada com sucesso.");
+                    "Não encontrou informações suficientes para atualizar o Status da Foto.");
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ALTERAR_STATUS_INVALIDO);
         }

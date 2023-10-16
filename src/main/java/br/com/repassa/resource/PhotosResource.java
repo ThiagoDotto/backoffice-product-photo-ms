@@ -120,7 +120,10 @@ public class PhotosResource {
     @Operation(summary = "Atualizar Tipo da Foto", description = "Endpoint com finalidade para atualizar o Tipo da foto.")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    @RolesAllowed({ "admin" })
+    @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
+    @APIResponses(value = {
+            @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ChangeTypePhotoDTO.class, type = SchemaType.ARRAY))),
+    })
     @Path("/change-type-photo")
     public Response updateProductStepOne(@RequestBody @Valid ChangeTypePhotoDTO changeTypePhotoDTO)
             throws RepassaException {

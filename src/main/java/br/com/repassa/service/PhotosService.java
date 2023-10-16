@@ -277,7 +277,7 @@ public class PhotosService {
                 if (group.getId().equals(data.getGroupId())) {
                     group.getPhotos().forEach(photo -> {
                         if (photo.getId().equals(data.getPhotoId())) {
-                            photo.setTypePhoto(TypePhoto.valueOf(data.getTypePhoto()));
+                            photo.setTypePhoto(data.getTypePhoto());
                         }
                     });
                 }

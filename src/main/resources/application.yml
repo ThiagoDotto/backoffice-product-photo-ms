@@ -12,9 +12,9 @@ quarkus:
   application:
     name: @project.artifactId@ # nome da aplicação será usando para definir o repositório de configura para o config-server
 
-  spring-cloud-config:
-    enabled: true # conexão com o config-server está disabilitado por padrão
-    url: https://api-java-qa.repassa.net.br/backoffice-spring-config/
+#  spring-cloud-config:
+#    enabled: true # conexão com o config-server está disabilitado por padrão
+#    url: https://api-java-qa.repassa.net.br/backoffice-spring-config/
 
 #  rest-client:
 #    history-resource:
@@ -23,13 +23,13 @@ quarkus:
 #    product-resource:
 #      url: https://api-java-qa.repassa.net.br/backoffice-product-ms
 #      scope: jakarta.inject.Singleton
-#
-#  health:
-#    enabled: true
-#    readiness:
-#      enabled: true
-#    liveness:
-#      enabled: true
+
+  health:
+    enabled: true
+    readiness:
+      enabled: true
+    liveness:
+      enabled: true
 #
 #  container-image:
 #    image: registry.repassa.com.br:5000/@project.artifactId@-jvm:@project.version@
@@ -43,17 +43,17 @@ quarkus:
 #      - -Dquarkus.http.host=0.0.0.0
 #      - -XshowSettings:all
 #      - -Djava.util.logging.manager=org.jboss.logmanager.LogManager
-#  log:
-#    console:
-#      json: false
-#      format: '%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n'
-#    min-level: DEBUG
-#
-#  jpa:
-#    properties:
-#      hibernate:
-#        default_schema: public
-#
+  log:
+    console:
+      json: false
+      format: '%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n'
+    min-level: DEBUG
+
+  jpa:
+    properties:
+      hibernate:
+        default_schema: public
+
 #  arc:
 #    unremovable-types: org.keycloak.admin.client.Keycloak
 #  oidc:
@@ -63,7 +63,7 @@ quarkus:
 #    auth-server-url: https://keycloak-java.repassa.net.br/realms/backoffice-qa
 #    credentials:
 #      secret: RqR4rFnxeFqVBlFbnnrc590CVrXAzFqj
-#
+
 #  opentelemetry:
 #    enabled: true
 #    tracer:
@@ -71,7 +71,7 @@ quarkus:
 #      exporter:
 #        otlp:
 #          endpoint: http://10.6.1.5:4317
-#
+
 #  rest:
 #    default-producer: org.jboss.resteasy.reactive.jackson.JacksonJsonb
 #    jackson:

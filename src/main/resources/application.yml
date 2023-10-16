@@ -12,70 +12,70 @@ quarkus:
   application:
     name: @project.artifactId@ # nome da aplicação será usando para definir o repositório de configura para o config-server
 
-  #  spring-cloud-config:
-  #    enabled: true # conexão com o config-server está disabilitado por padrão
-  #    url: https://api-java-qa.repassa.net.br/backoffice-spring-config/
+  spring-cloud-config:
+    enabled: true # conexão com o config-server está disabilitado por padrão
+    url: https://api-java-qa.repassa.net.br/backoffice-spring-config/
 
-  rest-client:
-    history-resource:
-      url: https://api-java-qa.repassa.net.br/backoffice-history-ms
-      scope: jakarta.inject.Singleton
-    product-resource:
-      url: https://api-java-qa.repassa.net.br/backoffice-product-ms
-      scope: jakarta.inject.Singleton
-
-  health:
-    enabled: true
-    readiness:
-      enabled: true
-    liveness:
-      enabled: true
-
-  container-image:
-    image: registry.repassa.com.br:5000/@project.artifactId@-jvm:@project.version@
-    build: false
-    insecure: true
-  jib:
-    base-jvm-image: mcr.microsoft.com/java/jre-headless:11-zulu-alpine
-    base-native-image: registry.access.redhat.com/ubi8/ubi-minimal
-    ports: 8080
-    jvm-arguments:
-      - -Dquarkus.http.host=0.0.0.0
-      - -XshowSettings:all
-      - -Djava.util.logging.manager=org.jboss.logmanager.LogManager
-  log:
-    console:
-      json: false
-      format: '%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n'
-    min-level: DEBUG
-
-  jpa:
-    properties:
-      hibernate:
-        default_schema: public
-
-  arc:
-    unremovable-types: org.keycloak.admin.client.Keycloak
-  oidc:
-    client-id: accounts
-    tls:
-      verification: none
-    auth-server-url: https://keycloak-java.repassa.net.br/realms/backoffice-qa
-    credentials:
-      secret: RqR4rFnxeFqVBlFbnnrc590CVrXAzFqj
-
-  opentelemetry:
-    enabled: true
-    tracer:
-      enabled: true
-      exporter:
-        otlp:
-          endpoint: http://10.6.1.5:4317
-
-  rest:
-    default-producer: org.jboss.resteasy.reactive.jackson.JacksonJsonb
-    jackson:
-      enable-jaxrs-jsonb: true
-  resteasy-reactive:
-    jackson:
-      enable: true
+#  rest-client:
+#    history-resource:
+#      url: https://api-java-qa.repassa.net.br/backoffice-history-ms
+#      scope: jakarta.inject.Singleton
+#    product-resource:
+#      url: https://api-java-qa.repassa.net.br/backoffice-product-ms
+#      scope: jakarta.inject.Singleton
+#
+#  health:
+#    enabled: true
+#    readiness:
+#      enabled: true
+#    liveness:
+#      enabled: true
+#
+#  container-image:
+#    image: registry.repassa.com.br:5000/@project.artifactId@-jvm:@project.version@
+#    build: false
+#    insecure: true
+#  jib:
+#    base-jvm-image: mcr.microsoft.com/java/jre-headless:11-zulu-alpine
+#    base-native-image: registry.access.redhat.com/ubi8/ubi-minimal
+#    ports: 8080
+#    jvm-arguments:
+#      - -Dquarkus.http.host=0.0.0.0
+#      - -XshowSettings:all
+#      - -Djava.util.logging.manager=org.jboss.logmanager.LogManager
+#  log:
+#    console:
+#      json: false
+#      format: '%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n'
+#    min-level: DEBUG
+#
+#  jpa:
+#    properties:
+#      hibernate:
+#        default_schema: public
+#
+#  arc:
+#    unremovable-types: org.keycloak.admin.client.Keycloak
+#  oidc:
+#    client-id: accounts
+#    tls:
+#      verification: none
+#    auth-server-url: https://keycloak-java.repassa.net.br/realms/backoffice-qa
+#    credentials:
+#      secret: RqR4rFnxeFqVBlFbnnrc590CVrXAzFqj
+#
+#  opentelemetry:
+#    enabled: true
+#    tracer:
+#      enabled: true
+#      exporter:
+#        otlp:
+#          endpoint: http://10.6.1.5:4317
+#
+#  rest:
+#    default-producer: org.jboss.resteasy.reactive.jackson.JacksonJsonb
+#    jackson:
+#      enable-jaxrs-jsonb: true
+#  resteasy-reactive:
+#    jackson:
+#      enable: true

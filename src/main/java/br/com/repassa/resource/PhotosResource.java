@@ -5,8 +5,11 @@ import java.util.stream.Collectors;
 
 import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
+import javax.validation.Valid;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
@@ -27,6 +30,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
+import br.com.repassa.dto.ChangeTypePhotoDTO;
 import br.com.repassa.dto.IdentificatorsDTO;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.ProcessBarCodeRequestDTO;
@@ -76,7 +80,7 @@ public class PhotosResource {
     }
 
     @POST
-    // @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
+    @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Validar ID's do(s) grupo(s) de foto(s)", description = "Irá validar os ID's identificado (da etiqueta) ou inserido manualmente dos grupos de fotos.")
     @APIResponses(value = {
@@ -86,7 +90,8 @@ public class PhotosResource {
     @Path("/validate-identificators")
     public Response validateIds(@RequestBody List<IdentificatorsDTO> identificators) throws Exception {
         String tokenAuth = headers.getHeaderString("Authorization");
-        List<IdentificatorsDTO> identificatorsValidated = photosService.validateIdentificators(identificators, tokenAuth);
+        List<IdentificatorsDTO> identificatorsValidated = photosService.validateIdentificators(identificators,
+                tokenAuth);
 
         List<IdentificatorsDTO> response = identificatorsValidated.stream()
                 .filter(identificator -> !identificator.getValid()).collect(Collectors.toList());
@@ -109,5 +114,20 @@ public class PhotosResource {
     @Path("/finish-manager-bags")
     public Response finishManagerPhotos(@RequestBody PhotosManager photosManager) throws RepassaException {
         return Response.ok(photosService.finishManagerPhotos(photosManager)).build();
+    }
+
+    @PUT
+    @Operation(summary = "Atualizar Tipo da Foto", description = "Endpoint com finalidade para atualizar o Tipo da foto.")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({ "admin", "FOTOGRAFIA.GERENCIAR_FOTOS" })
+    @APIResponses(value = {
+            @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ChangeTypePhotoDTO.class, type = SchemaType.ARRAY))),
+    })
+    @Path("/change-type-photo")
+    public Response updateProductStepOne(@RequestBody @Valid ChangeTypePhotoDTO changeTypePhotoDTO)
+            throws RepassaException {
+
+        return Response.ok(photosService.changeStatusPhoto(changeTypePhotoDTO)).build();
     }
 }

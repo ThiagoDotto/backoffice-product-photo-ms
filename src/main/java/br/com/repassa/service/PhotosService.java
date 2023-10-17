@@ -10,6 +10,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -106,9 +108,11 @@ public class PhotosService {
 
                 boolean foundText = false;
                 for (TextDetection textDetection : decRes.textDetections()) {
+                    String productId = extractNumber(textDetection.detectedText()).toString();
+
                     validateIds.add(IdentificatorsDTO.builder()
                             .groupId(item.getId())
-                            .productId(textDetection.detectedText())
+                            .productId(productId)
                             .build());
                     foundText = true;
                     break;
@@ -127,7 +131,7 @@ public class PhotosService {
         rekognitionClient.close();
 
         try {
-            validateIdentificators(validateIds, tokenAuth);
+            validateIdentificators(validateIds, tokenAuth, true);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -160,7 +164,8 @@ public class PhotosService {
     }
 
     @Transactional
-    public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth)
+    public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth,
+            Boolean isOcr)
             throws Exception {
         if (identificators.isEmpty()) {
             throw new RepassaException(PhotoError.VALIDATE_IDENTIFICATORS_EMPTY);
@@ -173,7 +178,12 @@ public class PhotosService {
                 PhotosManager photosManager = null;
 
                 if (identificator.getProductId() == null) {
-                    identificator.setMessage("ID não encontrado na imagem.");
+                    if (isOcr) {
+                        identificator.setMessage("ID não informado pelo Usuário.");
+                    } else {
+                        identificator.setMessage("ID não encontrado na Imagem.");
+                    }
+
                     identificator.setValid(false);
                 } else {
                     validateProductIDResponse(identificator.getProductId(), tokenAuth);
@@ -403,6 +413,29 @@ public class PhotosService {
         } catch (ClientWebApplicationException e) {
             throw new RepassaException(PhotoError.PRODUCT_ID_INVALIDO);
         }
+    }
+
+    private Integer extractNumber(String value) {
+        // Define a expressão regular para encontrar números
+        Pattern pattern = Pattern.compile("\\d+");
+
+        // Cria um Matcher para a string de entrada
+        Matcher matcher = pattern.matcher(value);
+
+        // Inicializa uma string vazia para armazenar os números
+        StringBuilder numbers = new StringBuilder();
+
+        // Encontra todos os números e os adiciona à string de números
+        while (matcher.find()) {
+            numbers.append(matcher.group());
+        }
+
+        // Converte a string de números para um número inteiro (se necessário)
+        if (!numbers.isEmpty()) {
+            return Integer.parseInt(numbers.toString());
+        }
+
+        return null;
     }
 
     private void createPhotosError(List<Photo> photos) {

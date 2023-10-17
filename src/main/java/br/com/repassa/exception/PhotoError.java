@@ -26,9 +26,11 @@ public class PhotoError implements RepassaUtilError {
     public static final RepassaUtilError PRODUCT_ID_INVALIDO = new PhotoError("010",
             "Erro ao verificar se o PRODUCT_ID é válido.");
     public static final RepassaUtilError ALTERAR_STATUS_INVALIDO = new PhotoError("011","Erro ao tentar atualizar o Status da Imagem.");
-        public static final RepassaUtilError PHOTO_MANAGER_IS_NULL = new PhotoError("012",
+    public static final RepassaUtilError PHOTO_MANAGER_IS_NULL = new PhotoError("012",
             "Não foi possível encontrar nenhum registro com os dados informado.");
 
+    public static final RepassaUtilError REKOGNITO_ERROR = new PhotoError("013",
+            "Não foi possível ler a imagem.");
     public PhotoError(String errorCode, String errorMessage) {
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;

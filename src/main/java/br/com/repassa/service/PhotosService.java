@@ -84,7 +84,7 @@ public class PhotosService {
     }
 
     public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user,
-            String tokenAuth) {
+            String tokenAuth) throws RepassaException {
 
         RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
         List<IdentificatorsDTO> validateIds = new ArrayList<>();
@@ -138,8 +138,7 @@ public class PhotosService {
         try {
             validateIdentificators(validateIds, tokenAuth, true);
         } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+            throw new RepassaException(PhotoError.REKOGNITO_ERROR);
         }
 
         return searchPhotos(processBarCodeRequestDTO.getDate(), user);

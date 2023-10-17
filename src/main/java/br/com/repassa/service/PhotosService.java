@@ -135,10 +135,14 @@ public class PhotosService {
 
         rekognitionClient.close();
 
+        if (validateIds.size() == 0) {
+            throw new RepassaException(PhotoError.REKOGNITION_PHOTO_EMPTY);
+        }
+
         try {
             validateIdentificators(validateIds, tokenAuth, true);
         } catch (Exception e) {
-            throw new RepassaException(PhotoError.REKOGNITO_ERROR);
+            throw new RepassaException(PhotoError.REKOGNITION_ERROR);
         }
 
         return searchPhotos(processBarCodeRequestDTO.getDate(), user);
@@ -183,9 +187,11 @@ public class PhotosService {
 
                 if (identificator.getProductId() == null) {
                     if (isOcr) {
-                        identificator.setMessage("ID não informado pelo Usuário.");
+                        identificator
+                                .setMessage("ID de Produto não reconhecido. Verifique a etiqueta e tente novamente.");
                     } else {
-                        identificator.setMessage("ID não encontrado na Imagem.");
+                        identificator
+                                .setMessage("ID de Produto não reconhecido. Verifique a etiqueta e informe novamente.");
                     }
 
                     identificator.setValid(false);
@@ -196,7 +202,7 @@ public class PhotosService {
 
                     if (photosManager == null) {
                         identificator.setValid(true);
-                        identificator.setMessage("ID Disponível");
+                        identificator.setMessage("ID de Produto disponível");
                     } else {
                         if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.STARTED) {
                             // Verifica se encontrou outro Grupo com o mesmo ID
@@ -208,7 +214,7 @@ public class PhotosService {
 
                             if (foundGroupPhotos.size() >= 2) {
                                 identificator.setMessage(
-                                        "O ID " + identificator.getProductId()
+                                        "O ID do Produto " + identificator.getProductId()
                                                 + " está sendo utilizado em outro Grupo.");
                                 identificator.setValid(false);
                                 photosManager = photoClient.findByGroupId(identificator.getGroupId());
@@ -216,17 +222,17 @@ public class PhotosService {
                             } else if (foundGroupPhotos.size() == 1
                                     && !foundGroupPhotos.get(0).getId().equals(identificator.getGroupId())) {
                                 identificator.setMessage(
-                                        "O ID " + identificator.getProductId()
+                                        "O ID do Produto " + identificator.getProductId()
                                                 + " está sendo utilizado em outro Grupo.");
                                 identificator.setValid(false);
 
                                 photosManager = photoClient.findByGroupId(identificator.getGroupId());
                             } else {
                                 identificator.setValid(true);
-                                identificator.setMessage("ID Disponível");
+                                identificator.setMessage("ID de Produto disponível");
                             }
                         } else if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
-                            identificator.setMessage("O ID " + identificator.getProductId()
+                            identificator.setMessage("O ID do Produto " + identificator.getProductId()
                                     + " está sendo utilizado em outro Grupo com status Finalizado.");
                             identificator.setValid(false);
                         }

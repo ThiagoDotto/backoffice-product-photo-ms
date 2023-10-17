@@ -108,11 +108,16 @@ public class PhotosService {
 
                 boolean foundText = false;
                 for (TextDetection textDetection : decRes.textDetections()) {
-                    String productId = extractNumber(textDetection.detectedText()).toString();
+                    Integer productId = extractNumber(textDetection.detectedText());
+                    String productIdStr = null;
+
+                    if (Objects.nonNull(productId)) {
+                        productIdStr = productId.toString();
+                    }
 
                     validateIds.add(IdentificatorsDTO.builder()
                             .groupId(item.getId())
-                            .productId(productId)
+                            .productId(productIdStr)
                             .build());
                     foundText = true;
                     break;

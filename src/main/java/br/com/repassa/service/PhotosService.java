@@ -298,9 +298,9 @@ public class PhotosService {
                 if (group.getId().equals(data.getGroupId())) {
 
                     group.getPhotos().forEach(photo -> {
-                        if (photo.getId().equals(data.getPhotoId())) {
-                            photo.setTypePhoto(data.getTypePhoto());
 
+                        if (Objects.nonNull(photo.getId()) && photo.getId().equals(data.getPhotoId())) {
+                            photo.setTypePhoto(data.getTypePhoto());
                             updatePhotoManager.set(Boolean.TRUE);
                         }
                     });

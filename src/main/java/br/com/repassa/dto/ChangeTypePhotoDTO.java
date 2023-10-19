@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 import javax.validation.constraints.NotNull;
 
+import br.com.repassa.enums.TypePhoto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,13 +16,12 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class IdentificatorsDTO implements Serializable {
-    @NotNull(message = "O campo productId é obrigatório.")
-    private String productId;
+public class ChangeTypePhotoDTO implements Serializable {
+    @NotNull(message = "O campo photoId é obrigatório.")
+    private String photoId;
     @NotNull(message = "O campo groupId é obrigatório.")
     private String groupId;
-    @Builder.Default
-    private Boolean valid = false;
-    @Builder.Default
-    private String message = "";
+    @NotNull(message = "O campo typePhoto é obrigatório.")
+    private TypePhoto typePhoto;
+    private String message;
 }

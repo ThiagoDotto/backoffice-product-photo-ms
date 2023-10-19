@@ -91,7 +91,7 @@ public class PhotosResource {
     public Response validateIds(@RequestBody List<IdentificatorsDTO> identificators) throws Exception {
         String tokenAuth = headers.getHeaderString("Authorization");
         List<IdentificatorsDTO> identificatorsValidated = photosService.validateIdentificators(identificators,
-                tokenAuth);
+                tokenAuth, false);
 
         List<IdentificatorsDTO> response = identificatorsValidated.stream()
                 .filter(identificator -> !identificator.getValid()).collect(Collectors.toList());

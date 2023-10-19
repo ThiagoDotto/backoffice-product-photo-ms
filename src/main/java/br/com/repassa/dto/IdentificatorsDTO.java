@@ -20,6 +20,8 @@ public class IdentificatorsDTO implements Serializable {
     private String productId;
     @NotNull(message = "O campo groupId é obrigatório.")
     private String groupId;
+    @Builder.Default
     private Boolean valid = false;
+    @Builder.Default
     private String message = "";
 }

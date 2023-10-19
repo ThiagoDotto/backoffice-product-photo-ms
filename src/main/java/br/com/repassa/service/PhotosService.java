@@ -10,6 +10,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -40,6 +42,7 @@ import br.com.repassa.enums.TypeError;
 import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.resource.client.ProductRestClient;
+import io.quarkus.logging.Log;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.rekognition.RekognitionClient;
 import software.amazon.awssdk.services.rekognition.model.DetectTextRequest;
@@ -82,7 +85,7 @@ public class PhotosService {
     }
 
     public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user,
-            String tokenAuth) {
+            String tokenAuth) throws RepassaException {
 
         RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
         List<IdentificatorsDTO> validateIds = new ArrayList<>();
@@ -106,9 +109,16 @@ public class PhotosService {
 
                 boolean foundText = false;
                 for (TextDetection textDetection : decRes.textDetections()) {
+                    Integer productId = extractNumber(textDetection.detectedText());
+                    String productIdStr = null;
+
+                    if (Objects.nonNull(productId)) {
+                        productIdStr = productId.toString();
+                    }
+
                     validateIds.add(IdentificatorsDTO.builder()
                             .groupId(item.getId())
-                            .productId(textDetection.detectedText())
+                            .productId(productIdStr)
                             .build());
                     foundText = true;
                     break;
@@ -126,11 +136,14 @@ public class PhotosService {
 
         rekognitionClient.close();
 
+        if (validateIds.size() == 0) {
+            throw new RepassaException(PhotoError.REKOGNITION_PHOTO_EMPTY);
+        }
+
         try {
-            validateIdentificators(validateIds, tokenAuth);
+            validateIdentificators(validateIds, tokenAuth, true);
         } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+            throw new RepassaException(PhotoError.REKOGNITION_ERROR);
         }
 
         return searchPhotos(processBarCodeRequestDTO.getDate(), user);
@@ -160,7 +173,8 @@ public class PhotosService {
     }
 
     @Transactional
-    public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth)
+    public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth,
+            Boolean isOcr)
             throws Exception {
         if (identificators.isEmpty()) {
             throw new RepassaException(PhotoError.VALIDATE_IDENTIFICATORS_EMPTY);
@@ -173,16 +187,27 @@ public class PhotosService {
                 PhotosManager photosManager = null;
 
                 if (identificator.getProductId() == null) {
-                    identificator.setMessage("ID não encontrado na imagem.");
+                    if (isOcr) {
+                        identificator
+                                .setMessage("ID de Produto não reconhecido. Verifique a etiqueta e tente novamente.");
+                    } else {
+                        identificator
+                                .setMessage("ID de Produto não reconhecido. Verifique a etiqueta e informe novamente.");
+                    }
+
                     identificator.setValid(false);
                 } else {
+                    LOG.info("PRODUCT_ID: " + identificator.getProductId());
+
                     validateProductIDResponse(identificator.getProductId(), tokenAuth);
 
                     photosManager = photoClient.findByProductId(identificator.getProductId());
 
+                    LOG.info("PRODUCT_ID 2: " + identificator.getProductId());
+
                     if (photosManager == null) {
                         identificator.setValid(true);
-                        identificator.setMessage("ID Disponível");
+                        identificator.setMessage("ID de Produto disponível");
                     } else {
                         if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.STARTED) {
                             // Verifica se encontrou outro Grupo com o mesmo ID
@@ -194,7 +219,7 @@ public class PhotosService {
 
                             if (foundGroupPhotos.size() >= 2) {
                                 identificator.setMessage(
-                                        "O ID " + identificator.getProductId()
+                                        "O ID do Produto " + identificator.getProductId()
                                                 + " está sendo utilizado em outro Grupo.");
                                 identificator.setValid(false);
                                 photosManager = photoClient.findByGroupId(identificator.getGroupId());
@@ -202,23 +227,22 @@ public class PhotosService {
                             } else if (foundGroupPhotos.size() == 1
                                     && !foundGroupPhotos.get(0).getId().equals(identificator.getGroupId())) {
                                 identificator.setMessage(
-                                        "O ID " + identificator.getProductId()
+                                        "O ID do Produto " + identificator.getProductId()
                                                 + " está sendo utilizado em outro Grupo.");
                                 identificator.setValid(false);
 
                                 photosManager = photoClient.findByGroupId(identificator.getGroupId());
                             } else {
                                 identificator.setValid(true);
-                                identificator.setMessage("ID Disponível");
+                                identificator.setMessage("ID de Produto disponível");
                             }
                         } else if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
-                            identificator.setMessage("O ID " + identificator.getProductId()
+                            identificator.setMessage("O ID do Produto " + identificator.getProductId()
                                     + " está sendo utilizado em outro Grupo com status Finalizado.");
                             identificator.setValid(false);
                         }
                     }
                 }
-
                 // Se não econtrar um PHOTO_MANAGER com base no PRODUCT_ID informado, será feito
                 // uma nova busca, informando o GROUP_ID
                 if (photosManager == null) {
@@ -230,8 +254,18 @@ public class PhotosService {
 
                 response.add(identificator);
             } catch (RepassaException repassaException) {
-                identificator.setMessage("O ID " + identificator.getProductId() + " é inválido");
-                identificator.setValid(false);
+                if (repassaException.getRepassaUtilError().getErrorCode().equals(PhotoError.PRODUCT_ID_INVALIDO
+                        .getErrorCode())) {
+                    identificator.setMessage("O ID " + identificator.getProductId() + " é inválido");
+                    identificator.setValid(false);
+                    response.add(identificator);
+                } else {
+                    LOG.info("Erro ao persistir o ID: " + repassaException.getMessage());
+
+                    identificator.setMessage("Houve um erro ao processar o ID " + identificator.getProductId());
+                    identificator.setValid(false);
+                    response.add(identificator);
+                }
 
                 PhotosManager photosManager = null;
                 try {
@@ -245,8 +279,6 @@ public class PhotosService {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
-                response.add(identificator);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -255,41 +287,66 @@ public class PhotosService {
         return response;
     }
 
-    private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator) {
-        photoManager.getGroupPhotos().forEach(group -> {
-            if (group.getId().equals(identificator.getGroupId())) {
-                group.setProductId(identificator.getProductId());
+    private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator)
+            throws RepassaException {
+        LOG.info("PHOTOMANAGER UPDATE: " + photoManager.getId());
+        if (photoManager != null) {
+            photoManager.getGroupPhotos().forEach(group -> {
+                if (group.getId().equals(identificator.getGroupId())) {
+                    group.setProductId(identificator.getProductId());
 
-                if (!identificator.getValid()) {
-                    group.setIdError(TypeError.ID_ERROR.name());
+                    if (identificator.getValid()) {                        
+                        group.setIdError(null);
+                    } else {
+                        group.setIdError(TypeError.ID_ERROR.name());
+                    }
                 }
-            }
-        });
+            });
 
-        photoClient.savePhotosManager(photoManager);
+            photoClient.savePhotosManager(photoManager);
+        } else {
+            throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
+        }
     }
 
     public ChangeTypePhotoDTO changeStatusPhoto(ChangeTypePhotoDTO data) throws RepassaException {
         try {
-            PhotosManager photoManager = photoClient.findByImageId(data.getPhotoId());
+            PhotosManager photoManager = photoClient.findByImageAndGroupId(data.getPhotoId(), data.getGroupId());
+            AtomicBoolean updatePhotoManager = new AtomicBoolean(Boolean.FALSE);
+
+            if (photoManager == null) {
+                throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
+            }
 
             photoManager.getGroupPhotos().forEach(group -> {
+
                 if (group.getId().equals(data.getGroupId())) {
+
                     group.getPhotos().forEach(photo -> {
-                        if (photo.getId().equals(data.getPhotoId())) {
+
+                        if (Objects.nonNull(photo.getId()) && photo.getId().equals(data.getPhotoId())) {
                             photo.setTypePhoto(data.getTypePhoto());
+                            updatePhotoManager.set(Boolean.TRUE);
                         }
                     });
                 }
             });
 
-            photoClient.savePhotosManager(photoManager);
+            if (updatePhotoManager.get()) {
+                photoClient.savePhotosManager(photoManager);
+
+                return new ChangeTypePhotoDTO(
+                        data.getPhotoId(),
+                        data.getGroupId(),
+                        data.getTypePhoto(),
+                        "Foto atualizada com sucesso.");
+            }
 
             return new ChangeTypePhotoDTO(
                     data.getPhotoId(),
                     data.getGroupId(),
                     data.getTypePhoto(),
-                    "Foto atualizada com sucesso.");
+                    "Não encontrou informações suficientes para atualizar o Status da Foto.");
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ALTERAR_STATUS_INVALIDO);
         }
@@ -382,10 +439,35 @@ public class PhotosService {
         try {
             Response response = productRestClient.validateProductId(productId, tokenAuth);
 
+            Log.info("FOUND PRODUCT ID: ");
+
             return response.readEntity(ProductDTO.class);
         } catch (ClientWebApplicationException e) {
             throw new RepassaException(PhotoError.PRODUCT_ID_INVALIDO);
         }
+    }
+
+    private Integer extractNumber(String value) {
+        // Define a expressão regular para encontrar números
+        Pattern pattern = Pattern.compile("\\d+");
+
+        // Cria um Matcher para a string de entrada
+        Matcher matcher = pattern.matcher(value);
+
+        // Inicializa uma string vazia para armazenar os números
+        StringBuilder numbers = new StringBuilder();
+
+        // Encontra todos os números e os adiciona à string de números
+        while (matcher.find()) {
+            numbers.append(matcher.group());
+        }
+
+        // Converte a string de números para um número inteiro (se necessário)
+        if (!numbers.isEmpty()) {
+            return Integer.parseInt(numbers.toString());
+        }
+
+        return null;
     }
 
     private void createPhotosError(List<Photo> photos) {

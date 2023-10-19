@@ -58,7 +58,6 @@ public class PhotoClient {
 
         } while (lastEvaluatedKey != null && !lastEvaluatedKey.isEmpty());
 
-
         if (photoFilterResponseDTOS.size() == 0) {
             log.error("Não há itens encontrados para a data informada. Selecione uma nova data ou tente novamente");
             throw new RepassaException(PhotoError.FOTOS_NAO_ENCONTRADA);
@@ -74,7 +73,8 @@ public class PhotoClient {
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
 
-        expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"productId\":\"" + productId + "\"").build());
+        expressionAttributeValues.put(":groupPhotos",
+                AttributeValue.builder().s("\"productId\":\"" + productId + "\"").build());
 
         ScanRequest scanRequest = ScanRequest.builder()
                 .tableName(TABLE_NAME_PHOTOS)
@@ -93,6 +93,25 @@ public class PhotoClient {
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
 
         expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + imageId + "\"").build());
+
+        ScanRequest scanRequest = ScanRequest.builder()
+                .tableName(TABLE_NAME_PHOTOS)
+                .filterExpression("contains(groupPhotos, :groupPhotos)")
+                .expressionAttributeValues(expressionAttributeValues)
+                .build();
+
+        ScanResponse items = dynamoDB.scan(scanRequest);
+
+        return parseJsonToObject(items);
+    }
+
+    public PhotosManager findByImageAndGroupId(String imageId, String groupId) throws Exception {
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+
+        expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + imageId + "\"").build());
+        expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + groupId + "\"").build());
 
         ScanRequest scanRequest = ScanRequest.builder()
                 .tableName(TABLE_NAME_PHOTOS)

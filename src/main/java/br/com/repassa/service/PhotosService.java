@@ -42,6 +42,7 @@ import br.com.repassa.enums.TypeError;
 import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.resource.client.ProductRestClient;
+import io.quarkus.logging.Log;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.rekognition.RekognitionClient;
 import software.amazon.awssdk.services.rekognition.model.DetectTextRequest;
@@ -196,9 +197,13 @@ public class PhotosService {
 
                     identificator.setValid(false);
                 } else {
+                    LOG.info("PRODUCT_ID: " + identificator.getProductId());
+
                     validateProductIDResponse(identificator.getProductId(), tokenAuth);
 
                     photosManager = photoClient.findByProductId(identificator.getProductId());
+
+                    LOG.info("PRODUCT_ID 2: " + identificator.getProductId());
 
                     if (photosManager == null) {
                         identificator.setValid(true);
@@ -238,7 +243,6 @@ public class PhotosService {
                         }
                     }
                 }
-
                 // Se não econtrar um PHOTO_MANAGER com base no PRODUCT_ID informado, será feito
                 // uma nova busca, informando o GROUP_ID
                 if (photosManager == null) {
@@ -250,8 +254,18 @@ public class PhotosService {
 
                 response.add(identificator);
             } catch (RepassaException repassaException) {
-                identificator.setMessage("O ID " + identificator.getProductId() + " é inválido");
-                identificator.setValid(false);
+                if (repassaException.getRepassaUtilError().getErrorCode().equals(PhotoError.PRODUCT_ID_INVALIDO
+                        .getErrorCode())) {
+                    identificator.setMessage("O ID " + identificator.getProductId() + " é inválido");
+                    identificator.setValid(false);
+                    response.add(identificator);
+                } else {
+                    LOG.info("Erro ao persistir o ID: " + repassaException.getMessage());
+
+                    identificator.setMessage("Houve um erro ao processar o ID " + identificator.getProductId());
+                    identificator.setValid(false);
+                    response.add(identificator);
+                }
 
                 PhotosManager photosManager = null;
                 try {
@@ -265,8 +279,6 @@ public class PhotosService {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
-                response.add(identificator);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -275,18 +287,26 @@ public class PhotosService {
         return response;
     }
 
-    private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator) {
-        photoManager.getGroupPhotos().forEach(group -> {
-            if (group.getId().equals(identificator.getGroupId())) {
-                group.setProductId(identificator.getProductId());
+    private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator)
+            throws RepassaException {
+        LOG.info("PHOTOMANAGER UPDATE: " + photoManager.getId());
+        if (photoManager != null) {
+            photoManager.getGroupPhotos().forEach(group -> {
+                if (group.getId().equals(identificator.getGroupId())) {
+                    group.setProductId(identificator.getProductId());
 
-                if (!identificator.getValid()) {
-                    group.setIdError(TypeError.ID_ERROR.name());
+                    if (identificator.getValid()) {                        
+                        group.setIdError(null);
+                    } else {
+                        group.setIdError(TypeError.ID_ERROR.name());
+                    }
                 }
-            }
-        });
+            });
 
-        photoClient.savePhotosManager(photoManager);
+            photoClient.savePhotosManager(photoManager);
+        } else {
+            throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
+        }
     }
 
     public ChangeTypePhotoDTO changeStatusPhoto(ChangeTypePhotoDTO data) throws RepassaException {
@@ -418,6 +438,8 @@ public class PhotosService {
     private ProductDTO validateProductIDResponse(String productId, String tokenAuth) throws RepassaException {
         try {
             Response response = productRestClient.validateProductId(productId, tokenAuth);
+
+            Log.info("FOUND PRODUCT ID: ");
 
             return response.readEntity(ProductDTO.class);
         } catch (ClientWebApplicationException e) {

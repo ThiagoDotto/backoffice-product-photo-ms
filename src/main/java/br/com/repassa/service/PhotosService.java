@@ -427,7 +427,6 @@ public class PhotosService {
         try {
             photoClient.savePhotosManager(photosManager);
             historyService.save(photosManager, loggerUser);
-            PhotoError.SUCESSO_AO_SALVAR.getErrorMessage();
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_SALVAR_NO_DYNAMO);
         }

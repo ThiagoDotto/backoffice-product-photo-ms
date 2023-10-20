@@ -107,13 +107,13 @@ public class PhotosResource {
     @Operation(summary = "Finaliza Gerencia de Fotos",
             description = "endpoint usado para finalizar o procosesso de gerencia de fotos")
     @Path("/finish-manager-bags")
-    public void finishManagerPhotos(@QueryParam("id") String id) throws RepassaException {
+    public void finishManagerPhotos(@QueryParam("id") String id) throws Exception {
         UserPrincipalDTO userPrincipalDTO = UserPrincipalDTO.builder()
                 .id(this.token.getClaim(Claims.sub))
                 .email(this.token.getClaim(Claims.email))
                 .firtName(this.token.getName())
                 .build();
-        return Response.ok(photosService.finishManagerPhotos(id, userPrincipalDTO)).build();
+        photosService.finishManagerPhotos(id, userPrincipalDTO);
     }
 
     @PUT

@@ -207,7 +207,7 @@ public class PhotoClient {
         }
     }
 
-    private PhotosManager parseJsonToObject(ScanResponse items) throws RepassaException, Exception {
+    private PhotosManager parseJsonToObject(ScanResponse items) throws RepassaException, JsonProcessingException {
         PhotosManager responseDTO = null;
 
         if (items.count() == 0) {

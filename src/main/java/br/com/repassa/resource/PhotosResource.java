@@ -2,10 +2,7 @@ package br.com.repassa.resource;
 
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.dto.ChangeTypePhotoDTO;
-import br.com.repassa.dto.IdentificatorsDTO;
-import br.com.repassa.dto.PhotoFilterDTO;
-import br.com.repassa.dto.ProcessBarCodeRequestDTO;
+import br.com.repassa.dto.*;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.service.PhotosService;
 import org.eclipse.microprofile.jwt.Claims;
@@ -32,6 +29,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Tag(name = "Photos", description = "Gerenciar Photos")
+@Produces()
 @Path("/api/v1/photos")
 public class PhotosResource {
     @Inject
@@ -107,13 +105,13 @@ public class PhotosResource {
     @Operation(summary = "Finaliza Gerencia de Fotos",
             description = "endpoint usado para finalizar o procosesso de gerencia de fotos")
     @Path("/finish-manager-bags")
-    public void finishManagerPhotos(@RequestBody String id) throws Exception {
+    public void finishManagerPhotos(@RequestBody FinishPhotoManagerDTO finishPhotoManagerDTO) throws Exception {
         UserPrincipalDTO userPrincipalDTO = UserPrincipalDTO.builder()
                 .id(this.token.getClaim(Claims.sub))
                 .email(this.token.getClaim(Claims.email))
                 .firtName(this.token.getName())
                 .build();
-        photosService.finishManagerPhotos(id, userPrincipalDTO);
+        photosService.finishManagerPhotos(finishPhotoManagerDTO.getId(), userPrincipalDTO);
     }
 
     @PUT

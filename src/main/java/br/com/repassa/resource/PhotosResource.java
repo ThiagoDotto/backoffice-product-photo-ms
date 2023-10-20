@@ -107,7 +107,7 @@ public class PhotosResource {
     @Operation(summary = "Finaliza Gerencia de Fotos",
             description = "endpoint usado para finalizar o procosesso de gerencia de fotos")
     @Path("/finish-manager-bags")
-    public void finishManagerPhotos(@QueryParam("id") String id) throws Exception {
+    public void finishManagerPhotos(@RequestBody String id) throws Exception {
         UserPrincipalDTO userPrincipalDTO = UserPrincipalDTO.builder()
                 .id(this.token.getClaim(Claims.sub))
                 .email(this.token.getClaim(Claims.email))

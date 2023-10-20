@@ -2,6 +2,7 @@ package br.com.repassa.enums;
 
 public enum StatusManagerPhotos {
 
-    STARTED,
+    NOT_STARTED,
+    IN_PROGRESS,
     FINISHED
 }

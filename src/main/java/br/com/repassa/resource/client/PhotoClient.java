@@ -1,20 +1,4 @@
-package br.com.repassa.client;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.enterprise.context.ApplicationScoped;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+package br.com.repassa.resource.client;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
@@ -22,11 +6,19 @@ import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.exception.PhotoError;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+
+import javax.enterprise.context.ApplicationScoped;
+import java.util.*;
 
 @Slf4j
 @ApplicationScoped
@@ -151,6 +143,25 @@ public class PhotoClient {
         return parseJsonToObject(items);
     }
 
+    public PhotosManager findById(String id) throws Exception {
+
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+
+        expressionAttributeValues.put(":id", AttributeValue.builder().s(id).build());
+
+        ScanRequest scanRequest = ScanRequest.builder()
+                .tableName(TABLE_NAME_PHOTOS)
+                .filterExpression("id = :id")
+                .expressionAttributeValues(expressionAttributeValues)
+                .build();
+
+        ScanResponse items = dynamoDB.scan(scanRequest);
+
+        return parseJsonToObject(items);
+    }
+
     public PhotosManager getPhotos(Map<String, AttributeValue> expressionAttributeValues)
             throws RepassaException {
         PhotosManager responseDTO = null;
@@ -196,7 +207,7 @@ public class PhotoClient {
         }
     }
 
-    private PhotosManager parseJsonToObject(ScanResponse items) throws RepassaException, Exception {
+    private PhotosManager parseJsonToObject(ScanResponse items) throws RepassaException, JsonProcessingException {
         PhotosManager responseDTO = null;
 
         if (items.count() == 0) {
@@ -247,5 +258,4 @@ public class PhotoClient {
 
         return resultList;
     }
-
 }

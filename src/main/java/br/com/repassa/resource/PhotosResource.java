@@ -1,5 +1,6 @@
 package br.com.repassa.resource;
 
+import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.dto.ChangeTypePhotoDTO;
 import br.com.repassa.dto.IdentificatorsDTO;
@@ -7,6 +8,7 @@ import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.ProcessBarCodeRequestDTO;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.service.PhotosService;
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -102,10 +104,16 @@ public class PhotosResource {
     @POST
     @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Finaliza Gerencia de Fotos", description = "endpoint usado para finalizar o procosesso de gerencia de fot")
+    @Operation(summary = "Finaliza Gerencia de Fotos",
+            description = "endpoint usado para finalizar o procosesso de gerencia de fotos")
     @Path("/finish-manager-bags")
-    public Response finishManagerPhotos(@RequestBody PhotosManager photosManager) throws RepassaException {
-        return Response.ok(photosService.finishManagerPhotos(photosManager)).build();
+    public void finishManagerPhotos(@RequestBody String id) throws Exception {
+        UserPrincipalDTO userPrincipalDTO = UserPrincipalDTO.builder()
+                .id(this.token.getClaim(Claims.sub))
+                .email(this.token.getClaim(Claims.email))
+                .firtName(this.token.getName())
+                .build();
+        photosService.finishManagerPhotos(id, userPrincipalDTO);
     }
 
     @PUT

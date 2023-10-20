@@ -23,7 +23,7 @@ public class ManagerGroupPhotos {
     public void addPhotos(List<Photo> photos, AtomicBoolean isValid) {
 
         GroupPhotos groupPhotos1 = new GroupPhotos();
-        groupPhotos1.setStatusProduct(StatusProduct.EM_ANDAMENTO);
+        groupPhotos1.setStatusProduct(StatusProduct.IN_PROGRESS);
         groupPhotos1.setUpdateDate(LocalDateTime.now().toString());
         groupPhotos1.setId(UUID.randomUUID().toString());
         groupPhotos1.setPhotos(new ArrayList<>(photos));
@@ -36,7 +36,7 @@ public class ManagerGroupPhotos {
         totalPhotos += groupPhotos1.getPhotos().size();
     }
 
-    public int getTotalPhotos(){
+    public int getTotalPhotos() {
         return totalPhotos;
     }
 

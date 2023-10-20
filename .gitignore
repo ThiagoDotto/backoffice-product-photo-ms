@@ -19,6 +19,9 @@ bin/
 *.ipr
 *.iml
 *.iws
+.idea/sonarlint
+.idea/sonarlint/issuestore/index.pb
+.idea/sonarlint/securityhotspotstore/index.pb
 
 # NetBeans
 nb-configuration.xml
@@ -43,3 +46,8 @@ nb-configuration.xml
 
 # Plugin directory
 /.quarkus/cli/plugins/
+
+#mvn
+.mvn
+mvnw.cmd
+mvnw

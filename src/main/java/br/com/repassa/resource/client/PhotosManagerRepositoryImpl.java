@@ -1,4 +1,4 @@
-package br.com.repassa.client;
+package br.com.repassa.resource.client;
 
 import java.util.HashMap;
 import java.util.Map;

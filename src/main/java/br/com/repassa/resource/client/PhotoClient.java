@@ -1,4 +1,4 @@
-package br.com.repassa.client;
+package br.com.repassa.resource.client;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
@@ -143,6 +143,25 @@ public class PhotoClient {
         return parseJsonToObject(items);
     }
 
+    public PhotosManager findById(String id) throws Exception {
+
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+
+        expressionAttributeValues.put(":id", AttributeValue.builder().s(id).build());
+
+        ScanRequest scanRequest = ScanRequest.builder()
+                .tableName(TABLE_NAME_PHOTOS)
+                .filterExpression("id = :id")
+                .expressionAttributeValues(expressionAttributeValues)
+                .build();
+
+        ScanResponse items = dynamoDB.scan(scanRequest);
+
+        return parseJsonToObject(items);
+    }
+
     public PhotosManager getPhotos(Map<String, AttributeValue> expressionAttributeValues)
             throws RepassaException {
         PhotosManager responseDTO = null;
@@ -188,7 +207,7 @@ public class PhotoClient {
         }
     }
 
-    private PhotosManager parseJsonToObject(ScanResponse items) throws RepassaException, Exception {
+    private PhotosManager parseJsonToObject(ScanResponse items) throws RepassaException, JsonProcessingException {
         PhotosManager responseDTO = null;
 
         if (items.count() == 0) {
@@ -239,5 +258,4 @@ public class PhotoClient {
 
         return resultList;
     }
-
 }

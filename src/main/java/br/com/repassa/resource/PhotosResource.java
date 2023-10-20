@@ -111,7 +111,7 @@ public class PhotosResource {
                 .email(this.token.getClaim(Claims.email))
                 .firtName(this.token.getName())
                 .build();
-        photosService.finishManagerPhotos(finishPhotoManagerDTO.getId(), userPrincipalDTO);
+        photosService.finishManagerPhotos(finishPhotoManagerDTO.getId(), userPrincipalDTO, headers);
     }
 
     @PUT

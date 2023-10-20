@@ -26,6 +26,7 @@ import software.amazon.awssdk.services.rekognition.model.*;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
@@ -391,7 +392,7 @@ public class PhotosService {
     }
 
     @Transactional
-    public void finishManagerPhotos(String id, UserPrincipalDTO loggerUser) throws Exception {
+    public void finishManagerPhotos(String id, UserPrincipalDTO loggerUser, HttpHeaders headers) throws Exception {
 
         if (Objects.isNull(id)) {
             throw new RepassaException(PhotoError.OBJETO_VAZIO);
@@ -421,7 +422,7 @@ public class PhotosService {
 
         try {
             photoClient.savePhotosManager(photosManager);
-            historyService.save(photosManager, loggerUser);
+            historyService.save(photosManager, loggerUser, headers);
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_SALVAR_NO_DYNAMO);
         }

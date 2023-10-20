@@ -1,7 +1,10 @@
 package br.com.repassa.service;
 
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
-import br.com.backoffice_repassa_utils_lib.dto.history.*;
+import br.com.backoffice_repassa_utils_lib.dto.history.HistoryDTO;
+import br.com.backoffice_repassa_utils_lib.dto.history.PhotoDTO;
+import br.com.backoffice_repassa_utils_lib.dto.history.PhotographyDTO;
+import br.com.backoffice_repassa_utils_lib.dto.history.UserSystem;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;

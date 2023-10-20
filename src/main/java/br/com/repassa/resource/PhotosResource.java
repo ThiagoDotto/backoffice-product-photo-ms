@@ -78,8 +78,13 @@ public class PhotosResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Validar ID's do(s) grupo(s) de foto(s)", description = "Irá validar os ID's identificado (da etiqueta) ou inserido manualmente dos grupos de fotos.")
     @APIResponses(value = {
-            @APIResponse(responseCode = "202", description = "ID's Aceito", content = @Content(mediaType = "application/json", schema = @Schema(implementation = IdentificatorsDTO.class, type = SchemaType.ARRAY))),
-            @APIResponse(responseCode = "400", description = "A lista informada, contém algum ID Inválido.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = IdentificatorsDTO.class, type = SchemaType.ARRAY), examples = @ExampleObject(name = "Erro de Validação", value = "[{\"productId\":\"123\",\"groupId\":\"456\", \"valid\":false, \"message\":\"O ID 16549 está sendo utilizado por outro Grupo.\"}]")))
+            @APIResponse(responseCode = "202", description = "ID's Aceito",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = IdentificatorsDTO.class, type = SchemaType.ARRAY))),
+            @APIResponse(responseCode = "400", description = "A lista informada, contém algum ID Inválido.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = IdentificatorsDTO.class, type = SchemaType.ARRAY),
+                            examples = @ExampleObject(name = "Erro de Validação", value = "[{\"productId\":\"123\",\"groupId\":\"456\", \"valid\":false, \"message\":\"O ID 16549 está sendo utilizado por outro Grupo.\"}]")))
     })
     @Path("/validate-identificators")
     public Response validateIds(@RequestBody List<IdentificatorsDTO> identificators) throws Exception {
@@ -122,7 +127,8 @@ public class PhotosResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @APIResponses(value = {
-            @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ChangeTypePhotoDTO.class, type = SchemaType.ARRAY))),
+            @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ChangeTypePhotoDTO.class, type = SchemaType.ARRAY))),
     })
     @Path("/change-type-photo")
     public Response updateProductStepOne(@RequestBody @Valid ChangeTypePhotoDTO changeTypePhotoDTO)

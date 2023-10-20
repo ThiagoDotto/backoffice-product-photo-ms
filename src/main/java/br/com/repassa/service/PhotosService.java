@@ -109,16 +109,11 @@ public class PhotosService {
 
                 boolean foundText = false;
                 for (TextDetection textDetection : decRes.textDetections()) {
-                    Integer productId = extractNumber(textDetection.detectedText());
-                    String productIdStr = null;
-
-                    if (Objects.nonNull(productId)) {
-                        productIdStr = productId.toString();
-                    }
+                    String productId = extractNumber(textDetection.detectedText());
 
                     validateIds.add(IdentificatorsDTO.builder()
                             .groupId(item.getId())
-                            .productId(productIdStr)
+                            .productId(productId)
                             .build());
                     foundText = true;
                     break;
@@ -295,7 +290,7 @@ public class PhotosService {
                 if (group.getId().equals(identificator.getGroupId())) {
                     group.setProductId(identificator.getProductId());
 
-                    if (identificator.getValid()) {                        
+                    if (identificator.getValid()) {
                         group.setIdError(null);
                     } else {
                         group.setIdError(TypeError.ID_ERROR.name());
@@ -447,7 +442,7 @@ public class PhotosService {
         }
     }
 
-    private Integer extractNumber(String value) {
+    private String extractNumber(String value) {
         // Define a expressão regular para encontrar números
         Pattern pattern = Pattern.compile("\\d+");
 
@@ -464,7 +459,7 @@ public class PhotosService {
 
         // Converte a string de números para um número inteiro (se necessário)
         if (!numbers.isEmpty()) {
-            return Integer.parseInt(numbers.toString());
+            return numbers.toString();
         }
 
         return null;

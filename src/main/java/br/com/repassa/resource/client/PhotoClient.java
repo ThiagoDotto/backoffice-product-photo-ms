@@ -143,6 +143,25 @@ public class PhotoClient {
         return parseJsonToObject(items);
     }
 
+    public PhotosManager findById(String id) throws Exception {
+
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+
+        expressionAttributeValues.put(":id", AttributeValue.builder().s(id).build());
+
+        ScanRequest scanRequest = ScanRequest.builder()
+                .tableName(TABLE_NAME_PHOTOS)
+                .filterExpression("id = :id")
+                .expressionAttributeValues(expressionAttributeValues)
+                .build();
+
+        ScanResponse items = dynamoDB.scan(scanRequest);
+
+        return parseJsonToObject(items);
+    }
+
     public PhotosManager getPhotos(Map<String, AttributeValue> expressionAttributeValues)
             throws RepassaException {
         PhotosManager responseDTO = null;

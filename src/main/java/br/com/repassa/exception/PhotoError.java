@@ -34,7 +34,8 @@ public class PhotoError implements RepassaUtilError {
                         "Não foi possível ler a imagem.");
         public static final RepassaUtilError REKOGNITION_PHOTO_EMPTY = new PhotoError("014",
                         "Nenhuma imagem de etiqueta selecionada para reconhecimento. Verifique as imagens e tente novamente.");
-
+        public static final RepassaUtilError GROUP_ERROR = new PhotoError("015",
+                "Não foi possível salvar a solicitacao, pois contem um grupo de fotos com erro.");
         public PhotoError(String errorCode, String errorMessage) {
                 this.errorCode = errorCode;
                 this.errorMessage = errorMessage;

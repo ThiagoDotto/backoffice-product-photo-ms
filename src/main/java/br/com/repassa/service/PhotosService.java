@@ -73,7 +73,7 @@ public class PhotosService {
         username = username.replaceAll("\\s", "+");
         username = username.replaceAll("[^a-zA-Z0-9+]", "");
 
-        LOG.info("Fetered by Name: " + username.toString());
+        LOG.info("filtered by Name: " + username.toString());
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
         expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(filter.getDate()).build());
@@ -156,11 +156,11 @@ public class PhotosService {
         username = username.replaceAll("\\s", "+");
         username = username.replaceAll("[^a-zA-Z0-9+]", "");
 
-        LOG.info("Fetered by Name: " + username.toString());
+        LOG.info("filtered by Name: " + username.toString());
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
         expressionAttributeValues.put(":statusManagerPhotos",
-                AttributeValue.builder().s(StatusManagerPhotos.STARTED.name()).build());
+                AttributeValue.builder().s(StatusManagerPhotos.IN_PROGRESS.name()).build());
         expressionAttributeValues.put(":editor", AttributeValue.builder().s(username).build());
         expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(date).build());
 
@@ -209,7 +209,7 @@ public class PhotosService {
                         identificator.setValid(true);
                         identificator.setMessage("ID de Produto disponível");
                     } else {
-                        if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.STARTED) {
+                        if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.IN_PROGRESS) {
                             // Verifica se encontrou outro Grupo com o mesmo ID
                             List<GroupPhotos> foundGroupPhotos = photosManager.getGroupPhotos()
                                     .stream()
@@ -287,7 +287,7 @@ public class PhotosService {
         return response;
     }
 
-    private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator)
+    private void  updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator)
             throws RepassaException {
         LOG.info("PHOTOMANAGER UPDATE: " + photoManager.getId());
         if (photoManager != null) {
@@ -400,7 +400,7 @@ public class PhotosService {
             }
         });
 
-        photoManager.setStatusManagerPhotos(StatusManagerPhotos.STARTED);
+        photoManager.setStatusManagerPhotos(StatusManagerPhotos.IN_PROGRESS);
         photoManager.setGroupPhotos(groupPhotos);
 
         persistPhotoManagerDynamoDB(photoManager);
@@ -408,20 +408,37 @@ public class PhotosService {
     }
 
     @Transactional
-    public String finishManagerPhotos(PhotosManager photosManager) throws RepassaException {
+    public void finishManagerPhotos(String id) throws Exception {
 
-        if (Objects.isNull(photosManager)) {
+        if (Objects.isNull(id)) {
             throw new RepassaException(PhotoError.OBJETO_VAZIO);
         }
+
+        var photosManager = photoClient.findById(id);
+
+        if(Objects.isNull(photosManager)){
+            throw new RepassaException(PhotoError.OBJETO_VAZIO);
+        }
+
         photosManager.setStatusManagerPhotos(StatusManagerPhotos.FINISHED);
+        AtomicBoolean existError = new AtomicBoolean(false);
         photosManager.getGroupPhotos().forEach(group -> {
-            group.setStatusProduct(StatusProduct.FINALIZADO);
+
+            if(group.getIdError() != null || group.getImageError() != null) {
+                existError.set(true);
+            }
+
+            group.setStatusProduct(StatusProduct.FINISHED);
             group.setUpdateDate(LocalDateTime.now().toString());
         });
 
+        if(existError.get()){
+            throw new RepassaException(PhotoError.GROUP_ERROR);
+        }
+
         try {
             photoClient.savePhotosManager(photosManager);
-            return PhotoError.SUCESSO_AO_SALVAR.getErrorMessage();
+            PhotoError.SUCESSO_AO_SALVAR.getErrorMessage();
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_SALVAR_NO_DYNAMO);
         }

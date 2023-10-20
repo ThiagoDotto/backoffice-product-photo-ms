@@ -112,8 +112,8 @@ public class PhotosResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Finaliza Gerencia de Fotos", description = "endpoint usado para finalizar o procosesso de gerencia de fot")
     @Path("/finish-manager-bags")
-    public Response finishManagerPhotos(@RequestBody PhotosManager photosManager) throws RepassaException {
-        return Response.ok(photosService.finishManagerPhotos(photosManager)).build();
+    public void finishManagerPhotos(@QueryParam("id") String id) throws Exception {
+        photosService.finishManagerPhotos(id);
     }
 
     @PUT

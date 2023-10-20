@@ -36,7 +36,7 @@ public class ManagerGroupPhotos {
         totalPhotos += groupPhotos1.getPhotos().size();
     }
 
-    public int getTotalPhotos(){
+    public int getTotalPhotos() {
         return totalPhotos;
     }
 

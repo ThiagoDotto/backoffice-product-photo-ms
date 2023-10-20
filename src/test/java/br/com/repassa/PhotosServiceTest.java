@@ -1,31 +1,23 @@
 package br.com.repassa;
 
 
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
+import br.com.repassa.dto.PhotoFilterDTO;
+import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.resource.client.DynamoClient;
+import br.com.repassa.resource.client.PhotoClient;
+import br.com.repassa.resource.client.PhotoClientInterface;
+import br.com.repassa.service.PhotosService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.client.DynamoClient;
-import br.com.repassa.client.PhotoClient;
-import br.com.repassa.client.PhotoClientInterface;
-import br.com.repassa.dto.PhotoFilterDTO;
-import br.com.repassa.dto.PhotoFilterResponseDTO;
-import br.com.repassa.service.PhotosService;
+import java.util.*;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 
 public class PhotosServiceTest {

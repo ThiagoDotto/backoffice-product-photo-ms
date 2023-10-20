@@ -1,4 +1,4 @@
-package br.com.repassa.client;
+package br.com.repassa.resource.client;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -13,7 +13,7 @@ public class RekognitionBarClient {
 
         AwsBasicCredentials awsCreds = AwsBasicCredentials.create(accessKeyId, secretAccessKey);
 
-        Region region = Region.US_EAST_1; 
+        Region region = Region.US_EAST_1;
         RekognitionClient rekognitionClient = RekognitionClient.builder()
             .region(region)
             .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
@@ -21,5 +21,5 @@ public class RekognitionBarClient {
 
         return rekognitionClient;
     }
-    
+
 }

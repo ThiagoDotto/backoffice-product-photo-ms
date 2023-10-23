@@ -41,6 +41,17 @@ public class PhotosResource {
     @Context
     HttpHeaders headers;
 
+    @POST
+//    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Adiciona nova imagem",
+            description = "endpoint usado para adicionar uma nova imagem.")
+    public void insertImage(@RequestBody ImageDTO image) {
+        //TODO: chamar o service
+
+//        photosService.insertImage(image);
+    }
+
     @GET
     @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)

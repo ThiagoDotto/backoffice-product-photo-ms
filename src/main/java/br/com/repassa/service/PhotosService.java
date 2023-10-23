@@ -476,4 +476,14 @@ public class PhotosService {
                 .sizePhoto("0").build();
         photos.add(photoError);
     }
+
+
+    public void savePhotosOnS3(){
+
+        //TODO: Validar a foto
+        //TODO: Salvar no S3( buscar do triage)
+        //TODO: Salvar no Dynamo
+            // 1- PhotoProcessingTable
+            // 2- PhotosManager
+    }
 }

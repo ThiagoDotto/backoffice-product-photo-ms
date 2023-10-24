@@ -10,6 +10,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PhotosValidate {
 
+    private static final int MAX_SIZE_PHOTO = 15728640;
+
+
     public void validatePhotos(ImageDTO imageDTO) throws RepassaException {
 
         var isValid = new AtomicBoolean(Boolean.TRUE);
@@ -18,14 +21,14 @@ public class PhotosValidate {
 
             byte[] decodedBytes = Base64.getMimeDecoder().decode(photo.getBase64());
             var size = decodedBytes.length;
-            var photoIsValid = photoIsValid(photo.getBase64());
+            var photoIsValid = extensionTypeValidation(photo.getBase64());
 
             if (!photoIsValid) {
                 isValid.set(Boolean.FALSE);
                 photo.setNote("invalid file type");
             }
 
-            if(size > 15728640){
+            if(size > MAX_SIZE_PHOTO){
                 isValid.set(Boolean.FALSE);
                 photo.setNote("file size exceeded");
             }
@@ -40,8 +43,6 @@ public class PhotosValidate {
 
         String username = Normalizer.normalize(name, Normalizer.Form.NFD);
         username = username.toLowerCase();
-//        username = username.replaceAll("\\s", "+");
-//        username = username.replaceAll("[^a-zA-Z0-9+]", "");
 
         String objectKeyWithCount = "fotografia/"
                 .concat(username + "/")
@@ -49,7 +50,7 @@ public class PhotosValidate {
         return objectKeyWithCount;
     }
 
-    public static Boolean photoIsValid(String photo){
+    public static Boolean extensionTypeValidation(String photo){
 
         if (photo.contains("jpeg") || photo.contains("jpg")) {
             return true;

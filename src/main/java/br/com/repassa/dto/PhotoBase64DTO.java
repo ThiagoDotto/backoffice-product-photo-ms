@@ -13,6 +13,7 @@ public class PhotoBase64DTO {
 
     private String type;
     private String base64;
-    private String size;
+    private String name;
+    private String note;
 
 }

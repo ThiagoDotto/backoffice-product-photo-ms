@@ -11,10 +11,12 @@ import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.enums.TypeError;
 import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.exception.PhotoError;
+import br.com.repassa.resource.client.AwsService;
 import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.resource.client.ProductRestClient;
 import br.com.repassa.resource.client.RekognitionBarClient;
 import io.quarkus.logging.Log;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.slf4j.Logger;
@@ -44,6 +46,12 @@ public class PhotosService {
 
     private static final String URL_ERROR_IMAGE = "https://backoffice-triage-photo-dev.s3.amazonaws.com/invalidPhoto.png";
 
+    @ConfigProperty(name = "s3.aws.bucket-name")
+    String bucketName;
+
+    @ConfigProperty(name = "s3.aws.error-image")
+    String errorImage;
+
     @Inject
     @RestClient
     ProductRestClient productRestClient;
@@ -53,6 +61,10 @@ public class PhotosService {
 
     @Inject
     HistoryService historyService;
+
+    @Inject
+    AwsService awsService;
+
 
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
 
@@ -271,6 +283,29 @@ public class PhotosService {
         return response;
     }
 
+    @Transactional
+    public PhotosManager insertImage(ImageDTO imageDTO, String name) throws RepassaException {
+
+        var photosValidate = new PhotosValidate();
+        //TODO: Validar a foto
+        photosValidate.validatePhotos(imageDTO);
+        //TODO: Salvar no S3( buscar do triage)
+        var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
+        imageDTO.getPhotoBase64().forEach(photo -> {
+
+            try {
+                awsService.uploadBase64FileToS3(bucketName, objectKey.concat(
+                        photo.getName() + "." + photo.getType()), photo.getBase64());
+            } catch (RepassaException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        //TODO: Salvar no Dynamo
+        // 1- PhotoProcessingTable
+        // 2- PhotosManager
+        return new PhotosManager();
+    }
+
     private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator)
             throws RepassaException {
         LOG.info("PHOTOMANAGER UPDATE: " + photoManager.getId());
@@ -472,18 +507,10 @@ public class PhotosService {
     }
 
     private void createPhotosError(List<Photo> photos) {
-        Photo photoError = Photo.builder().urlPhoto(URL_ERROR_IMAGE).namePhoto("error").base64("")
+        Photo photoError = Photo.builder().urlPhoto(errorImage).namePhoto("error").base64("")
                 .sizePhoto("0").build();
         photos.add(photoError);
     }
 
 
-    public void savePhotosOnS3(){
-
-        //TODO: Validar a foto
-        //TODO: Salvar no S3( buscar do triage)
-        //TODO: Salvar no Dynamo
-            // 1- PhotoProcessingTable
-            // 2- PhotosManager
-    }
 }

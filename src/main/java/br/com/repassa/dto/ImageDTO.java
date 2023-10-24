@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Getter
@@ -13,8 +14,13 @@ import java.util.List;
 @AllArgsConstructor
 public class ImageDTO {
 
+    @NotNull
     private String groupId;
+
+    @NotNull
     private List<PhotoBase64DTO> photoBase64;
+
+    @NotNull
     private String date;
 
 }

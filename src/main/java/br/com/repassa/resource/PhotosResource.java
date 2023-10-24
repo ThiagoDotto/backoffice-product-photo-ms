@@ -16,6 +16,9 @@ import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.jboss.resteasy.reactive.MultipartForm;
+import org.jboss.resteasy.reactive.PartType;
+import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 
 import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
@@ -40,6 +43,15 @@ public class PhotosResource {
 
     @Context
     HttpHeaders headers;
+
+    @POST
+    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Adiciona nova imagem",
+            description = "endpoint usado para adicionar uma nova imagem.")
+    public Response insertImage(@RequestBody ImageDTO image) throws RepassaException {
+        return Response.ok(photosService.insertImage(image, token.getClaim("name"))).build();
+    }
 
     @GET
     @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})

@@ -39,6 +39,12 @@ public class PhotoError implements RepassaUtilError {
         public static final RepassaUtilError FOTOS_PRODUTO_NAO_ENCONTRADAS = new PhotoError("016",
                 "Não foi possível encontrar as fotos do produto.");
 
+        public static final RepassaUtilError FOTOS_PRODUTO_NAO_ENCONTRADAS = new PhotoError("016",
+                "NÃ£o foi possÃ­vel encontrar as fotos do produto.");
+        public static final RepassaUtilError ERROR_VALID_PHOTO = new PhotoError("017",
+                "Erro! Algumas imagens não puderam ser carregadas devido ao tipo ou tamanho inválido de arquivo");
+        public static final RepassaUtilError BASE64_INVALIDO =
+                new PhotoError("018", "Base64 inválido.");
         public PhotoError(String errorCode, String errorMessage) {
                 this.errorCode = errorCode;
                 this.errorMessage = errorMessage;

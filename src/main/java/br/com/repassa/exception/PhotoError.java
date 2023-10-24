@@ -36,12 +36,12 @@ public class PhotoError implements RepassaUtilError {
                         "Nenhuma imagem de etiqueta selecionada para reconhecimento. Verifique as imagens e tente novamente.");
         public static final RepassaUtilError GROUP_ERROR = new PhotoError("015",
                 "Não foi possível salvar a solicitacao, pois contem um grupo de fotos com erro.");
+        public static final RepassaUtilError FOTOS_PRODUTO_NAO_ENCONTRADAS = new PhotoError("016",
+                "NÃ£o foi possÃ­vel encontrar as fotos do produto.");
         public static final RepassaUtilError ERROR_VALID_PHOTO = new PhotoError("017",
                 "Erro! Algumas imagens não puderam ser carregadas devido ao tipo ou tamanho inválido de arquivo");
-        public static final RepassaUtilError ERROR_ADD_PHOTO = new PhotoError("018",
-                "Erro! Algumas imagens não puderam ser carregadas devido ao tipo ou tamanho inválido de arquivo");
         public static final RepassaUtilError BASE64_INVALIDO =
-                new PhotoError("019", "Base64 inválido.");
+                new PhotoError("018", "Base64 inválido.");
         public PhotoError(String errorCode, String errorMessage) {
                 this.errorCode = errorCode;
                 this.errorMessage = errorMessage;

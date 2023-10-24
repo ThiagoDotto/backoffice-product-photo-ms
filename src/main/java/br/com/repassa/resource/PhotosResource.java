@@ -50,6 +50,15 @@ public class PhotosResource {
         return photosService.searchPhotos(date, token.getClaim("name"));
     }
 
+    @GET
+    @RolesAllowed({"admin", "CADASTRO DE PRODUTOS.CADASTRAR_PRODUTOS", "HISTÓRICO DE PROCESSAMENTO DA SACOLA.VISUALIZAR_DETALHES"})
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Busca as fotos do produto", description = "Busca as fotos pelo id do produto.")
+    @Path("/getbyproductid")
+    public ProductPhotoListDTO getPhotoByProductId(@QueryParam("productId") String productId) throws RepassaException {
+        return photosService.findPhotoByProductId(productId);
+    }
+
     @POST
     @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)

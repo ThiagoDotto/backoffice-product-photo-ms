@@ -428,6 +428,30 @@ public class PhotosService {
         }
     }
 
+    public ProductPhotoListDTO findPhotoByProductId(String productId) throws RepassaException {
+        LOG.info("Busca de fotos para o productId: {}", productId);
+        try {
+            final var photoManager = photoClient.findByProductId(productId);
+            final var lastGroupPhotoIndex = photoManager.getGroupPhotos().size() - 1;
+
+            var productPhotoDTOList = photoManager.getGroupPhotos().get(lastGroupPhotoIndex).getPhotos().stream()
+                    .map(p -> ProductPhotoDTO.builder()
+                            .id(p.getId())
+                            .typePhoto(p.getTypePhoto().toString())
+                            .sizePhoto(p.getSizePhoto())
+                            .namePhoto(p.getNamePhoto())
+                            .urlPhoto(p.getUrlPhoto())
+                            .build()
+                    ).toList();
+
+            LOG.info("Busca de fotos para o productId {} realizada com sucesso", productId);
+            return ProductPhotoListDTO.builder().photos(productPhotoDTOList).build();
+        } catch (Exception e) {
+            LOG.info("Falha ao buscar fotos para o productId: {}", productId);
+            throw new RepassaException(PhotoError.FOTOS_PRODUTO_NAO_ENCONTRADAS);
+        }
+    }
+
     private void persistPhotoManagerDynamoDB(PhotosManager photosManager) throws RepassaException {
         try {
             photoClient.savePhotosManager(photosManager);

@@ -54,7 +54,7 @@ public class PhotosResource {
     @RolesAllowed({"admin", "CADASTRO DE PRODUTOS.CADASTRAR_PRODUTOS", "HISTÓRICO DE PROCESSAMENTO DA SACOLA.VISUALIZAR_DETALHES"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Busca as fotos do produto", description = "Busca as fotos pelo id do produto.")
-    @Path("/getByProductId")
+    @Path("/getbyproductid")
     public ProductPhotoListDTO getPhotoByProductId(@QueryParam("productId") String productId) throws RepassaException {
         return photosService.findPhotoByProductId(productId);
     }

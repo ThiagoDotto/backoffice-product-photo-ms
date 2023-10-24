@@ -36,6 +36,8 @@ public class PhotoError implements RepassaUtilError {
                         "Nenhuma imagem de etiqueta selecionada para reconhecimento. Verifique as imagens e tente novamente.");
         public static final RepassaUtilError GROUP_ERROR = new PhotoError("015",
                 "Não foi possível salvar a solicitacao, pois contem um grupo de fotos com erro.");
+        public static final RepassaUtilError FOTOS_PRODUTO_NAO_ENCONTRADAS = new PhotoError("016",
+                "Não foi possível encontrar as fotos do produto.");
 
         public PhotoError(String errorCode, String errorMessage) {
                 this.errorCode = errorCode;

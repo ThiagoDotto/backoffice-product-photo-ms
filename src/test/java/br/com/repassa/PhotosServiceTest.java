@@ -17,11 +17,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
 import java.util.*;
 
 import static io.smallrye.common.constraint.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -106,6 +108,15 @@ public class PhotosServiceTest {
         final var actual = photosService.findPhotoByProductId(productId);
 
         assertEquals(0, actual.getPhotos().size());
+    }
+
+    @Test
+    void shouldThrowRepassaExceptionWhenDynamoError() throws Exception {
+        final var productId = "10203040";
+
+        when(photoClient.findByProductId(anyString())).thenThrow(DynamoDbException.class);
+
+        assertThrows(RepassaException.class, () -> photosService.findPhotoByProductId(productId));
     }
 
     private List<PhotoFilterResponseDTO> createListPhotoFilter() {

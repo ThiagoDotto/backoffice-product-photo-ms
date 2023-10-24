@@ -428,29 +428,32 @@ public class PhotosService {
         }
     }
 
-    public ProductPhotoListDTO findPhotoByProductId(String productId) throws Exception {
+    public ProductPhotoListDTO findPhotoByProductId(String productId) throws RepassaException {
         LOG.info("Busca de fotos para o productId: {}", productId);
+        try {
+            final var photoManager = photoClient.findByProductId(productId);
 
-        final var photoManager = photoClient.findByProductId(productId);
+            if (Objects.isNull(photoManager) || Objects.isNull(photoManager.getGroupPhotos())) {
+                return ProductPhotoListDTO.builder().photos(List.of()).build();
+            }
 
-        if (Objects.isNull(photoManager) || Objects.isNull(photoManager.getGroupPhotos())) {
-            return ProductPhotoListDTO.builder().photos(List.of()).build();
+            final var lastGroupPhotoIndex = photoManager.getGroupPhotos().size() - 1;
+
+            final var productPhotoDTOList = photoManager.getGroupPhotos().get(lastGroupPhotoIndex).getPhotos().stream()
+                    .map(p -> ProductPhotoDTO.builder()
+                            .id(p.getId())
+                            .typePhoto(p.getTypePhoto().toString())
+                            .sizePhoto(p.getSizePhoto())
+                            .namePhoto(p.getNamePhoto())
+                            .urlPhoto(p.getUrlPhoto())
+                            .build()
+                    ).toList();
+
+            LOG.info("Busca de fotos para o productId {} realizada com sucesso", productId);
+            return ProductPhotoListDTO.builder().photos(productPhotoDTOList).build();
+        } catch (Exception e) {
+            throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_IMAGENS);
         }
-
-        final var lastGroupPhotoIndex = photoManager.getGroupPhotos().size() - 1;
-
-        final var productPhotoDTOList = photoManager.getGroupPhotos().get(lastGroupPhotoIndex).getPhotos().stream()
-                .map(p -> ProductPhotoDTO.builder()
-                        .id(p.getId())
-                        .typePhoto(p.getTypePhoto().toString())
-                        .sizePhoto(p.getSizePhoto())
-                        .namePhoto(p.getNamePhoto())
-                        .urlPhoto(p.getUrlPhoto())
-                        .build()
-                ).toList();
-
-        LOG.info("Busca de fotos para o productId {} realizada com sucesso", productId);
-        return ProductPhotoListDTO.builder().photos(productPhotoDTOList).build();
     }
 
     private void persistPhotoManagerDynamoDB(PhotosManager photosManager) throws RepassaException {

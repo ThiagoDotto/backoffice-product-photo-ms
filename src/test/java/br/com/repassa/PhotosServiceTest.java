@@ -22,7 +22,6 @@ import java.util.*;
 
 import static io.smallrye.common.constraint.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -99,10 +98,14 @@ public class PhotosServiceTest {
     }
 
     @Test
-    void shouldThrowRepassaExceptionWhenGetPhotoByProductId() throws RepassaException {
+    void shouldReturnEmptyListWhenProductIdNotFound() throws Exception {
         final var productId = "10203040";
 
-        assertThrows(RepassaException.class, () -> photosService.findPhotoByProductId(productId));
+        when(photoClient.findByProductId(anyString())).thenReturn(null);
+
+        final var actual = photosService.findPhotoByProductId(productId);
+
+        assertEquals(0, actual.getPhotos().size());
     }
 
     private List<PhotoFilterResponseDTO> createListPhotoFilter() {

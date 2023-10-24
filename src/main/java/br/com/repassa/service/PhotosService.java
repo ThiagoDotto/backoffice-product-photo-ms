@@ -467,9 +467,14 @@ public class PhotosService {
         LOG.info("Busca de fotos para o productId: {}", productId);
         try {
             final var photoManager = photoClient.findByProductId(productId);
+
+            if (Objects.isNull(photoManager) || Objects.isNull(photoManager.getGroupPhotos())) {
+                return ProductPhotoListDTO.builder().photos(List.of()).build();
+            }
+
             final var lastGroupPhotoIndex = photoManager.getGroupPhotos().size() - 1;
 
-            var productPhotoDTOList = photoManager.getGroupPhotos().get(lastGroupPhotoIndex).getPhotos().stream()
+            final var productPhotoDTOList = photoManager.getGroupPhotos().get(lastGroupPhotoIndex).getPhotos().stream()
                     .map(p -> ProductPhotoDTO.builder()
                             .id(p.getId())
                             .typePhoto(p.getTypePhoto().toString())
@@ -482,8 +487,7 @@ public class PhotosService {
             LOG.info("Busca de fotos para o productId {} realizada com sucesso", productId);
             return ProductPhotoListDTO.builder().photos(productPhotoDTOList).build();
         } catch (Exception e) {
-            LOG.info("Falha ao buscar fotos para o productId: {}", productId);
-            throw new RepassaException(PhotoError.FOTOS_PRODUTO_NAO_ENCONTRADAS);
+            throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_IMAGENS);
         }
     }
 

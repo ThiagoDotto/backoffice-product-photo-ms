@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
 import java.util.*;
 
@@ -99,8 +100,21 @@ public class PhotosServiceTest {
     }
 
     @Test
-    void shouldThrowRepassaExceptionWhenGetPhotoByProductId() throws RepassaException {
+    void shouldReturnEmptyListWhenProductIdNotFound() throws Exception {
         final var productId = "10203040";
+
+        when(photoClient.findByProductId(anyString())).thenReturn(null);
+
+        final var actual = photosService.findPhotoByProductId(productId);
+
+        assertEquals(0, actual.getPhotos().size());
+    }
+
+    @Test
+    void shouldThrowRepassaExceptionWhenDynamoError() throws Exception {
+        final var productId = "10203040";
+
+        when(photoClient.findByProductId(anyString())).thenThrow(DynamoDbException.class);
 
         assertThrows(RepassaException.class, () -> photosService.findPhotoByProductId(productId));
     }

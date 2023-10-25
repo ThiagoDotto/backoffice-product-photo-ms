@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.ws.rs.core.HttpHeaders;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +33,7 @@ public class HistoryService {
     }
 
 
-    public void save(PhotosManager photosManager, UserPrincipalDTO loggerUser) {
+    public void save(PhotosManager photosManager, UserPrincipalDTO loggerUser, HttpHeaders headers) {
 
         List<GroupPhotos> groupPhotos = photosManager.getGroupPhotos();
         List<HistoryDTO> histories = new ArrayList<>();
@@ -40,7 +41,7 @@ public class HistoryService {
         List<HistoryDTO> historyDTOS = historiesObjsBuilder(loggerUser, groupPhotos, histories);
         LOGGER.debug("Salvando no History as photos");
         historyDTOS.stream().forEach(historyDTO ->
-                historyClient.updateHistory(historyDTO));
+                historyClient.updateHistory(historyDTO,headers.getHeaderString("Authorization")));
     }
 
     private static List<HistoryDTO> historiesObjsBuilder(UserPrincipalDTO loggerUser, List<GroupPhotos> groupPhotos, List<HistoryDTO> histories) {

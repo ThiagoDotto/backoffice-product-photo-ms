@@ -37,6 +37,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -47,6 +48,8 @@ public class PhotosService {
     private static final Logger LOG = LoggerFactory.getLogger(PhotosService.class);
 
     private static final String URL_ERROR_IMAGE = "https://backoffice-triage-photo-dev.s3.amazonaws.com/invalidPhoto.png";
+
+    private static final String URL_BASE_S3 = "https://backoffice-triage-photo-dev.s3.amazonaws.com/";
 
     @ConfigProperty(name = "s3.aws.bucket-name")
     String bucketName;
@@ -289,16 +292,19 @@ public class PhotosService {
     }
 
     @Transactional
-    public PhotosManager insertImage(ImageDTO imageDTO, String name) throws RepassaException {
+    public PhotosManager insertImage(ImageDTO imageDTO, String name) throws Exception {
 
         var photosValidate = new PhotosValidate();
         //TODO: Validar a foto
         photosValidate.validatePhotos(imageDTO);
         //TODO: Salvar no S3( buscar do triage)
+        AtomicReference<String> urlImage = new AtomicReference<>(new String());
         var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
         imageDTO.getPhotoBase64().forEach(photo -> {
 
             try {
+                urlImage.set(URL_BASE_S3 + objectKey.concat(
+                        photo.getName() + "." + photo.getType()));
                 awsService.uploadBase64FileToS3(bucketName, objectKey.concat(
                         photo.getName() + "." + photo.getType()), photo.getBase64());
             } catch (RepassaException e) {
@@ -307,8 +313,8 @@ public class PhotosService {
         });
         //TODO: Salvar no Dynamo
         // 1- PhotoProcessingTable
-        // 2- PhotosManager
-        return new PhotosManager();
+
+        return savePhotoManager(imageDTO, urlImage.get());
     }
 
     private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator)
@@ -540,11 +546,43 @@ public class PhotosService {
     }
 
     private void createPhotosError(List<Photo> photos) {
-        Photo photoError = Photo.builder().urlPhoto(URL_ERROR_IMAGE).namePhoto("error").base64("")
+        Photo photoError = Photo.builder().urlPhoto(errorImage).namePhoto("error").base64("")
                 .sizePhoto("0").build();
         photos.add(photoError);
     }
 
+    private PhotosManager savePhotoManager(ImageDTO imageDTO, String urlImage) throws Exception {
+
+         var photoManager = photoClient.findByGroupId(imageDTO.getGroupId());
+
+        if(Objects.isNull(photoManager)){
+            throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
+        }
+
+        AtomicReference<Photo> photo = new AtomicReference<>(new Photo());
+        photoManager.getGroupPhotos()
+                .forEach( groupPhotos -> {
+                    if (Objects.equals(groupPhotos.getId(), imageDTO.getGroupId())){
+                        imageDTO.getPhotoBase64().forEach(photoTela -> {
+                            photo.set(Photo.builder()
+                                    .namePhoto(photoTela.getName())
+                                    .urlPhoto(urlImage)
+                                    .sizePhoto(photoTela.getSize())
+                                    .base64(photoTela.getBase64())
+                                    .build());
+                        });
+                    }
+                    groupPhotos.getPhotos().add(photo.get());
+                });
+
+        try {
+            photoClient.savePhotosManager(photoManager);
+        } catch (Exception e){
+            throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
+        }
+
+        return photoManager;
+    }
     public void teste(){
         PhotoProcessed p = new PhotoProcessed();
         p.setId(UUID.randomUUID().toString());

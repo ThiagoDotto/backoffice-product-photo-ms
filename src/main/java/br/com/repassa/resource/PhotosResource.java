@@ -41,6 +41,15 @@ public class PhotosResource {
     @Context
     HttpHeaders headers;
 
+    @POST
+    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Adiciona nova imagem",
+            description = "endpoint usado para adicionar uma nova imagem.")
+    public Response insertImage(@RequestBody ImageDTO image) throws RepassaException {
+        return Response.ok(photosService.insertImage(image, token.getClaim("name"))).build();
+    }
+
     @GET
     @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
@@ -48,6 +57,15 @@ public class PhotosResource {
     @Path("/search")
     public PhotosManager getAllPhotos(@QueryParam("date") String date) {
         return photosService.searchPhotos(date, token.getClaim("name"));
+    }
+
+    @GET
+    @RolesAllowed({"admin", "CADASTRO DE PRODUTOS.CADASTRAR_PRODUTOS", "HISTÓRICO DE PROCESSAMENTO DA SACOLA.VISUALIZAR_DETALHES"})
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Busca as fotos do produto", description = "Busca as fotos pelo id do produto.")
+    @Path("/getbyproductid")
+    public ProductPhotoListDTO getPhotoByProductId(@QueryParam("productId") String productId) throws RepassaException {
+        return photosService.findPhotoByProductId(productId);
     }
 
     @POST
@@ -127,6 +145,21 @@ public class PhotosResource {
             throws RepassaException {
 
         return Response.ok(photosService.changeStatusPhoto(changeTypePhotoDTO)).build();
+    }
+
+    @DELETE
+    @Operation(summary = "Deleta uma imagem do S3 e Dynamo", description = "Endpoint com finalidade para deletar a foto.")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
+    @APIResponses(value = {
+            @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ChangeTypePhotoDTO.class, type = SchemaType.ARRAY))),
+    })
+    @Path("/change-type-photo")
+    public Response deletePhoto(@QueryParam("idPhoto") String idPhoto)
+            throws RepassaException {
+    	//photosService.deletePhoto(idPhoto);
+        return Response.ok().build();
     }
 
     @GET

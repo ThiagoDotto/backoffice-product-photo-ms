@@ -12,11 +12,13 @@ import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.enums.TypeError;
 import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.exception.PhotoError;
+import br.com.repassa.resource.client.AwsService;
 import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.resource.client.ProductRestClient;
 import br.com.repassa.resource.client.RekognitionBarClient;
 import br.com.repassa.service.dynamo.PhotoProcessingService;
 import io.quarkus.logging.Log;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.slf4j.Logger;
@@ -46,6 +48,12 @@ public class PhotosService {
 
     private static final String URL_ERROR_IMAGE = "https://backoffice-triage-photo-dev.s3.amazonaws.com/invalidPhoto.png";
 
+    @ConfigProperty(name = "s3.aws.bucket-name")
+    String bucketName;
+
+    @ConfigProperty(name = "s3.aws.error-image")
+    String errorImage;
+
     @Inject
     @RestClient
     ProductRestClient productRestClient;
@@ -55,6 +63,10 @@ public class PhotosService {
 
     @Inject
     HistoryService historyService;
+
+    @Inject
+    AwsService awsService;
+
 
     @Inject
     PhotoProcessingService photoProcessingService;
@@ -276,6 +288,29 @@ public class PhotosService {
         return response;
     }
 
+    @Transactional
+    public PhotosManager insertImage(ImageDTO imageDTO, String name) throws RepassaException {
+
+        var photosValidate = new PhotosValidate();
+        //TODO: Validar a foto
+        photosValidate.validatePhotos(imageDTO);
+        //TODO: Salvar no S3( buscar do triage)
+        var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
+        imageDTO.getPhotoBase64().forEach(photo -> {
+
+            try {
+                awsService.uploadBase64FileToS3(bucketName, objectKey.concat(
+                        photo.getName() + "." + photo.getType()), photo.getBase64());
+            } catch (RepassaException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        //TODO: Salvar no Dynamo
+        // 1- PhotoProcessingTable
+        // 2- PhotosManager
+        return new PhotosManager();
+    }
+
     private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator)
             throws RepassaException {
         LOG.info("PHOTOMANAGER UPDATE: " + photoManager.getId());
@@ -433,6 +468,34 @@ public class PhotosService {
         }
     }
 
+    public ProductPhotoListDTO findPhotoByProductId(String productId) throws RepassaException {
+        LOG.info("Busca de fotos para o productId: {}", productId);
+        try {
+            final var photoManager = photoClient.findByProductId(productId);
+
+            if (Objects.isNull(photoManager) || Objects.isNull(photoManager.getGroupPhotos())) {
+                return ProductPhotoListDTO.builder().photos(List.of()).build();
+            }
+
+            final var lastGroupPhotoIndex = photoManager.getGroupPhotos().size() - 1;
+
+            final var productPhotoDTOList = photoManager.getGroupPhotos().get(lastGroupPhotoIndex).getPhotos().stream()
+                    .map(p -> ProductPhotoDTO.builder()
+                            .id(p.getId())
+                            .typePhoto(p.getTypePhoto().toString())
+                            .sizePhoto(p.getSizePhoto())
+                            .namePhoto(p.getNamePhoto())
+                            .urlPhoto(p.getUrlPhoto())
+                            .build()
+                    ).toList();
+
+            LOG.info("Busca de fotos para o productId {} realizada com sucesso", productId);
+            return ProductPhotoListDTO.builder().photos(productPhotoDTOList).build();
+        } catch (Exception e) {
+            throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_IMAGENS);
+        }
+    }
+
     private void persistPhotoManagerDynamoDB(PhotosManager photosManager) throws RepassaException {
         try {
             photoClient.savePhotosManager(photosManager);
@@ -481,7 +544,6 @@ public class PhotosService {
                 .sizePhoto("0").build();
         photos.add(photoError);
     }
-
 
     public void teste(){
         PhotoProcessed p = new PhotoProcessed();

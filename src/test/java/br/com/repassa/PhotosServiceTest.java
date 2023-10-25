@@ -2,14 +2,13 @@ package br.com.repassa;
 
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
+import br.com.repassa.config.DynamoClient;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
-import br.com.repassa.config.DynamoClient;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.enums.TypePhoto;
-import br.com.repassa.resource.client.DynamoClient;
 import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.resource.client.PhotoClientInterface;
 import br.com.repassa.service.PhotosService;

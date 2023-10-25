@@ -1,5 +1,7 @@
 package br.com.repassa.config;
 
+import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
+import br.com.repassa.exception.AwsPhotoError;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -12,7 +14,7 @@ public class DynamoClient {
     private DynamoClient() {
     }
 
-    public static synchronized DynamoDbClient openDynamoDBConnection() {
+    public static synchronized DynamoDbClient openDynamoDBConnection() throws RepassaException {
         if (clientInstance == null) {
             try {
                 var accessKey = "AKIA3GWR6GFBSXT2QB52";
@@ -25,8 +27,7 @@ public class DynamoClient {
                         .build();
 
             } catch (Exception e) {
-                System.out.println(e.getMessage());
-                return null;
+                throw new RepassaException(AwsPhotoError.DYNAMO_CONNECTION, e);
             }
         }
 

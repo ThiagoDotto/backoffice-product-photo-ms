@@ -1,52 +1,117 @@
 package br.com.repassa.service.dynamo;
 
+import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.DynamoClient;
+import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.entity.dynamo.PhotoProcessed;
+import br.com.repassa.exception.AwsPhotoError;
+import br.com.repassa.exception.PhotoError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
-import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.*;
 
 import javax.enterprise.context.ApplicationScoped;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @ApplicationScoped
-public class PhotoProcessingService extends PhotoAbstractService {
+public class PhotoProcessingService {
     private static final Logger LOGGER = LoggerFactory.getLogger(PhotoProcessingService.class);
     private static final String TABLE_NAME = "PhotoProcessingTable";
     private static final String SUCCESSFUL_STATS = "successful";
 
 
-    public void save(PhotoProcessed photoProcessed) {
-        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
-        Map<String, AttributeValue> item = new HashMap<>();
-
-        item.put("id", AttributeValue.builder().s(photoProcessed.getId()).build());
-        item.put("created_at", AttributeValue.builder().s(LocalDateTime.now().toString()).build());
-        item.put("edited_by", AttributeValue.builder().s(photoProcessed.getEditedBy()).build());
-        item.put("image_id", AttributeValue.builder().s(photoProcessed.getImageId().toString()).build());
-        item.put("imagem_name", AttributeValue.builder().s(photoProcessed.getImageName()).build());
-        item.put("is_valid", AttributeValue.builder().s(photoProcessed.getIsValid()).build());
-        item.put("notes", AttributeValue.builder().s(SUCCESSFUL_STATS).build());
-        item.put("original_image_url", AttributeValue.builder().s(photoProcessed.getOriginalImageUrl()).build());
-        item.put("size_photo", AttributeValue.builder().s(photoProcessed.getSizePhoto()).build());
-        item.put("thumbnail_base64", AttributeValue.builder().s(photoProcessed.getThumbnailBase64()).build());
-        item.put("upload_date", AttributeValue.builder().s(photoProcessed.getUploadDate()).build());
-
-        PutItemRequest putItemRequest = PutItemRequest.builder()
-                .tableName(TABLE_NAME)
-                .item(item)
-                .build();
-
+    public void save(PhotoProcessed photoProcessed) throws RepassaException {
         try {
+            DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+            Map<String, AttributeValue> item = new HashMap<>();
+
+            item.put("id", AttributeValue.builder().s(photoProcessed.getId()).build());
+            item.put("created_at", AttributeValue.builder().s(LocalDateTime.now().toString()).build());
+            item.put("edited_by", AttributeValue.builder().s(photoProcessed.getEditedBy()).build());
+            item.put("image_id", AttributeValue.builder().s(photoProcessed.getImageId()).build());
+            item.put("imagem_name", AttributeValue.builder().s(photoProcessed.getImageName()).build());
+            item.put("is_valid", AttributeValue.builder().s(photoProcessed.getIsValid()).build());
+            item.put("notes", AttributeValue.builder().s(SUCCESSFUL_STATS).build());
+            item.put("original_image_url", AttributeValue.builder().s(photoProcessed.getOriginalImageUrl()).build());
+            item.put("size_photo", AttributeValue.builder().s(photoProcessed.getSizePhoto()).build());
+            item.put("thumbnail_base64", AttributeValue.builder().s(photoProcessed.getThumbnailBase64()).build());
+            item.put("upload_date", AttributeValue.builder().s(photoProcessed.getUploadDate()).build());
+
+            PutItemRequest putItemRequest = PutItemRequest.builder()
+                    .tableName(TABLE_NAME)
+                    .item(item)
+                    .build();
+
             dynamoDB.putItem(putItemRequest);
             LOGGER.debug("Item saved successfully!");
-        } catch (DynamoDbException e) {
+        } catch (DynamoDbException | RepassaException e) {
             LOGGER.error("Unable to save item. {}", photoProcessed.getId());
+            throw new RepassaException(AwsPhotoError.DYNAMO_CONNECTION);
         }
+    }
+
+    public List<PhotoFilterResponseDTO> listItem(Map<String, AttributeValue> expressionAttributeValues)
+            throws RepassaException {
+
+        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+
+        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = new ArrayList<PhotoFilterResponseDTO>();
+        Map<String, AttributeValue> lastEvaluatedKey = null;
+
+        do {
+            ScanRequest.Builder scanRequest = ScanRequest.builder()
+                    .tableName(TABLE_NAME)
+                    .filterExpression("contains(upload_date, :upload_date) AND edited_by = :edited_by")
+                    .expressionAttributeValues(expressionAttributeValues);
+
+            if (lastEvaluatedKey != null) {
+                scanRequest.exclusiveStartKey(lastEvaluatedKey);
+            }
+
+            ScanResponse items = dynamoDB.scan(scanRequest.build());
+            photoFilterResponseDTOS.addAll(mapPhotoFilter(items));
+            lastEvaluatedKey = items.lastEvaluatedKey();
+
+        } while (lastEvaluatedKey != null && !lastEvaluatedKey.isEmpty());
+
+        if (photoFilterResponseDTOS.isEmpty()) {
+            LOGGER.error("Não há itens encontrados para a data informada. Selecione uma nova data ou tente novamente");
+            throw new RepassaException(PhotoError.FOTOS_NAO_ENCONTRADA);
+        } else {
+            Collections.sort(photoFilterResponseDTOS,
+                    Comparator.nullsFirst(Comparator.comparing(PhotoFilterResponseDTO::getImageName)));
+        }
+        return photoFilterResponseDTOS;
+    }
+
+    private List<PhotoFilterResponseDTO> mapPhotoFilter(ScanResponse scanResponse) {
+
+        List<PhotoFilterResponseDTO> resultList = new ArrayList<>();
+
+        scanResponse.items().forEach(item -> {
+            String imageName = item.get("imagem_name").s();
+
+            if (imageName == null) {
+                imageName = "undefined";
+            }
+
+            PhotoFilterResponseDTO responseDTO = new PhotoFilterResponseDTO();
+            responseDTO.setBagId(item.get("bag_id").s());
+            responseDTO.setEditedBy(item.get("edited_by").s());
+            responseDTO.setImageName(imageName);
+            responseDTO.setId(item.get("id").s());
+            responseDTO.setImageId(item.get("image_id").s());
+            responseDTO.setIsValid(item.get("is_valid").s());
+            responseDTO.setOriginalImageUrl(item.get("original_image_url").s());
+            responseDTO.setSizePhoto(item.get("size_photo").s());
+            responseDTO.setThumbnailBase64(item.get("thumbnail_base64").s());
+            responseDTO.setUploadDate(item.get("upload_date").s());
+
+            resultList.add(responseDTO);
+        });
+
+        return resultList;
     }
 }

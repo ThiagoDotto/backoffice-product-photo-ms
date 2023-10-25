@@ -11,6 +11,7 @@ import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.enums.TypeError;
 import br.com.repassa.enums.TypePhoto;
+import br.com.repassa.exception.AwsPhotoError;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.resource.client.AwsService;
 import br.com.repassa.resource.client.PhotoClient;
@@ -65,14 +66,14 @@ public class PhotosService {
     PhotoClient photoClient;
 
     @Inject
+    PhotoProcessingService photoProcessingService;
+
+    @Inject
     HistoryService historyService;
 
     @Inject
     AwsService awsService;
 
-
-    @Inject
-    PhotoProcessingService photoProcessingService;
 
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
 
@@ -88,7 +89,7 @@ public class PhotosService {
         expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(filter.getDate()).build());
         expressionAttributeValues.put(":edited_by", AttributeValue.builder().s(username).build());
 
-        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = this.photoClient.listItem(expressionAttributeValues);
+        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = this.photoProcessingService.listItem(expressionAttributeValues);
 
         persistPhotoManager(photoFilterResponseDTOS);
     }
@@ -141,13 +142,13 @@ public class PhotosService {
         rekognitionClient.close();
 
         if (validateIds.isEmpty()) {
-            throw new RepassaException(PhotoError.REKOGNITION_PHOTO_EMPTY);
+            throw new RepassaException(AwsPhotoError.REKOGNITION_PHOTO_EMPTY);
         }
 
         try {
             validateIdentificators(validateIds, tokenAuth, true);
         } catch (Exception e) {
-            throw new RepassaException(PhotoError.REKOGNITION_ERROR);
+            throw new RepassaException(AwsPhotoError.REKOGNITION_ERROR);
         }
 
         return searchPhotos(processBarCodeRequestDTO.getDate(), user);
@@ -298,7 +299,6 @@ public class PhotosService {
         AtomicReference<String> urlImage = new AtomicReference<>(new String());
 
         photosValidate.validatePhotos(imageDTO);
-        //TODO: Salvar no S3( buscar do triage)
         var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
         AtomicReference<PhotosManager> photosManager = new AtomicReference<>(new PhotosManager());
         imageDTO.getPhotoBase64().forEach(photo -> {
@@ -584,7 +584,7 @@ public class PhotosService {
         }
     }
 
-    public void savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name, AtomicReference<String> urlImage) {
+    public void savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name, AtomicReference<String> urlImage) throws RepassaException {
         PhotoProcessed photoProcessed = new PhotoProcessed();
 
         photoProcessed.setEditedBy(name);

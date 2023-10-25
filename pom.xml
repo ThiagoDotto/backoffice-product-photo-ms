@@ -16,6 +16,8 @@
         <quarkus.platform.artifact-id>quarkus-universe-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
         <quarkus.platform.version>2.16.5.Final</quarkus.platform.version>
+<!--        <quarkus-amazon-services.version>2.5.2</quarkus-amazon-services.version>-->
+
         <surefire-plugin.version>3.0.0</surefire-plugin.version>
         <org.mapstruct.version>1.5.3.Final</org.mapstruct.version>
         <projectlombok.version>1.18.26</projectlombok.version>
@@ -34,6 +36,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+<!--            <dependency>-->
+<!--                <groupId>io.quarkiverse.amazonservices</groupId>-->
+<!--                <artifactId>quarkus-amazon-services-bom</artifactId>-->
+<!--                <version>${quarkus-amazon-services.version}</version>-->
+<!--                <type>pom</type>-->
+<!--                <scope>import</scope>-->
+<!--            </dependency>-->
         </dependencies>
     </dependencyManagement>
 
@@ -112,6 +121,7 @@
             <artifactId>mapstruct</artifactId>
             <version>1.5.5.Final</version>
         </dependency>
+        <!--  AWS -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>rekognition</artifactId>
@@ -147,6 +157,16 @@
             <artifactId>utils</artifactId>
             <version>${aws_version}</version>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>software.amazon.awssdk</groupId>-->
+<!--            <artifactId>url-connection-client</artifactId>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>io.quarkiverse.amazonservices</groupId>-->
+<!--            <artifactId>quarkus-amazon-dynamodb</artifactId>-->
+<!--        </dependency>-->
+
+        <!--        -->
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>

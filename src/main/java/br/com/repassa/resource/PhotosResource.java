@@ -128,4 +128,10 @@ public class PhotosResource {
 
         return Response.ok(photosService.changeStatusPhoto(changeTypePhotoDTO)).build();
     }
+
+    @GET
+    public void teste(){
+        photosService.teste();
+    }
+
 }

@@ -1,3 +1,11 @@
+s3:
+  aws:
+    access-key-id: AKIAJWITEVM4HXREFLYA
+    secret-access-key: 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
+    region: us-east-1
+    bucket-name: backoffice-triage-photo-dev
+    error-image : https://backoffice-triage-photo-dev.s3.amazonaws.com/invalidPhoto.png
+
 quarkus:
   devservices:
     enabled: false
@@ -11,6 +19,15 @@ quarkus:
   application:
     name: @project.artifactId@ # nome da aplicação será usando para definir o repositório de configura para o config-server
 
+  log:
+    console:
+      json: false
+      format: '%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n'
+    min-level: DEBUG
+
   spring-cloud-config:
     enabled: true # conexão com o config-server está disabilitado por padrão
     url: https://api-java-dev.repassa.net.br/backoffice-spring-config/
+
+cloudfront:
+  url: https://assets-dev-curadoria.repassa.com.br

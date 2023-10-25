@@ -1,4 +1,4 @@
-package br.com.repassa.resource.client;
+package br.com.repassa.config;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;

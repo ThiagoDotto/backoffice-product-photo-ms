@@ -6,14 +6,17 @@ import br.com.repassa.dto.*;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
+import br.com.repassa.entity.dynamo.PhotoProcessed;
 import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.enums.TypeError;
 import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.exception.PhotoError;
+import br.com.repassa.resource.client.AwsService;
 import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.resource.client.ProductRestClient;
 import br.com.repassa.resource.client.RekognitionBarClient;
+import br.com.repassa.service.dynamo.PhotoProcessingService;
 import io.quarkus.logging.Log;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -34,6 +37,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -44,6 +48,14 @@ public class PhotosService {
     private static final Logger LOG = LoggerFactory.getLogger(PhotosService.class);
 
     private static final String URL_ERROR_IMAGE = "https://backoffice-triage-photo-dev.s3.amazonaws.com/invalidPhoto.png";
+
+    private static final String URL_BASE_S3 = "https://backoffice-triage-photo-dev.s3.amazonaws.com/";
+
+    @ConfigProperty(name = "s3.aws.bucket-name")
+    String bucketName;
+
+    @ConfigProperty(name = "s3.aws.error-image")
+    String errorImage;
 
     @Inject
     @RestClient
@@ -57,6 +69,13 @@ public class PhotosService {
 
     @ConfigProperty(name = "cloudfront.url")
     String cloudFrontURL;
+
+    @Inject
+    AwsService awsService;
+
+
+    @Inject
+    PhotoProcessingService photoProcessingService;
 
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
 
@@ -273,6 +292,33 @@ public class PhotosService {
         });
 
         return response;
+    }
+
+    @Transactional
+    public PhotosManager insertImage(ImageDTO imageDTO, String name) throws RepassaException {
+
+        var photosValidate = new PhotosValidate();
+        AtomicReference<String> urlImage = new AtomicReference<>(new String());
+
+        photosValidate.validatePhotos(imageDTO);
+        //TODO: Salvar no S3( buscar do triage)
+        var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
+        AtomicReference<PhotosManager> photosManager = new AtomicReference<>(new PhotosManager());
+        imageDTO.getPhotoBase64().forEach(photo -> {
+
+            try {
+                String objKey = objectKey.concat(photo.getName() + "." + photo.getType());
+
+                urlImage.set(URL_BASE_S3 + objKey);
+                awsService.uploadBase64FileToS3(bucketName, objKey, photo.getBase64());
+                this.savePhotoProcessingDynamo(photo, name, urlImage);
+                photosManager.set(savePhotoManager(imageDTO, urlImage.get()));
+            } catch (RepassaException e) {
+                LOG.debug("Erro ao tentar salvar as imagens para o GroupId {} ", imageDTO.getGroupId());
+                throw new RuntimeException(e);
+            }
+        });
+        return photosManager.get();
     }
 
     private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator)
@@ -508,8 +554,56 @@ public class PhotosService {
     }
 
     private void createPhotosError(List<Photo> photos) {
-        Photo photoError = Photo.builder().urlPhoto(URL_ERROR_IMAGE).namePhoto("error").base64("")
+        Photo photoError = Photo.builder().urlPhoto(errorImage).namePhoto("error").base64("")
                 .sizePhoto("0").build();
         photos.add(photoError);
+    }
+
+    private PhotosManager savePhotoManager(ImageDTO imageDTO, String urlImage) throws RepassaException {
+        try {
+            var photoManager = photoClient.findByGroupId(imageDTO.getGroupId());
+
+            if (Objects.isNull(photoManager)) {
+                throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
+            }
+
+            AtomicReference<Photo> photo = new AtomicReference<>(new Photo());
+            photoManager.getGroupPhotos()
+                    .forEach(groupPhotos -> {
+                        if (Objects.equals(groupPhotos.getId(), imageDTO.getGroupId())) {
+                            imageDTO.getPhotoBase64().forEach(photoTela -> {
+                                photo.set(Photo.builder()
+                                        .namePhoto(photoTela.getName())
+                                        .urlPhoto(urlImage)
+                                        .sizePhoto(photoTela.getSize())
+                                        .base64(photoTela.getBase64())
+                                        .build());
+                            });
+                        }
+                        groupPhotos.getPhotos().add(photo.get());
+                    });
+
+
+            photoClient.savePhotosManager(photoManager);
+            return photoManager;
+        } catch (Exception e) {
+            throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
+        }
+    }
+
+    public void savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name, AtomicReference<String> urlImage) {
+        PhotoProcessed photoProcessed = new PhotoProcessed();
+
+        photoProcessed.setEditedBy(name);
+        photoProcessed.setIsValid("true");
+        photoProcessed.setUploadDate(LocalDateTime.now().toString());
+        photoProcessed.setId(UUID.randomUUID().toString());
+        photoProcessed.setImageId(UUID.randomUUID().toString());
+        photoProcessed.setSizePhoto(photoBase64DTO.getSize());
+        photoProcessed.setImageName(photoBase64DTO.getName());
+        photoProcessed.setThumbnailBase64(photoBase64DTO.getBase64());
+        photoProcessed.setOriginalImageUrl(urlImage.get());
+
+        photoProcessingService.save(photoProcessed);
     }
 }

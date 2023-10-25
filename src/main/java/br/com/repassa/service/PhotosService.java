@@ -1,8 +1,44 @@
 package br.com.repassa.service;
 
+import java.text.Normalizer;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.transaction.Transactional;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.reactive.ClientWebApplicationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.dto.*;
+import br.com.repassa.dto.ChangeTypePhotoDTO;
+import br.com.repassa.dto.IdentificatorsDTO;
+import br.com.repassa.dto.ImageDTO;
+import br.com.repassa.dto.PhotoBase64DTO;
+import br.com.repassa.dto.PhotoFilterDTO;
+import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.dto.ProcessBarCodeRequestDTO;
+import br.com.repassa.dto.ProductDTO;
+import br.com.repassa.dto.ProductPhotoDTO;
+import br.com.repassa.dto.ProductPhotoListDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -18,29 +54,13 @@ import br.com.repassa.resource.client.ProductRestClient;
 import br.com.repassa.resource.client.RekognitionBarClient;
 import br.com.repassa.service.dynamo.PhotoProcessingService;
 import io.quarkus.logging.Log;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.resteasy.reactive.ClientWebApplicationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.rekognition.RekognitionClient;
-import software.amazon.awssdk.services.rekognition.model.*;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.transaction.Transactional;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-import java.text.Normalizer;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import software.amazon.awssdk.services.rekognition.model.DetectTextRequest;
+import software.amazon.awssdk.services.rekognition.model.DetectTextResponse;
+import software.amazon.awssdk.services.rekognition.model.Image;
+import software.amazon.awssdk.services.rekognition.model.S3Object;
+import software.amazon.awssdk.services.rekognition.model.TextDetection;
 
 @ApplicationScoped
 public class PhotosService {
@@ -73,7 +93,6 @@ public class PhotosService {
     @Inject
     AwsS3Client awsS3Client;
 
-
     @Inject
     PhotoProcessingService photoProcessingService;
 
@@ -97,7 +116,7 @@ public class PhotosService {
     }
 
     public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user,
-                                        String tokenAuth) throws RepassaException {
+            String tokenAuth) throws RepassaException {
 
         RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
         List<IdentificatorsDTO> validateIds = new ArrayList<>();
@@ -181,7 +200,7 @@ public class PhotosService {
 
     @Transactional
     public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth,
-                                                          Boolean isOcr)
+            Boolean isOcr)
             throws Exception {
         if (identificators.isEmpty()) {
             throw new RepassaException(PhotoError.VALIDATE_IDENTIFICATORS_EMPTY);
@@ -253,6 +272,7 @@ public class PhotosService {
                 // Se não econtrar um PHOTO_MANAGER com base no PRODUCT_ID informado, será feito
                 // uma nova busca, informando o GROUP_ID
                 if (photosManager == null) {
+                    LOG.debug("GroupId {} ", identificator.getGroupId());
                     PhotosManager photoManagerGroup = photoClient.findByGroupId(identificator.getGroupId());
                     updatePhotoManager(photoManagerGroup, identificator);
                 } else {
@@ -301,7 +321,6 @@ public class PhotosService {
         AtomicReference<String> urlImage = new AtomicReference<>(new String());
 
         photosValidate.validatePhotos(imageDTO);
-        //TODO: Salvar no S3( buscar do triage)
         var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
         AtomicReference<PhotosManager> photosManager = new AtomicReference<>(new PhotosManager());
         imageDTO.getPhotoBase64().forEach(photo -> {
@@ -318,16 +337,15 @@ public class PhotosService {
                 throw new RuntimeException(e);
             }
         });
-        //TODO: Salvar no Dynamo
-        // 1- PhotoProcessingTable
-        // 2- PhotosManager
+        
         return new PhotosManager();
     }
 
     private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator)
             throws RepassaException {
-        LOG.info("PHOTOMANAGER UPDATE: " + photoManager.getId());
         if (photoManager != null) {
+            LOG.info("PHOTOMANAGER UPDATE: " + photoManager.getId());
+
             photoManager.getGroupPhotos().forEach(group -> {
                 if (group.getId().equals(identificator.getGroupId())) {
                     group.setProductId(identificator.getProductId());
@@ -503,8 +521,8 @@ public class PhotosService {
                             .sizePhoto(p.getSizePhoto())
                             .namePhoto(p.getNamePhoto())
                             .urlPhoto(formatToCloudFrontURL(p.getUrlPhoto()))
-                            .build()
-                    ).toList();
+                            .build())
+                    .toList();
 
             LOG.info("Busca de fotos para o productId {} realizada com sucesso", productId);
             return ProductPhotoListDTO.builder().photos(productPhotoDTOList).build();
@@ -564,38 +582,38 @@ public class PhotosService {
 
     private PhotosManager savePhotoManager(ImageDTO imageDTO, String urlImage) throws RepassaException {
         try {
-         var photoManager = photoClient.findByGroupId(imageDTO.getGroupId());
+            var photoManager = photoClient.findByGroupId(imageDTO.getGroupId());
 
-        if(Objects.isNull(photoManager)){
-            throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
-        }
+            if (Objects.isNull(photoManager)) {
+                throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
+            }
 
-        AtomicReference<Photo> photo = new AtomicReference<>(new Photo());
-        photoManager.getGroupPhotos()
-                .forEach( groupPhotos -> {
-                    if (Objects.equals(groupPhotos.getId(), imageDTO.getGroupId())){
-                        imageDTO.getPhotoBase64().forEach(photoTela -> {
-                            photo.set(Photo.builder()
-                                    .namePhoto(photoTela.getName())
-                                    .urlPhoto(urlImage)
-                                    .sizePhoto(photoTela.getSize())
-                                    .base64(photoTela.getBase64())
-                                    .build());
-                        });
-                    }
-                    groupPhotos.getPhotos().add(photo.get());
-                });
+            AtomicReference<Photo> photo = new AtomicReference<>(new Photo());
+            photoManager.getGroupPhotos()
+                    .forEach(groupPhotos -> {
+                        if (Objects.equals(groupPhotos.getId(), imageDTO.getGroupId())) {
+                            imageDTO.getPhotoBase64().forEach(photoTela -> {
+                                photo.set(Photo.builder()
+                                        .namePhoto(photoTela.getName())
+                                        .urlPhoto(urlImage)
+                                        .sizePhoto(photoTela.getSize())
+                                        .base64(photoTela.getBase64())
+                                        .build());
+                            });
+                        }
+                        groupPhotos.getPhotos().add(photo.get());
+                    });
 
-        
             photoClient.savePhotosManager(photoManager);
 
             return photoManager;
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
         }
     }
 
-    public void savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name, AtomicReference<String> urlImage) {
+    public void savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name,
+            AtomicReference<String> urlImage) {
         PhotoProcessed photoProcessed = new PhotoProcessed();
 
         photoProcessed.setEditedBy(name);

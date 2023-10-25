@@ -12,7 +12,7 @@ import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.enums.TypeError;
 import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.exception.PhotoError;
-import br.com.repassa.resource.client.AwsService;
+import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.resource.client.ProductRestClient;
 import br.com.repassa.resource.client.RekognitionBarClient;
@@ -71,7 +71,7 @@ public class PhotosService {
     String cloudFrontURL;
 
     @Inject
-    AwsService awsService;
+    AwsS3Client awsS3Client;
 
 
     @Inject
@@ -310,7 +310,7 @@ public class PhotosService {
                 String objKey = objectKey.concat(photo.getName() + "." + photo.getType());
 
                 urlImage.set(URL_BASE_S3 + objKey);
-                awsService.uploadBase64FileToS3(bucketName, objKey, photo.getBase64());
+                awsS3Client.uploadBase64FileToS3(bucketName, objKey, photo.getBase64());
                 this.savePhotoProcessingDynamo(photo, name, urlImage);
                 photosManager.set(savePhotoManager(imageDTO, urlImage.get()));
             } catch (RepassaException e) {
@@ -318,7 +318,10 @@ public class PhotosService {
                 throw new RuntimeException(e);
             }
         });
-        return photosManager.get();
+        //TODO: Salvar no Dynamo
+        // 1- PhotoProcessingTable
+        // 2- PhotosManager
+        return new PhotosManager();
     }
 
     private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator)
@@ -561,32 +564,33 @@ public class PhotosService {
 
     private PhotosManager savePhotoManager(ImageDTO imageDTO, String urlImage) throws RepassaException {
         try {
-            var photoManager = photoClient.findByGroupId(imageDTO.getGroupId());
+         var photoManager = photoClient.findByGroupId(imageDTO.getGroupId());
 
-            if (Objects.isNull(photoManager)) {
-                throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
-            }
+        if(Objects.isNull(photoManager)){
+            throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
+        }
 
-            AtomicReference<Photo> photo = new AtomicReference<>(new Photo());
-            photoManager.getGroupPhotos()
-                    .forEach(groupPhotos -> {
-                        if (Objects.equals(groupPhotos.getId(), imageDTO.getGroupId())) {
-                            imageDTO.getPhotoBase64().forEach(photoTela -> {
-                                photo.set(Photo.builder()
-                                        .namePhoto(photoTela.getName())
-                                        .urlPhoto(urlImage)
-                                        .sizePhoto(photoTela.getSize())
-                                        .base64(photoTela.getBase64())
-                                        .build());
-                            });
-                        }
-                        groupPhotos.getPhotos().add(photo.get());
-                    });
+        AtomicReference<Photo> photo = new AtomicReference<>(new Photo());
+        photoManager.getGroupPhotos()
+                .forEach( groupPhotos -> {
+                    if (Objects.equals(groupPhotos.getId(), imageDTO.getGroupId())){
+                        imageDTO.getPhotoBase64().forEach(photoTela -> {
+                            photo.set(Photo.builder()
+                                    .namePhoto(photoTela.getName())
+                                    .urlPhoto(urlImage)
+                                    .sizePhoto(photoTela.getSize())
+                                    .base64(photoTela.getBase64())
+                                    .build());
+                        });
+                    }
+                    groupPhotos.getPhotos().add(photo.get());
+                });
 
-
+        
             photoClient.savePhotosManager(photoManager);
+
             return photoManager;
-        } catch (Exception e) {
+        } catch (Exception e){
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
         }
     }

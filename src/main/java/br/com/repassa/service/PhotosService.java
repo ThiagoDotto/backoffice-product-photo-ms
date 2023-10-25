@@ -69,7 +69,7 @@ public class PhotosService {
 
     private static final String URL_ERROR_IMAGE = "https://backoffice-triage-photo-qa.s3.amazonaws.com/invalidPhoto.png";
 
-    private static final String URL_BASE_S3 = "https://backoffice-triage-photo-dev.s3.amazonaws.com/";
+    private static final String URL_BASE_S3 = "https://backoffice-triage-photo-qa.s3.amazonaws.com/";
 
     @ConfigProperty(name = "s3.aws.bucket-name")
     String bucketName;

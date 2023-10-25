@@ -26,7 +26,7 @@ public class AwsS3Client {
 
     private final String accessKey = "AKIAJWITEVM4HXREFLYA";
     private final String secretKey = "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";
-    private final String cloudFrontURL = "https://assets-dev-curadoria.repassa.com.br";
+    private final String cloudFrontURL = "https://assets-qa-curadoria.repassa.com.br";
 
     AwsCredentialsProvider credentialsProvider;
 

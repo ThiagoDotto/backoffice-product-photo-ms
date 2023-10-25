@@ -1,42 +1,8 @@
 package br.com.repassa.service;
 
-import java.text.Normalizer;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.transaction.Transactional;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.resteasy.reactive.ClientWebApplicationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.dto.ChangeTypePhotoDTO;
-import br.com.repassa.dto.IdentificatorsDTO;
-import br.com.repassa.dto.ImageDTO;
-import br.com.repassa.dto.PhotoFilterDTO;
-import br.com.repassa.dto.PhotoFilterResponseDTO;
-import br.com.repassa.dto.ProcessBarCodeRequestDTO;
-import br.com.repassa.dto.ProductDTO;
-import br.com.repassa.dto.ProductPhotoDTO;
-import br.com.repassa.dto.ProductPhotoListDTO;
+import br.com.repassa.dto.*;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -50,13 +16,28 @@ import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.resource.client.ProductRestClient;
 import br.com.repassa.resource.client.RekognitionBarClient;
 import io.quarkus.logging.Log;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.reactive.ClientWebApplicationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.rekognition.RekognitionClient;
-import software.amazon.awssdk.services.rekognition.model.DetectTextRequest;
-import software.amazon.awssdk.services.rekognition.model.DetectTextResponse;
-import software.amazon.awssdk.services.rekognition.model.Image;
-import software.amazon.awssdk.services.rekognition.model.S3Object;
-import software.amazon.awssdk.services.rekognition.model.TextDetection;
+import software.amazon.awssdk.services.rekognition.model.*;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.transaction.Transactional;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import java.text.Normalizer;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class PhotosService {
@@ -84,6 +65,7 @@ public class PhotosService {
     @Inject
     AwsS3Client awsS3Client;
 
+
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
 
         LOG.info("Filter", filter.toString());
@@ -104,7 +86,7 @@ public class PhotosService {
     }
 
     public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user,
-            String tokenAuth) throws RepassaException {
+                                        String tokenAuth) throws RepassaException {
 
         RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
         List<IdentificatorsDTO> validateIds = new ArrayList<>();
@@ -188,7 +170,7 @@ public class PhotosService {
 
     @Transactional
     public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth,
-            Boolean isOcr)
+                                                          Boolean isOcr)
             throws Exception {
         if (identificators.isEmpty()) {
             throw new RepassaException(PhotoError.VALIDATE_IDENTIFICATORS_EMPTY);
@@ -305,9 +287,9 @@ public class PhotosService {
     public PhotosManager insertImage(ImageDTO imageDTO, String name) throws RepassaException {
 
         var photosValidate = new PhotosValidate();
-        // TODO: Validar a foto
+        //TODO: Validar a foto
         photosValidate.validatePhotos(imageDTO);
-        // TODO: Salvar no S3( buscar do triage)
+        //TODO: Salvar no S3( buscar do triage)
         var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
         imageDTO.getPhotoBase64().forEach(photo -> {
 
@@ -318,7 +300,7 @@ public class PhotosService {
                 throw new RuntimeException(e);
             }
         });
-        // TODO: Salvar no Dynamo
+        //TODO: Salvar no Dynamo
         // 1- PhotoProcessingTable
         // 2- PhotosManager
         return new PhotosManager();
@@ -499,8 +481,8 @@ public class PhotosService {
                             .sizePhoto(p.getSizePhoto())
                             .namePhoto(p.getNamePhoto())
                             .urlPhoto(p.getUrlPhoto())
-                            .build())
-                    .toList();
+                            .build()
+                    ).toList();
 
             LOG.info("Busca de fotos para o productId {} realizada com sucesso", productId);
             return ProductPhotoListDTO.builder().photos(productPhotoDTOList).build();
@@ -557,5 +539,6 @@ public class PhotosService {
                 .sizePhoto("0").build();
         photos.add(photoError);
     }
+
 
 }

@@ -209,7 +209,6 @@ public class PhotosService {
         List<IdentificatorsDTO> response = new ArrayList<>();
 
         identificators.forEach(identificator -> {
-            LOG.info("IDENTIFICATORS: " + identificator.toString());
             try {
                 PhotosManager photosManager = null;
 
@@ -322,7 +321,6 @@ public class PhotosService {
         AtomicReference<String> urlImage = new AtomicReference<>(new String());
 
         photosValidate.validatePhotos(imageDTO);
-        // TODO: Salvar no S3( buscar do triage)
         var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
         AtomicReference<PhotosManager> photosManager = new AtomicReference<>(new PhotosManager());
         imageDTO.getPhotoBase64().forEach(photo -> {
@@ -339,9 +337,7 @@ public class PhotosService {
                 throw new RuntimeException(e);
             }
         });
-        // TODO: Salvar no Dynamo
-        // 1- PhotoProcessingTable
-        // 2- PhotosManager
+        
         return new PhotosManager();
     }
 

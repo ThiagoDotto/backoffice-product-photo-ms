@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 
 import javax.enterprise.context.ApplicationScoped;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,9 +26,7 @@ public class PhotoProcessingService extends PhotoAbstractService {
         Map<String, AttributeValue> item = new HashMap<>();
 
         item.put("id", AttributeValue.builder().s(photoProcessed.getId()).build());
-        item.put("bag_id", AttributeValue.builder().s(photoProcessed.getBagId()).build());
-        //TODO: Verificar a data de upload
-//        item.put("created_at", AttributeValue.builder().s(photoProcessed.get()).build());
+        item.put("created_at", AttributeValue.builder().s(LocalDateTime.now().toString()).build());
         item.put("edited_by", AttributeValue.builder().s(photoProcessed.getEditedBy()).build());
         item.put("image_id", AttributeValue.builder().s(photoProcessed.getImageId().toString()).build());
         item.put("imagem_name", AttributeValue.builder().s(photoProcessed.getImageName()).build());

@@ -585,17 +585,18 @@ public class PhotosService {
     }
 
     public void savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name, AtomicReference<String> urlImage) {
-        PhotoProcessed p = new PhotoProcessed();
+        PhotoProcessed photoProcessed = new PhotoProcessed();
 
-        p.setEditedBy(name);
-        p.setIsValid("true");
-        p.setUploadDate(LocalDateTime.now().toString());
-        p.setId(UUID.randomUUID().toString());
-        p.setImageId(UUID.randomUUID().toString());
-        p.setSizePhoto(photoBase64DTO.getSize());
-        p.setImageName(photoBase64DTO.getName());
-        p.setThumbnailBase64(photoBase64DTO.getBase64());
-        p.setOriginalImageUrl(urlImage.get());
-        photoProcessingService.save(p);
+        photoProcessed.setEditedBy(name);
+        photoProcessed.setIsValid("true");
+        photoProcessed.setUploadDate(LocalDateTime.now().toString());
+        photoProcessed.setId(UUID.randomUUID().toString());
+        photoProcessed.setImageId(UUID.randomUUID().toString());
+        photoProcessed.setSizePhoto(photoBase64DTO.getSize());
+        photoProcessed.setImageName(photoBase64DTO.getName());
+        photoProcessed.setThumbnailBase64(photoBase64DTO.getBase64());
+        photoProcessed.setOriginalImageUrl(urlImage.get());
+
+        photoProcessingService.save(photoProcessed);
     }
 }

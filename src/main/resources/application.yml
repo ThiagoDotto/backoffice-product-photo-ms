@@ -3,8 +3,8 @@ s3:
     access-key-id: AKIAJWITEVM4HXREFLYA
     secret-access-key: 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
     region: us-east-1
-    bucket-name: backoffice-triage-photo-dev
-    error-image : https://backoffice-triage-photo-dev.s3.amazonaws.com/invalidPhoto.png
+    bucket-name: backoffice-triage-photo-stg
+    error-image : https://backoffice-triage-photo-qa.s3.amazonaws.com/invalidPhoto.png
 
 quarkus:
   devservices:

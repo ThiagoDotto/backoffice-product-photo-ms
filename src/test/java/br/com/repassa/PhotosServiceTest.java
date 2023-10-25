@@ -2,9 +2,13 @@ package br.com.repassa;
 
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
+import br.com.repassa.config.DynamoClient;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
-import br.com.repassa.resource.client.DynamoClient;
+import br.com.repassa.entity.GroupPhotos;
+import br.com.repassa.entity.Photo;
+import br.com.repassa.entity.PhotosManager;
+import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.resource.client.PhotoClientInterface;
 import br.com.repassa.service.PhotosService;
@@ -13,9 +17,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
 import java.util.*;
 
+import static io.smallrye.common.constraint.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -60,6 +68,55 @@ public class PhotosServiceTest {
         doNothing().when(photoClient).savePhotosManager(any());
 
         photosService.persistPhotoManager(listPhotoFilter);
+    }
+
+    @Test
+    void shouldGetPhotosByProductIdWithSuccess() throws Exception {
+        final var productId = "10203040";
+
+        final var photo = Photo.builder()
+                .id("id")
+                .namePhoto("name")
+                .urlPhoto("url")
+                .typePhoto(TypePhoto.PRINCIPAL)
+                .sizePhoto("size")
+                .build();
+
+        final var groupPhoto = GroupPhotos.builder()
+                .photos(List.of(photo))
+                .build();
+
+        final var productManager = PhotosManager.builder()
+                .groupPhotos(List.of(groupPhoto))
+                .build();
+
+        when(photoClient.findByProductId(anyString())).thenReturn(productManager);
+
+        final var actual = photosService.findPhotoByProductId(productId);
+
+        assertNotNull(actual);
+        assertEquals(1, actual.getPhotos().size());
+        assertEquals("PRINCIPAL", actual.getPhotos().get(0).getTypePhoto());
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenProductIdNotFound() throws Exception {
+        final var productId = "10203040";
+
+        when(photoClient.findByProductId(anyString())).thenReturn(null);
+
+        final var actual = photosService.findPhotoByProductId(productId);
+
+        assertEquals(0, actual.getPhotos().size());
+    }
+
+    @Test
+    void shouldThrowRepassaExceptionWhenDynamoError() throws Exception {
+        final var productId = "10203040";
+
+        when(photoClient.findByProductId(anyString())).thenThrow(DynamoDbException.class);
+
+        assertThrows(RepassaException.class, () -> photosService.findPhotoByProductId(productId));
     }
 
     private List<PhotoFilterResponseDTO> createListPhotoFilter() {

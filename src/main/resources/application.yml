@@ -19,6 +19,12 @@ quarkus:
   application:
     name: @project.artifactId@ # nome da aplicação será usando para definir o repositório de configura para o config-server
 
+  log:
+    console:
+      json: false
+      format: '%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n'
+    min-level: DEBUG
+
   spring-cloud-config:
     enabled: true # conexão com o config-server está disabilitado por padrão
     url: https://api-java-dev.repassa.net.br/backoffice-spring-config/

@@ -61,7 +61,7 @@ public class PhotosResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Adiciona nova imagem",
             description = "endpoint usado para adicionar uma nova imagem.")
-    public Response insertImage(@Valid @RequestBody ImageDTO image) throws Exception {
+    public Response insertImage(@Valid @RequestBody ImageDTO image) throws RepassaException {
         return Response.ok(photosService.insertImage(image, token.getClaim("name"))).build();
     }
 
@@ -161,7 +161,7 @@ public class PhotosResource {
 
         return Response.ok(photosService.changeStatusPhoto(changeTypePhotoDTO)).build();
     }
-    
+
     @DELETE
     @Operation(summary = "Deleta uma imagem do S3 e Dynamo", description = "Endpoint com finalidade para deletar a foto.")
     @Produces(MediaType.APPLICATION_JSON)
@@ -173,7 +173,7 @@ public class PhotosResource {
     @Path("/change-type-photo")
     public Response deletePhoto(@QueryParam("idPhoto") String idPhoto)
             throws RepassaException {
-    	//photosService.deletePhoto(idPhoto);
+        //photosService.deletePhoto(idPhoto);
         return Response.ok().build();
     }
 }

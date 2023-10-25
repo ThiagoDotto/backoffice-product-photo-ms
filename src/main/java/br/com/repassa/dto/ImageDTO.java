@@ -17,7 +17,6 @@ public class ImageDTO {
     @NotNull
     private String groupId;
 
-    @NotNull
     private List<PhotoBase64DTO> photoBase64;
 
     @NotNull

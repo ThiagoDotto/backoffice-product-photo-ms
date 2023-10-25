@@ -31,6 +31,7 @@ public class PhotosValidate {
             if(size > MAX_SIZE_PHOTO){
                 isValid.set(Boolean.FALSE);
                 photo.setNote("file size exceeded");
+                photo.setSize(String.valueOf(size));
             }
         });
 

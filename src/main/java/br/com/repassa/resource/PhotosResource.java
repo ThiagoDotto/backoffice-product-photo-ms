@@ -49,7 +49,7 @@ public class PhotosResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Adiciona nova imagem",
             description = "endpoint usado para adicionar uma nova imagem.")
-    public Response insertImage(@RequestBody ImageDTO image) throws RepassaException {
+    public Response insertImage(@Valid @RequestBody ImageDTO image) throws Exception {
         return Response.ok(photosService.insertImage(image, token.getClaim("name"))).build();
     }
 

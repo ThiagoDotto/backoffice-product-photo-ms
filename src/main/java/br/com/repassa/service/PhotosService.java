@@ -67,6 +67,9 @@ public class PhotosService {
     @Inject
     HistoryService historyService;
 
+    @ConfigProperty(name = "cloudfront.url")
+    String cloudFrontURL;
+
     @Inject
     AwsService awsService;
 
@@ -475,6 +478,10 @@ public class PhotosService {
         }
     }
 
+    private String formatToCloudFrontURL(String s3URL) {
+        return s3URL.replaceAll("https://.*?\\.com", cloudFrontURL);
+    }
+
     public ProductPhotoListDTO findPhotoByProductId(String productId) throws RepassaException {
         LOG.info("Busca de fotos para o productId: {}", productId);
         try {
@@ -489,10 +496,10 @@ public class PhotosService {
             final var productPhotoDTOList = photoManager.getGroupPhotos().get(lastGroupPhotoIndex).getPhotos().stream()
                     .map(p -> ProductPhotoDTO.builder()
                             .id(p.getId())
-                            .typePhoto(p.getTypePhoto().toString())
+                            .typePhoto(Objects.nonNull(p.getTypePhoto()) ? p.getTypePhoto().toString() : "")
                             .sizePhoto(p.getSizePhoto())
                             .namePhoto(p.getNamePhoto())
-                            .urlPhoto(p.getUrlPhoto())
+                            .urlPhoto(formatToCloudFrontURL(p.getUrlPhoto()))
                             .build()
                     ).toList();
 

@@ -15,6 +15,7 @@ import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.resource.client.ProductRestClient;
 import br.com.repassa.resource.client.RekognitionBarClient;
 import io.quarkus.logging.Log;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.slf4j.Logger;
@@ -53,6 +54,9 @@ public class PhotosService {
 
     @Inject
     HistoryService historyService;
+
+    @ConfigProperty(name = "cloudfront.url")
+    String cloudFrontURL;
 
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
 
@@ -428,6 +432,10 @@ public class PhotosService {
         }
     }
 
+    private String formatToCloudFrontURL(String s3URL) {
+        return s3URL.replaceAll("https://.*?\\.com", cloudFrontURL);
+    }
+
     public ProductPhotoListDTO findPhotoByProductId(String productId) throws RepassaException {
         LOG.info("Busca de fotos para o productId: {}", productId);
         try {
@@ -442,10 +450,10 @@ public class PhotosService {
             final var productPhotoDTOList = photoManager.getGroupPhotos().get(lastGroupPhotoIndex).getPhotos().stream()
                     .map(p -> ProductPhotoDTO.builder()
                             .id(p.getId())
-                            .typePhoto(p.getTypePhoto().toString())
+                            .typePhoto(Objects.nonNull(p.getTypePhoto()) ? p.getTypePhoto().toString() : "")
                             .sizePhoto(p.getSizePhoto())
                             .namePhoto(p.getNamePhoto())
-                            .urlPhoto(p.getUrlPhoto())
+                            .urlPhoto(formatToCloudFrontURL(p.getUrlPhoto()))
                             .build()
                     ).toList();
 

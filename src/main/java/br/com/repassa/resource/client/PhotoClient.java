@@ -126,13 +126,17 @@ public class PhotoClient {
         return parseJsonToObject(items);
     }
 
-    public PhotosManager getPhotos(Map<String, AttributeValue> expressionAttributeValues)
-            throws RepassaException {
-        PhotosManager responseDTO = null;
-
-        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+    public PhotosManager getByEditorUploadDateAndInProgressStatus(String date, String userName) throws RepassaException {
 
         try {
+            PhotosManager responseDTO = null;
+            DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+
+            Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+            expressionAttributeValues.put(":statusManagerPhotos",
+                    AttributeValue.builder().s(StatusManagerPhotos.IN_PROGRESS.name()).build());
+            expressionAttributeValues.put(":editor", AttributeValue.builder().s(userName).build());
+            expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(date).build());
 
             ScanRequest scanRequest = ScanRequest.builder()
                     .tableName(TABLE_NAME_PHOTOS)

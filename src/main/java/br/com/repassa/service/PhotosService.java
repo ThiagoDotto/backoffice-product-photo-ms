@@ -15,24 +15,22 @@ import br.com.repassa.exception.AwsPhotoError;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.resource.client.PhotoClient;
-import br.com.repassa.resource.client.RekognitionBarClient;
 import br.com.repassa.service.dynamo.PhotoProcessingService;
 import br.com.repassa.service.rekognition.RekognitionService;
 import br.com.repassa.utils.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.rekognition.RekognitionClient;
-import software.amazon.awssdk.services.rekognition.model.*;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 import javax.ws.rs.core.HttpHeaders;
-import java.text.Normalizer;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -148,22 +146,10 @@ public class PhotosService {
     }
 
     public PhotosManager searchPhotos(String date, String name) {
-
-        String username = Normalizer.normalize(name, Normalizer.Form.NFD);
-        username = username.toLowerCase();
-        username = username.replaceAll("\\s", "+");
-        username = username.replaceAll("[^a-zA-Z0-9+]", "");
-
-        LOG.info("Fetered by Name: " + username.toString());
-
-        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
-        expressionAttributeValues.put(":statusManagerPhotos",
-                AttributeValue.builder().s(StatusManagerPhotos.IN_PROGRESS.name()).build());
-        expressionAttributeValues.put(":editor", AttributeValue.builder().s(username).build());
-        expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(date).build());
-
         try {
-            return photoClient.getPhotos(expressionAttributeValues);
+            String username = StringUtils.normalizerNFD(name);
+            LOG.info("Fetered by Name: {}", username);
+            return photoClient.getByEditorUploadDateAndInProgressStatus(date, name);
         } catch (RepassaException e) {
             e.printStackTrace();
             return null;

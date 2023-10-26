@@ -24,7 +24,7 @@ import java.util.Map;
 @ApplicationScoped
 public class PhotoClient {
 
-    private static final String TABLE_NAME_PHOTOS = "PhotosManager";
+    private static final String TABLE_NAME_PHOTOS = "PhotosManager_QA";
 
     public void savePhotosManager(PhotosManager manager) throws RepassaException {
         DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();

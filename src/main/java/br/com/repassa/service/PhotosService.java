@@ -20,7 +20,6 @@ import br.com.repassa.resource.client.RekognitionBarClient;
 import br.com.repassa.service.dynamo.PhotoProcessingService;
 import br.com.repassa.utils.StringUtils;
 import io.quarkus.logging.Log;
-import io.smallrye.config.common.utils.StringUtil;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
@@ -83,7 +82,7 @@ public class PhotosService {
         String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
 
         LOG.info("Fetered by Name: {}", username);
-        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = this.photoProcessingService.listItensOfUserBy(filter.getDate(), username);
+        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = this.photoProcessingService.listItensByDateAndUser(filter.getDate(), username);
 
         persistPhotoManager(photoFilterResponseDTOS);
     }

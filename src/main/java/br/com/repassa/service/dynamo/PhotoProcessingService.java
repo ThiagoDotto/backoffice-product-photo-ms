@@ -52,7 +52,7 @@ public class PhotoProcessingService {
         }
     }
 
-    public List<PhotoFilterResponseDTO> listItensOfUserBy(String date, String username) throws RepassaException {
+    public List<PhotoFilterResponseDTO> listItensByDateAndUser(String date, String username) throws RepassaException {
 
         DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
 

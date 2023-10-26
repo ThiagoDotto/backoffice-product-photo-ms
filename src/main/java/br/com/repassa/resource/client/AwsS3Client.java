@@ -8,6 +8,7 @@ import javax.inject.Singleton;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.exception.PhotoError;
+import br.com.repassa.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -70,6 +71,7 @@ public class AwsS3Client {
 
         if (matcher.find()) {
             String objectKey = matcher.group();
+            objectKey = StringUtils.replacePlusToBackspace(objectKey);
 
             DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
                     .bucket(bucketName)

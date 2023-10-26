@@ -1,76 +1,35 @@
 package br.com.repassa.resource.client;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.enterprise.context.ApplicationScoped;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.DynamoClient;
-import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.exception.PhotoError;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 
+import javax.enterprise.context.ApplicationScoped;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @Slf4j
 @ApplicationScoped
 public class PhotoClient {
-    private static final String TABLE_NAME = "PhotoProcessingTable_QA";
-    private static final String TABLE_NAME_PHOTOS = "PhotosManager_QA";
 
-    public void savePhotosManager(PhotosManager manager) {
+    private static final String TABLE_NAME_PHOTOS = "PhotosManager";
+
+    public void savePhotosManager(PhotosManager manager) throws RepassaException {
         DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
         PhotosManagerRepositoryImpl impl = new PhotosManagerRepositoryImpl(dynamoDB);
         impl.save(manager);
-    }
-
-    public List<PhotoFilterResponseDTO> listItem(Map<String, AttributeValue> expressionAttributeValues)
-            throws RepassaException {
-
-        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
-
-        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = new ArrayList<PhotoFilterResponseDTO>();
-        Map<String, AttributeValue> lastEvaluatedKey = null;
-
-        do {
-
-            ScanRequest.Builder scanRequest = ScanRequest.builder()
-                    .tableName(TABLE_NAME)
-                    .filterExpression("contains(upload_date, :upload_date) AND edited_by = :edited_by")
-                    .expressionAttributeValues(expressionAttributeValues);
-
-            if (lastEvaluatedKey != null) {
-                scanRequest.exclusiveStartKey(lastEvaluatedKey);
-            }
-
-            ScanResponse items = dynamoDB.scan(scanRequest.build());
-            photoFilterResponseDTOS.addAll(mapPhotoFilter(items));
-            lastEvaluatedKey = items.lastEvaluatedKey();
-
-        } while (lastEvaluatedKey != null && !lastEvaluatedKey.isEmpty());
-
-        if (photoFilterResponseDTOS.size() == 0) {
-            log.error("Não há itens encontrados para a data informada. Selecione uma nova data ou tente novamente");
-            throw new RepassaException(PhotoError.FOTOS_NAO_ENCONTRADA);
-        } else {
-            Collections.sort(photoFilterResponseDTOS,
-                    Comparator.nullsFirst(Comparator.comparing(PhotoFilterResponseDTO::getImageName)));
-        }
-        return photoFilterResponseDTOS;
     }
 
     public PhotosManager findByProductId(String productId) throws Exception {
@@ -167,13 +126,17 @@ public class PhotoClient {
         return parseJsonToObject(items);
     }
 
-    public PhotosManager getPhotos(Map<String, AttributeValue> expressionAttributeValues)
-            throws RepassaException {
-        PhotosManager responseDTO = null;
-
-        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+    public PhotosManager getByEditorUploadDateAndInProgressStatus(String date, String userName) throws RepassaException {
 
         try {
+            PhotosManager responseDTO = null;
+            DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+
+            Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+            expressionAttributeValues.put(":statusManagerPhotos",
+                    AttributeValue.builder().s(StatusManagerPhotos.IN_PROGRESS.name()).build());
+            expressionAttributeValues.put(":editor", AttributeValue.builder().s(userName).build());
+            expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(date).build());
 
             ScanRequest scanRequest = ScanRequest.builder()
                     .tableName(TABLE_NAME_PHOTOS)
@@ -235,32 +198,4 @@ public class PhotoClient {
         return responseDTO;
     }
 
-    private List<PhotoFilterResponseDTO> mapPhotoFilter(ScanResponse scanResponse) {
-
-        List<PhotoFilterResponseDTO> resultList = new ArrayList<>();
-
-        scanResponse.items().forEach(item -> {
-            String imageName = item.get("imagem_name").s();
-
-            if (imageName == null) {
-                imageName = "undefined";
-            }
-
-            PhotoFilterResponseDTO responseDTO = new PhotoFilterResponseDTO();
-            responseDTO.setBagId(item.get("bag_id").s());
-            responseDTO.setEditedBy(item.get("edited_by").s());
-            responseDTO.setImageName(imageName);
-            responseDTO.setId(item.get("id").s());
-            responseDTO.setImageId(item.get("image_id").s());
-            responseDTO.setIsValid(item.get("is_valid").s());
-            responseDTO.setOriginalImageUrl(item.get("original_image_url").s());
-            responseDTO.setSizePhoto(item.get("size_photo").s());
-            responseDTO.setThumbnailBase64(item.get("thumbnail_base64").s());
-            responseDTO.setUploadDate(item.get("upload_date").s());
-
-            resultList.add(responseDTO);
-        });
-
-        return resultList;
-    }
 }

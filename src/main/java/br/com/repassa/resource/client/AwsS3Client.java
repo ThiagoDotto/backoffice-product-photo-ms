@@ -1,14 +1,14 @@
 package br.com.repassa.resource.client;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Singleton;
+
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.exception.PhotoError;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -18,12 +18,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 @Singleton
 @Slf4j
-public class AwsService {
+public class AwsS3Client {
 
     S3Client s3Client;
 
@@ -33,39 +30,15 @@ public class AwsService {
 
     AwsCredentialsProvider credentialsProvider;
 
-//    @Inject
-//    public AwsService(@ConfigProperty(name = "s3.aws.access-key-id") String accessKey,
-//                      @ConfigProperty(name = "s3.aws.secret-access-key") String secretKey,
-//                      @ConfigProperty(name = "cloudfront.url") String cloudFrontURL,
-//                      S3Client s3Client) {
-//        this.accessKey = accessKey;
-//        this.secretKey = secretKey;
-//        this.s3Client = s3Client;
-//        this.cloudFrontURL = cloudFrontURL;
-//    }
-
-//    @PostConstruct
-//    private void init() {
-//        credentialsProvider = StaticCredentialsProvider.create(
-//                AwsBasicCredentials.create(accessKey, secretKey)
-//        );
-//        s3Client = S3Client.builder()
-//                .credentialsProvider(credentialsProvider)
-//                .region(Region.US_EAST_1)
-//                .build();
-//    }
-
     @PostConstruct
     private void init() {
         credentialsProvider = StaticCredentialsProvider.create(
-                AwsBasicCredentials.create(accessKey, secretKey)
-        );
+                AwsBasicCredentials.create(accessKey, secretKey));
         s3Client = S3Client.builder()
                 .credentialsProvider(credentialsProvider)
                 .region(Region.US_EAST_1)
                 .build();
     }
-
 
     public String uploadBase64FileToS3(String bucketName, String objectKey, String base64Data) throws RepassaException {
         log.info("Iniciando o upload da imagem no S3");
@@ -92,10 +65,10 @@ public class AwsService {
     }
 
     public void removeImageByUrl(String bucketName, String url) {
-        Pattern pattern = Pattern.compile("triage/.*");
+        Pattern pattern = Pattern.compile("fotografia/.*");
         Matcher matcher = pattern.matcher(url);
 
-        if(matcher.find()) {
+        if (matcher.find()) {
             String objectKey = matcher.group();
 
             DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()

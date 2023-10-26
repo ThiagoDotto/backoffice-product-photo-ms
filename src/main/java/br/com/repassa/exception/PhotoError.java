@@ -42,7 +42,7 @@ public class PhotoError implements RepassaUtilError {
                 "Erro! Algumas imagens não puderam ser carregadas devido ao tipo ou tamanho inválido de arquivo");
         public static final RepassaUtilError BASE64_INVALIDO = new PhotoError("018", "Base64 inválido.");
         public static final RepassaUtilError DELETE_PHOTO = new PhotoError("019", "Problemas ao Deletar a imagem.");
-
+        public static final RepassaUtilError ENDPOINT_NAO_VALIDO = new PhotoError("020", "Endpoint não válido.");
 
         public PhotoError(String errorCode, String errorMessage) {
                 this.errorCode = errorCode;

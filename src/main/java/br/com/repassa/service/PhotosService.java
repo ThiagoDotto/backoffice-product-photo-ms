@@ -144,9 +144,9 @@ public class PhotosService {
 
     public PhotosManager searchPhotos(String date, String name) {
         try {
-            String username = StringUtils.normalizerNFD(name);
+            String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
             LOG.info("Fetered by Name: {}", username);
-            return photoClient.getByEditorUploadDateAndInProgressStatus(date, name);
+            return photoClient.getByEditorUploadDateAndInProgressStatus(date, username);
         } catch (RepassaException e) {
             e.printStackTrace();
             return null;

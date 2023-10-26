@@ -3,12 +3,15 @@ package br.com.repassa;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.DynamoClient;
+import br.com.repassa.dto.ImageDTO;
+import br.com.repassa.dto.PhotoBase64DTO;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.enums.TypePhoto;
+import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.resource.client.PhotoClientInterface;
 import br.com.repassa.service.PhotosService;
@@ -19,7 +22,9 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.smallrye.common.constraint.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,6 +42,9 @@ public class PhotosServiceTest {
 
     @Mock
     private PhotoClient photoClient = mock(PhotoClient.class);
+
+    @Mock
+    AwsS3Client awsS3Client;
 
     List<PhotoFilterResponseDTO> listPhotoFilter = new ArrayList<>();
 
@@ -117,6 +125,25 @@ public class PhotosServiceTest {
         when(photoClient.findByProductId(anyString())).thenThrow(DynamoDbException.class);
 
         assertThrows(RepassaException.class, () -> photosService.findPhotoByProductId(productId));
+    }
+
+    @Test
+    void shouldInsertImage_returnOK() throws Exception {
+        var bucketName = "bucket_name";
+        var photoBase64DTO = PhotoBase64DTO.builder().base64("base60.jpeg")
+                .type("jpeg").name("teste").size("500").build();
+        var imageDTO = ImageDTO.builder().date(LocalDateTime.now().toString())
+                .photoBase64(Arrays.asList(photoBase64DTO))
+                .groupId("08a02106-7e8e-4a58-99bd-8e9fdc921e29").build();
+        var name = "name_teste";
+        AtomicReference<String> urlImage = new AtomicReference<>(new String("teste.com/123"));
+
+        when(awsS3Client.uploadBase64FileToS3(anyString(), anyString(), anyString())).thenReturn(bucketName);
+        doNothing().when(photosService).savePhotoProcessingDynamo(any(), anyString(), any());
+
+        var photoManager = photosService.insertImage(imageDTO, name);
+
+        assertNotNull(photoManager);
     }
 
     private List<PhotoFilterResponseDTO> createListPhotoFilter() {

@@ -18,7 +18,9 @@ import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.resource.client.ProductRestClient;
 import br.com.repassa.resource.client.RekognitionBarClient;
 import br.com.repassa.service.dynamo.PhotoProcessingService;
+import br.com.repassa.utils.StringUtils;
 import io.quarkus.logging.Log;
+import io.smallrye.config.common.utils.StringUtil;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
@@ -77,19 +79,11 @@ public class PhotosService {
 
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
 
-        LOG.info("Filter", filter.toString());
-        String username = Normalizer.normalize(name, Normalizer.Form.NFD);
-        username = username.toLowerCase();
-        username = username.replaceAll("\\s", "+");
-        username = username.replaceAll("[^a-zA-Z0-9+]", "");
+        LOG.info("Filter {}", filter.getDate());
+        String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
 
-        LOG.info("Fetered by Name: " + username.toString());
-
-        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
-        expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(filter.getDate()).build());
-        expressionAttributeValues.put(":edited_by", AttributeValue.builder().s(username).build());
-
-        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = this.photoProcessingService.listItem(expressionAttributeValues);
+        LOG.info("Fetered by Name: {}", username);
+        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = this.photoProcessingService.listItensOfUserBy(filter.getDate(), username);
 
         persistPhotoManager(photoFilterResponseDTOS);
     }
@@ -396,7 +390,7 @@ public class PhotosService {
         AtomicBoolean isPhotoValid = new AtomicBoolean(Boolean.TRUE);
 
         resultList.forEach(photosFilter -> {
-
+            //CRIA PHOTO
             var photo = Photo.builder().namePhoto(photosFilter.getImageName())
                     .sizePhoto(photosFilter.getSizePhoto())
                     .id(photosFilter.getId())
@@ -404,6 +398,7 @@ public class PhotosService {
                     .urlPhoto(photosFilter.getOriginalImageUrl())
                     .base64(photosFilter.getThumbnailBase64()).build();
 
+            //Seta photoManager
             photoManager.setEditor(photosFilter.getEditedBy());
             photoManager.setDate(photosFilter.getUploadDate());
             photoManager.setId(UUID.randomUUID().toString());

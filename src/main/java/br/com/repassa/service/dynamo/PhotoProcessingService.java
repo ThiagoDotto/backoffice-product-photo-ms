@@ -52,10 +52,13 @@ public class PhotoProcessingService {
         }
     }
 
-    public List<PhotoFilterResponseDTO> listItem(Map<String, AttributeValue> expressionAttributeValues)
-            throws RepassaException {
+    public List<PhotoFilterResponseDTO> listItensOfUserBy(String date, String username) throws RepassaException {
 
         DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+        expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(date).build());
+        expressionAttributeValues.put(":edited_by", AttributeValue.builder().s(username).build());
 
         List<PhotoFilterResponseDTO> photoFilterResponseDTOS = new ArrayList<PhotoFilterResponseDTO>();
         Map<String, AttributeValue> lastEvaluatedKey = null;

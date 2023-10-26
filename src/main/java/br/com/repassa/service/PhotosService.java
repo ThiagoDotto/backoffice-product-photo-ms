@@ -598,10 +598,11 @@ public class PhotosService {
                 while (iteratorPhotos.hasNext()) {
                     Photo photo = iteratorPhotos.next();
                     int sizePhoto = Integer.parseInt(photo.getSizePhoto());
-                    if (isPhotoEqual(idPhoto, photo, sizePhoto)
-                            && isEditorEquals(userPrincipalDTO, photosManager)) {
-                        LOG.debug("Removendo Photo {} no S3", photo.getId());
-                        awsS3Client.removeImageByUrl(bucketName, photo.getUrlPhoto().replace("+", " "));
+                    if (isPhotoEqual(idPhoto, photo) && isEditorEquals(userPrincipalDTO, photosManager)) {
+                        if(sizePhoto > 0){
+                            LOG.info("Removendo Photo {} no S3", photo.getId());
+                            awsS3Client.removeImageByUrl(bucketName, photo.getUrlPhoto().replace("+", " "));
+                        }
                         iteratorPhotos.remove();
                     }
                 }
@@ -619,7 +620,7 @@ public class PhotosService {
         return photosManager.getEditor().equals(username);
     }
 
-    private static boolean isPhotoEqual(String idPhoto, Photo photo, int sizePhoto) {
-        return Objects.nonNull(photo.getId()) && (photo.getId().equals(idPhoto) && (sizePhoto > 0));
+    private static boolean isPhotoEqual(String idPhoto, Photo photo) {
+        return Objects.nonNull(photo.getId()) && (photo.getId().equals(idPhoto));
     }
 }

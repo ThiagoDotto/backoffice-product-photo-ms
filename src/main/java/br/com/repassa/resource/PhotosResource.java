@@ -174,7 +174,7 @@ public class PhotosResource {
         UserPrincipalDTO userPrincipalDTO = UserPrincipalDTO.builder()
                 .id(this.token.getClaim(Claims.sub))
                 .email(this.token.getClaim(Claims.email))
-                .firtName(this.token.getName())
+                .firtName(this.token.getClaim("name"))
                 .build();
         photosService.deletePhoto(idPhoto, userPrincipalDTO);
         return Response.ok().build();

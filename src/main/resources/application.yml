@@ -9,6 +9,11 @@ s3:
 quarkus:
   devservices:
     enabled: false
+#  dynamodb:
+#    aws:
+#      region:
+#      credentials:
+#        type:
 
   swagger-ui:
     always-include: true

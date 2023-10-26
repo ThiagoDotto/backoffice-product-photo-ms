@@ -1,44 +1,8 @@
 package br.com.repassa.service;
 
-import java.text.Normalizer;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.transaction.Transactional;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.resteasy.reactive.ClientWebApplicationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.dto.ChangeTypePhotoDTO;
-import br.com.repassa.dto.IdentificatorsDTO;
-import br.com.repassa.dto.ImageDTO;
-import br.com.repassa.dto.PhotoBase64DTO;
-import br.com.repassa.dto.PhotoFilterDTO;
-import br.com.repassa.dto.PhotoFilterResponseDTO;
-import br.com.repassa.dto.ProcessBarCodeRequestDTO;
-import br.com.repassa.dto.ProductDTO;
-import br.com.repassa.dto.ProductPhotoDTO;
-import br.com.repassa.dto.ProductPhotoListDTO;
+import br.com.repassa.dto.*;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -47,20 +11,30 @@ import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.enums.TypeError;
 import br.com.repassa.enums.TypePhoto;
+import br.com.repassa.exception.AwsPhotoError;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.resource.client.PhotoClient;
-import br.com.repassa.resource.client.ProductRestClient;
-import br.com.repassa.resource.client.RekognitionBarClient;
 import br.com.repassa.service.dynamo.PhotoProcessingService;
-import io.quarkus.logging.Log;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.rekognition.RekognitionClient;
-import software.amazon.awssdk.services.rekognition.model.DetectTextRequest;
-import software.amazon.awssdk.services.rekognition.model.DetectTextResponse;
-import software.amazon.awssdk.services.rekognition.model.Image;
-import software.amazon.awssdk.services.rekognition.model.S3Object;
-import software.amazon.awssdk.services.rekognition.model.TextDetection;
+import br.com.repassa.service.rekognition.RekognitionService;
+import br.com.repassa.utils.StringUtils;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.transaction.Transactional;
+import javax.ws.rs.core.HttpHeaders;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class PhotosService {
@@ -78,11 +52,13 @@ public class PhotosService {
     String errorImage;
 
     @Inject
-    @RestClient
-    ProductRestClient productRestClient;
+    ProductService productService;
 
     @Inject
     PhotoClient photoClient;
+
+    @Inject
+    PhotoProcessingService photoProcessingService;
 
     @Inject
     HistoryService historyService;
@@ -94,104 +70,86 @@ public class PhotosService {
     AwsS3Client awsS3Client;
 
     @Inject
-    PhotoProcessingService photoProcessingService;
+    RekognitionService rekognitionService;
 
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
 
-        LOG.info("Filter", filter.toString());
-        String username = Normalizer.normalize(name, Normalizer.Form.NFD);
-        username = username.toLowerCase();
-        username = username.replaceAll("\\s", "+");
-        username = username.replaceAll("[^a-zA-Z0-9+]", "");
+        LOG.info("Filter {}", filter.getDate());
+        String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
 
-        LOG.info("Fetered by Name: " + username.toString());
-
-        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
-        expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(filter.getDate()).build());
-        expressionAttributeValues.put(":edited_by", AttributeValue.builder().s(username).build());
-
-        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = this.photoClient.listItem(expressionAttributeValues);
+        LOG.info("Fetered by Name: {}", username);
+        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = this.photoProcessingService.listItensByDateAndUser(filter.getDate(), username);
 
         persistPhotoManager(photoFilterResponseDTOS);
     }
 
     public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user,
-            String tokenAuth) throws RepassaException {
+                                        String tokenAuth) throws RepassaException {
+        List<ProcessBarCodeRequestDTO.GroupPhoto> groupPhotos = processBarCodeRequestDTO.getGroupPhotos();
+        List<IdentificatorsDTO> validateIds = rekognitionService.PhotosRecognition(groupPhotos);
 
-        RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
-        List<IdentificatorsDTO> validateIds = new ArrayList<>();
-
-        processBarCodeRequestDTO.getGroupPhotos().forEach(item -> item.getPhotos().forEach(photo -> {
-            if (Objects.equals(photo.getTypePhoto(), TypePhoto.ETIQUETA)) {
-                String url = photo.getUrlPhotoBarCode();
-                String bucket = url.split("\\.")[0].replace("https://", "");
-                String pathImage = url.split("\\.com/")[1].replace("+", " ");
-
-                DetectTextRequest decReq = DetectTextRequest.builder()
-                        .image(Image.builder()
-                                .s3Object(S3Object.builder()
-                                        .bucket(bucket)
-                                        .name(pathImage)
-                                        .build())
-                                .build())
-                        .build();
-
-                DetectTextResponse decRes = rekognitionClient.detectText(decReq);
-
-                boolean foundText = false;
-                for (TextDetection textDetection : decRes.textDetections()) {
-                    String productId = extractNumber(textDetection.detectedText());
-
-                    validateIds.add(IdentificatorsDTO.builder()
-                            .groupId(item.getId())
-                            .productId(productId)
-                            .build());
-                    foundText = true;
-                    break;
-                }
-
-                if (!foundText) {
-                    validateIds.add(IdentificatorsDTO.builder()
-                            .groupId(item.getId())
-                            .productId(null)
-                            .valid(false)
-                            .build());
-                }
-            }
-        }));
-
-        rekognitionClient.close();
-
+//        RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
+//        List<IdentificatorsDTO> validateIds = new ArrayList<>();
+//
+//        processBarCodeRequestDTO.getGroupPhotos().forEach(item ->
+//                item.getPhotos().forEach(photo -> {
+//                    if (Objects.equals(photo.getTypePhoto(), TypePhoto.ETIQUETA)) {
+//                        String url = photo.getUrlPhotoBarCode();
+//                        String bucket = url.split("\\.")[0].replace("https://", "");
+//                        String pathImage = url.split("\\.com/")[1].replace("+", " ");
+//
+//                        DetectTextRequest decReq = DetectTextRequest.builder()
+//                                .image(Image.builder()
+//                                        .s3Object(S3Object.builder()
+//                                                .bucket(bucket)
+//                                                .name(pathImage)
+//                                                .build())
+//                                        .build())
+//                                .build();
+//
+//                        DetectTextResponse decRes = rekognitionClient.detectText(decReq);
+//
+//                        boolean foundText = false;
+//                        for (TextDetection textDetection : decRes.textDetections()) {
+//                            String productId = StringUtils.extractNumber(textDetection.detectedText());
+//
+//                            validateIds.add(IdentificatorsDTO.builder()
+//                                    .groupId(item.getId())
+//                                    .productId(productId)
+//                                    .build());
+//                            foundText = true;
+//                            break;
+//                        }
+//
+//                        if (!foundText) {
+//                            validateIds.add(IdentificatorsDTO.builder()
+//                                    .groupId(item.getId())
+//                                    .productId(null)
+//                                    .valid(false)
+//                                    .build());
+//                        }
+//                    }
+//                }));
+//
+//        rekognitionClient.close();
         if (validateIds.isEmpty()) {
-            throw new RepassaException(PhotoError.REKOGNITION_PHOTO_EMPTY);
+            throw new RepassaException(AwsPhotoError.REKOGNITION_PHOTO_EMPTY);
         }
 
         try {
             validateIdentificators(validateIds, tokenAuth, true);
         } catch (Exception e) {
-            throw new RepassaException(PhotoError.REKOGNITION_ERROR);
+            throw new RepassaException(AwsPhotoError.REKOGNITION_ERROR);
         }
 
         return searchPhotos(processBarCodeRequestDTO.getDate(), user);
     }
 
     public PhotosManager searchPhotos(String date, String name) {
-
-        String username = Normalizer.normalize(name, Normalizer.Form.NFD);
-        username = username.toLowerCase();
-        username = username.replaceAll("\\s", "+");
-        username = username.replaceAll("[^a-zA-Z0-9+]", "");
-
-        LOG.info("Fetered by Name: " + username.toString());
-
-        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
-        expressionAttributeValues.put(":statusManagerPhotos",
-                AttributeValue.builder().s(StatusManagerPhotos.IN_PROGRESS.name()).build());
-        expressionAttributeValues.put(":editor", AttributeValue.builder().s(username).build());
-        expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(date).build());
-
         try {
-            return photoClient.getPhotos(expressionAttributeValues);
+            String username = StringUtils.normalizerNFD(name);
+            LOG.info("Fetered by Name: {}", username);
+            return photoClient.getByEditorUploadDateAndInProgressStatus(date, name);
         } catch (RepassaException e) {
             e.printStackTrace();
             return null;
@@ -200,7 +158,7 @@ public class PhotosService {
 
     @Transactional
     public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth,
-            Boolean isOcr)
+                                                          Boolean isOcr)
             throws Exception {
         if (identificators.isEmpty()) {
             throw new RepassaException(PhotoError.VALIDATE_IDENTIFICATORS_EMPTY);
@@ -225,7 +183,7 @@ public class PhotosService {
                 } else {
                     LOG.info("PRODUCT_ID: " + identificator.getProductId());
 
-                    validateProductIDResponse(identificator.getProductId(), tokenAuth);
+                    productService.validateProductIDResponse(identificator.getProductId(), tokenAuth);
 
                     photosManager = photoClient.findByProductId(identificator.getProductId());
 
@@ -337,7 +295,7 @@ public class PhotosService {
                 throw new RuntimeException(e);
             }
         });
-        
+
         return new PhotosManager();
     }
 
@@ -420,7 +378,7 @@ public class PhotosService {
         AtomicBoolean isPhotoValid = new AtomicBoolean(Boolean.TRUE);
 
         resultList.forEach(photosFilter -> {
-
+            //CRIA PHOTO
             var photo = Photo.builder().namePhoto(photosFilter.getImageName())
                     .sizePhoto(photosFilter.getSizePhoto())
                     .id(photosFilter.getId())
@@ -428,6 +386,7 @@ public class PhotosService {
                     .urlPhoto(photosFilter.getOriginalImageUrl())
                     .base64(photosFilter.getThumbnailBase64()).build();
 
+            //Seta photoManager
             photoManager.setEditor(photosFilter.getEditedBy());
             photoManager.setDate(photosFilter.getUploadDate());
             photoManager.setId(UUID.randomUUID().toString());
@@ -499,10 +458,6 @@ public class PhotosService {
         }
     }
 
-    private String formatToCloudFrontURL(String s3URL) {
-        return s3URL.replaceAll("https://.*?\\.com", cloudFrontURL);
-    }
-
     public ProductPhotoListDTO findPhotoByProductId(String productId) throws RepassaException {
         LOG.info("Busca de fotos para o productId: {}", productId);
         try {
@@ -520,7 +475,7 @@ public class PhotosService {
                             .typePhoto(Objects.nonNull(p.getTypePhoto()) ? p.getTypePhoto().toString() : "")
                             .sizePhoto(p.getSizePhoto())
                             .namePhoto(p.getNamePhoto())
-                            .urlPhoto(formatToCloudFrontURL(p.getUrlPhoto()))
+                            .urlPhoto(StringUtils.formatToCloudFrontURL(p.getUrlPhoto(), cloudFrontURL))
                             .build())
                     .toList();
 
@@ -539,40 +494,38 @@ public class PhotosService {
         }
     }
 
-    private ProductDTO validateProductIDResponse(String productId, String tokenAuth) throws RepassaException {
-        try {
-            Response response = productRestClient.validateProductId(productId, tokenAuth);
+//    private ProductDTO validateProductIDResponse(String productId, String tokenAuth) throws RepassaException {
+//        try {
+//            Response response = productRestClient.validateProductId(productId, tokenAuth);
+//            Log.info("FOUND PRODUCT ID: ");
+//            return response.readEntity(ProductDTO.class);
+//        } catch (ClientWebApplicationException e) {
+//            throw new RepassaException(PhotoError.PRODUCT_ID_INVALIDO);
+//        }
+//    }
 
-            Log.info("FOUND PRODUCT ID: ");
-
-            return response.readEntity(ProductDTO.class);
-        } catch (ClientWebApplicationException e) {
-            throw new RepassaException(PhotoError.PRODUCT_ID_INVALIDO);
-        }
-    }
-
-    private String extractNumber(String value) {
-        // Define a expressão regular para encontrar números
-        Pattern pattern = Pattern.compile("\\d+");
-
-        // Cria um Matcher para a string de entrada
-        Matcher matcher = pattern.matcher(value);
-
-        // Inicializa uma string vazia para armazenar os números
-        StringBuilder numbers = new StringBuilder();
-
-        // Encontra todos os números e os adiciona à string de números
-        while (matcher.find()) {
-            numbers.append(matcher.group());
-        }
-
-        // Converte a string de números para um número inteiro (se necessário)
-        if (!numbers.isEmpty()) {
-            return numbers.toString();
-        }
-
-        return null;
-    }
+//    private String extractNumber(String value) {
+//        // Define a expressão regular para encontrar números
+//        Pattern pattern = Pattern.compile("\\d+");
+//
+//        // Cria um Matcher para a string de entrada
+//        Matcher matcher = pattern.matcher(value);
+//
+//        // Inicializa uma string vazia para armazenar os números
+//        StringBuilder numbers = new StringBuilder();
+//
+//        // Encontra todos os números e os adiciona à string de números
+//        while (matcher.find()) {
+//            numbers.append(matcher.group());
+//        }
+//
+//        // Converte a string de números para um número inteiro (se necessário)
+//        if (!numbers.isEmpty()) {
+//            return numbers.toString();
+//        }
+//
+//        return null;
+//    }
 
     private void createPhotosError(List<Photo> photos) {
         Photo photoError = Photo.builder().urlPhoto(errorImage).namePhoto("error").base64("")
@@ -612,8 +565,7 @@ public class PhotosService {
         }
     }
 
-    public void savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name,
-            AtomicReference<String> urlImage) {
+    public void savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name, AtomicReference<String> urlImage) throws RepassaException {
         PhotoProcessed photoProcessed = new PhotoProcessed();
 
         photoProcessed.setEditedBy(name);

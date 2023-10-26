@@ -30,10 +30,10 @@ public class PhotoError implements RepassaUtilError {
                         "Erro ao tentar atualizar o Status da Imagem.");
         public static final RepassaUtilError PHOTO_MANAGER_IS_NULL = new PhotoError("012",
                         "Não foi possível encontrar nenhum registro com os dados informado.");
-        public static final RepassaUtilError REKOGNITION_ERROR = new PhotoError("013",
-                        "Não foi possível ler a imagem.");
-        public static final RepassaUtilError REKOGNITION_PHOTO_EMPTY = new PhotoError("014",
-                        "Nenhuma imagem de etiqueta selecionada para reconhecimento. Verifique as imagens e tente novamente.");
+//        public static final RepassaUtilError REKOGNITION_ERROR = new PhotoError("013",
+//                        "Não foi possível ler a imagem.");
+//        public static final RepassaUtilError REKOGNITION_PHOTO_EMPTY = new PhotoError("014",
+//                        "Nenhuma imagem de etiqueta selecionada para reconhecimento. Verifique as imagens e tente novamente.");
         public static final RepassaUtilError GROUP_ERROR = new PhotoError("015",
                 "Não foi possível salvar a solicitacao, pois contem um grupo de fotos com erro.");
         public static final RepassaUtilError FOTOS_PRODUTO_NAO_ENCONTRADAS = new PhotoError("016",

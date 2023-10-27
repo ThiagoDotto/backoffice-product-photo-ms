@@ -46,6 +46,7 @@ import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.service.dynamo.PhotoProcessingService;
 import br.com.repassa.service.rekognition.RekognitionService;
+import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
 
 @ApplicationScoped
@@ -255,8 +256,8 @@ public class PhotosService {
 
                 urlImage.set(URL_BASE_S3 + objKey);
                 awsS3Client.uploadBase64FileToS3(bucketName, objKey, photo.getBase64());
-                this.savePhotoProcessingDynamo(photo, name, urlImage);
-                photosManager.set(savePhotoManager(imageDTO, urlImage.get()));
+                PhotoProcessed photoProcessed = this.savePhotoProcessingDynamo(photo, name, urlImage);
+                photosManager.set(savePhotoManager(imageDTO, urlImage.get(), photoProcessed));
             } catch (RepassaException e) {
                 LOG.debug("Erro ao tentar salvar as imagens para o GroupId {} ", imageDTO.getGroupId());
                 throw new RuntimeException(e);
@@ -472,7 +473,7 @@ public class PhotosService {
         photos.add(photoError);
     }
 
-    private PhotosManager savePhotoManager(ImageDTO imageDTO, String urlImage) throws RepassaException {
+    private PhotosManager savePhotoManager(ImageDTO imageDTO, String urlImage, PhotoProcessed photoProcessed) throws RepassaException {
         try {
             var photoManager = photoClient.findByGroupId(imageDTO.getGroupId());
 
@@ -486,10 +487,11 @@ public class PhotosService {
                         if (Objects.equals(groupPhotos.getId(), imageDTO.getGroupId())) {
                             imageDTO.getPhotoBase64().forEach(photoTela -> {
                                 photo.set(Photo.builder()
+                                        .id(photoProcessed.getImageId())
                                         .namePhoto(photoTela.getName())
                                         .urlPhoto(urlImage)
                                         .sizePhoto(photoTela.getSize())
-                                        .base64(photoTela.getBase64())
+                                        .base64(PhotoUtils.thumbnail(urlImage))
                                         .build());
                             });
                         }
@@ -504,7 +506,7 @@ public class PhotosService {
         }
     }
 
-    public void savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name, AtomicReference<String> urlImage)
+    public PhotoProcessed savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name, AtomicReference<String> urlImage)
             throws RepassaException {
         PhotoProcessed photoProcessed = new PhotoProcessed();
 
@@ -522,6 +524,7 @@ public class PhotosService {
         photoProcessed.setOriginalImageUrl(urlImage.get());
 
         photoProcessingService.save(photoProcessed);
+        return photoProcessed;
     }
 
     public void deletePhoto(String idPhoto, UserPrincipalDTO userPrincipalDTO) throws RepassaException {

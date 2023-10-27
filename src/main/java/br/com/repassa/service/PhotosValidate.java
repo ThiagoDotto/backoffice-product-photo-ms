@@ -20,18 +20,18 @@ public class PhotosValidate {
         imageDTO.getPhotoBase64().forEach(photo -> {
 
             byte[] decodedBytes = Base64.getMimeDecoder().decode(photo.getBase64());
-            var size = decodedBytes.length;
-            var photoIsValid = extensionTypeValidation(photo.getBase64());
+             photo.setSize(String.valueOf(decodedBytes.length));
+            photo.setType(photo.getType().replaceAll("image/", ""));
+            var photoIsValid = extensionTypeValidation(photo.getType());
 
             if (!photoIsValid) {
                 isValid.set(Boolean.FALSE);
                 photo.setNote("invalid file type");
             }
 
-            if(size > MAX_SIZE_PHOTO){
+            if(Integer.valueOf(photo.getSize()) > MAX_SIZE_PHOTO){
                 isValid.set(Boolean.FALSE);
                 photo.setNote("file size exceeded");
-                photo.setSize(String.valueOf(size));
             }
         });
 
@@ -51,9 +51,9 @@ public class PhotosValidate {
         return objectKeyWithCount;
     }
 
-    public static Boolean extensionTypeValidation(String photo){
+    public static Boolean extensionTypeValidation(String type){
 
-        if (photo.contains("jpeg") || photo.contains("jpg")) {
+        if (type.contains("jpeg") || type.contains("jpg")) {
             return true;
         }
         return false;

@@ -26,6 +26,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 import javax.ws.rs.core.HttpHeaders;
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -281,7 +282,8 @@ public class PhotosService {
         imageDTO.getPhotoBase64().forEach(photo -> {
 
             try {
-                String objKey = objectKey.concat(photo.getName() + "." + photo.getType());
+                photo.setName(photo.getName().substring(0, photo.getName().lastIndexOf(".")));
+                String objKey = objectKey.concat( photo.getName() + "." + photo.getType());
 
                 urlImage.set(URL_BASE_S3 + objKey);
                 awsS3Client.uploadBase64FileToS3(bucketName, objKey, photo.getBase64());
@@ -293,7 +295,7 @@ public class PhotosService {
             }
         });
 
-        return new PhotosManager();
+        return photosManager.get();
     }
 
     private void updatePhotoManager(PhotosManager photoManager, IdentificatorsDTO identificator)
@@ -570,7 +572,10 @@ public class PhotosService {
     public void savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name, AtomicReference<String> urlImage) throws RepassaException {
         PhotoProcessed photoProcessed = new PhotoProcessed();
 
-        photoProcessed.setEditedBy(name);
+        String username = Normalizer.normalize(name, Normalizer.Form.NFD);
+        username = username.toLowerCase();
+
+        photoProcessed.setEditedBy(username);
         photoProcessed.setIsValid("true");
         photoProcessed.setUploadDate(LocalDateTime.now().toString());
         photoProcessed.setId(UUID.randomUUID().toString());

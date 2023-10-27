@@ -170,10 +170,13 @@ public class PhotosResource {
     @APIResponses(value = {
             @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ChangeTypePhotoDTO.class, type = SchemaType.ARRAY))),
     })
-    @Path("/change-type-photo")
-    public Response deletePhoto(@QueryParam("idPhoto") String idPhoto)
-            throws RepassaException {
-        //photosService.deletePhoto(idPhoto);
+    public Response deletePhoto(@QueryParam("idPhoto") String idPhoto) throws Exception {
+        UserPrincipalDTO userPrincipalDTO = UserPrincipalDTO.builder()
+                .id(this.token.getClaim(Claims.sub))
+                .email(this.token.getClaim(Claims.email))
+                .firtName(this.token.getClaim("name"))
+                .build();
+        photosService.deletePhoto(idPhoto, userPrincipalDTO);
         return Response.ok().build();
     }
 }

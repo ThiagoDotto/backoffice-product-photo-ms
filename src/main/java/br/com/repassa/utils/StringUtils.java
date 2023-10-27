@@ -32,4 +32,10 @@ public class StringUtils {
         }
         return null;
     }
+
+    public static String replacePlusToBackspace(String url) {
+        String[] split = url.split("/");
+        String userName = split[1].replaceAll("\\+", " ");
+        return url.replace(split[1],userName);
+    }
 }

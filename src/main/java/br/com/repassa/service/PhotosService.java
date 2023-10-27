@@ -27,10 +27,7 @@ import javax.inject.Inject;
 import javax.transaction.Transactional;
 import javax.ws.rs.core.HttpHeaders;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,7 +38,7 @@ public class PhotosService {
 
     private static final Logger LOG = LoggerFactory.getLogger(PhotosService.class);
 
-    private static final String URL_ERROR_IMAGE = "https://backoffice-triage-photo-dev.s3.amazonaws.com/invalidPhoto.png";
+//    private static final String URL_ERROR_IMAGE = "https://backoffice-triage-photo-dev.s3.amazonaws.com/invalidPhoto.png";
 
     private static final String URL_BASE_S3 = "https://backoffice-triage-photo-dev.s3.amazonaws.com/";
 
@@ -147,9 +144,9 @@ public class PhotosService {
 
     public PhotosManager searchPhotos(String date, String name) {
         try {
-            String username = StringUtils.normalizerNFD(name);
+            String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
             LOG.info("Fetered by Name: {}", username);
-            return photoClient.getByEditorUploadDateAndInProgressStatus(date, name);
+            return photoClient.getByEditorUploadDateAndInProgressStatus(date, username);
         } catch (RepassaException e) {
             e.printStackTrace();
             return null;
@@ -528,8 +525,13 @@ public class PhotosService {
 //    }
 
     private void createPhotosError(List<Photo> photos) {
-        Photo photoError = Photo.builder().urlPhoto(errorImage).namePhoto("error").base64("")
-                .sizePhoto("0").build();
+        Photo photoError = Photo.builder()
+                .urlPhoto(errorImage)
+                .id(UUID.randomUUID().toString())
+                .namePhoto("error")
+                .base64("")
+                .sizePhoto("0")
+                .build();
         photos.add(photoError);
     }
 
@@ -579,5 +581,46 @@ public class PhotosService {
         photoProcessed.setOriginalImageUrl(urlImage.get());
 
         photoProcessingService.save(photoProcessed);
+    }
+
+    public void deletePhoto(String idPhoto, UserPrincipalDTO userPrincipalDTO) throws Exception {
+        try {
+            LOG.debug("Buscando Photo no Dynamo");
+            PhotosManager photosManager = photoClient.findByImageId(idPhoto);
+            if (Objects.isNull(photosManager)) {
+                LOG.debug("Photo não encontrada no Dynamo");
+                throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
+            }
+            photosManager.getGroupPhotos().forEach(groupPhotos -> {
+                List<Photo> photos = groupPhotos.getPhotos();
+
+                Iterator<Photo> iteratorPhotos = photos.iterator();
+                while (iteratorPhotos.hasNext()) {
+                    Photo photo = iteratorPhotos.next();
+                    int sizePhoto = Integer.parseInt(photo.getSizePhoto());
+                    if (isPhotoEqual(idPhoto, photo) && isEditorEquals(userPrincipalDTO, photosManager)) {
+                        if(sizePhoto > 0){
+                            LOG.info("Removendo Photo {} no S3", photo.getId());
+                            awsS3Client.removeImageByUrl(bucketName, photo.getUrlPhoto().replace("+", " "));
+                        }
+                        iteratorPhotos.remove();
+                    }
+                }
+            });
+            LOG.debug("Atualizando o PhotosManager no Dynamo");
+            photoClient.savePhotosManager(photosManager);
+        } catch (RepassaException e) {
+            LOG.debug("Atualizando o PhotosManager no Dynamo");
+            throw new RepassaException(PhotoError.DELETE_PHOTO);
+        }
+    }
+
+    private static boolean isEditorEquals(UserPrincipalDTO userPrincipalDTO, PhotosManager photosManager) {
+        String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(userPrincipalDTO.getFirtName()));
+        return photosManager.getEditor().equals(username);
+    }
+
+    private static boolean isPhotoEqual(String idPhoto, Photo photo) {
+        return Objects.nonNull(photo.getId()) && (photo.getId().equals(idPhoto));
     }
 }

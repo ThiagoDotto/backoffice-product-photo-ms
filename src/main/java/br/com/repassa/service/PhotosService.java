@@ -17,6 +17,7 @@ import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.service.dynamo.PhotoProcessingService;
 import br.com.repassa.service.rekognition.RekognitionService;
+import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
@@ -555,7 +556,7 @@ public class PhotosService {
                                         .namePhoto(photoTela.getName())
                                         .urlPhoto(urlImage)
                                         .sizePhoto(photoTela.getSize())
-                                        .base64(photoTela.getBase64())
+                                        .base64(PhotoUtils.thumbnail(urlImage))
                                         .build());
                             });
                         }

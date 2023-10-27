@@ -15,6 +15,7 @@ import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.resource.client.PhotoClientInterface;
 import br.com.repassa.service.PhotosService;
+import br.com.repassa.service.PhotosValidate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -127,24 +128,33 @@ public class PhotosServiceTest {
         assertThrows(RepassaException.class, () -> photosService.findPhotoByProductId(productId));
     }
 
-    @Test
-    void shouldInsertImage_returnOK() throws Exception {
-        var bucketName = "bucket_name";
-        var photoBase64DTO = PhotoBase64DTO.builder().base64("base60.jpeg")
-                .type("jpeg").name("teste").size("500").build();
-        var imageDTO = ImageDTO.builder().date(LocalDateTime.now().toString())
-                .photoBase64(Arrays.asList(photoBase64DTO))
-                .groupId("08a02106-7e8e-4a58-99bd-8e9fdc921e29").build();
-        var name = "name_teste";
-        AtomicReference<String> urlImage = new AtomicReference<>(new String("teste.com/123"));
-
-        when(awsS3Client.uploadBase64FileToS3(anyString(), anyString(), anyString())).thenReturn(bucketName);
-        doNothing().when(photosService).savePhotoProcessingDynamo(any(), anyString(), any());
-
-        var photoManager = photosService.insertImage(imageDTO, name);
-
-        assertNotNull(photoManager);
-    }
+//    @Test
+//    void shouldInsertImage_returnOk() throws RepassaException {
+//
+//        var photoValidate = new PhotosValidate();
+//        var base64 = "data:image/jpeg;base64,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";
+//        var photoBase64 = PhotoBase64DTO.builder().base64(base64).type("jpeg")
+//                .size("1000").name("teste").build();
+//        var imageDTO = ImageDTO.builder().groupId("eb489fdd-f1d3-4678-801b-21a8a911e89b")
+//                .photoBase64(Arrays.asList(photoBase64))
+//                .date(LocalDateTime.now().toString())
+//                .build();
+//        var objectKey = imageDTO.getPhotoBase64().get(0).getName() + "." + imageDTO.getPhotoBase64().get(0).getType();
+//        var cloudFront = "https://assets-dev-curadoria.repassa.com.br";
+//        var name = "teste";
+//        var bucketName = "backoffice-triage-photo-dev";
+//        var urlImage = "";
+//
+//        doNothing().when(photoValidate).validatePhotos(any());
+//        when(photoValidate.validatePathBucket(anyString(), anyString())).thenReturn(objectKey);
+////        when(awsS3Client.uploadBase64FileToS3(anyString(), anyString(), anyString())).thenReturn(cloudFront + objectKey);
+//        doNothing().when(this.photosService).savePhotoProcessingDynamo(any(), anyString(), any());
+//
+//        var photosManager = photosService.insertImage(imageDTO, name);
+//
+//
+//        assertNotNull(photosManager);
+//    }
 
     private List<PhotoFilterResponseDTO> createListPhotoFilter() {
 

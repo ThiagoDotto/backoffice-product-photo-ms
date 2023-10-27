@@ -21,7 +21,6 @@ public class PhotoProcessingService {
     private static final String TABLE_NAME = "PhotoProcessingTable";
     private static final String SUCCESSFUL_STATS = "successful";
 
-
     public void save(PhotoProcessed photoProcessed) throws RepassaException {
         try {
             DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
@@ -48,6 +47,27 @@ public class PhotoProcessingService {
             LOGGER.debug("Item saved successfully!");
         } catch (DynamoDbException | RepassaException e) {
             LOGGER.error("Unable to save item. {}", photoProcessed.getId());
+            throw new RepassaException(AwsPhotoError.DYNAMO_CONNECTION);
+        }
+    }
+
+    public void removeItemByPhotoId(String photoId) throws RepassaException {
+        try {
+            DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+            Map<String, AttributeValue> item = new HashMap<>();
+
+            item.put("image_id", AttributeValue.builder().s(photoId).build());
+
+            // Criando solicitação para excluir o item
+            DeleteItemRequest deleteRequest = DeleteItemRequest.builder()
+                    .tableName(TABLE_NAME)
+                    .key(item)
+                    .build();
+
+            // Excluindo item da tabela
+            dynamoDB.deleteItem(deleteRequest);
+        } catch (DynamoDbException | RepassaException e) {
+            LOGGER.error("Error remove item photoId. {}", photoId);
             throw new RepassaException(AwsPhotoError.DYNAMO_CONNECTION);
         }
     }

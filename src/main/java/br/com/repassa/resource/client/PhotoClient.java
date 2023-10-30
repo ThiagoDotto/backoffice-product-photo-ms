@@ -5,6 +5,7 @@ import br.com.repassa.config.DynamoClient;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.enums.StatusManagerPhotos;
+import br.com.repassa.exception.AwsPhotoError;
 import br.com.repassa.exception.PhotoError;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -12,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 
@@ -51,22 +53,27 @@ public class PhotoClient {
         return parseJsonToObject(items);
     }
 
-    public PhotosManager findByImageId(String imageId) throws Exception {
-        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+    public PhotosManager findByImageId(String imageId) throws RepassaException {
+        try {
+            DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
 
-        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+            Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
 
-        expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + imageId + "\"").build());
+            expressionAttributeValues.put(":groupPhotos",
+                    AttributeValue.builder().s("\"id\":\"" + imageId + "\"").build());
 
-        ScanRequest scanRequest = ScanRequest.builder()
-                .tableName(TABLE_NAME_PHOTOS)
-                .filterExpression("contains(groupPhotos, :groupPhotos)")
-                .expressionAttributeValues(expressionAttributeValues)
-                .build();
+            ScanRequest scanRequest = ScanRequest.builder()
+                    .tableName(TABLE_NAME_PHOTOS)
+                    .filterExpression("contains(groupPhotos, :groupPhotos)")
+                    .expressionAttributeValues(expressionAttributeValues)
+                    .build();
 
-        ScanResponse items = dynamoDB.scan(scanRequest);
+            ScanResponse items = dynamoDB.scan(scanRequest);
 
-        return parseJsonToObject(items);
+            return parseJsonToObject(items);
+        } catch (DynamoDbException | JsonProcessingException e) {
+            throw new RepassaException(AwsPhotoError.DYNAMO_CONNECTION);
+        }
     }
 
     public PhotosManager findByImageAndGroupId(String imageId, String groupId) throws Exception {
@@ -126,7 +133,8 @@ public class PhotoClient {
         return parseJsonToObject(items);
     }
 
-    public PhotosManager getByEditorUploadDateAndInProgressStatus(String date, String userName) throws RepassaException {
+    public PhotosManager getByEditorUploadDateAndInProgressStatus(String date, String userName)
+            throws RepassaException {
 
         try {
             PhotosManager responseDTO = null;

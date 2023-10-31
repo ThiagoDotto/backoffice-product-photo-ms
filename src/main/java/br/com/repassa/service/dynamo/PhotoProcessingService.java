@@ -54,19 +54,34 @@ public class PhotoProcessingService {
     public void removeItemByPhotoId(String photoId) throws RepassaException {
         try {
             DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
-            Map<String, AttributeValue> item = new HashMap<>();
 
-            item.put("image_id", AttributeValue.builder().s(photoId).build());
+            Map<String, AttributeValue> itemFilterMap = new HashMap<>();
+            itemFilterMap.put(":image_id", AttributeValue.builder().s(photoId).build());
 
-            // Criando solicitação para excluir o item
-            DeleteItemRequest deleteRequest = DeleteItemRequest.builder()
+            ScanRequest.Builder scanRequest = ScanRequest.builder()
                     .tableName(TABLE_NAME)
-                    .key(item)
-                    .build();
+                    .filterExpression("image_id = :image_id")
+                    .expressionAttributeValues(itemFilterMap);
 
-            // Excluindo item da tabela
-            dynamoDB.deleteItem(deleteRequest);
-        } catch (DynamoDbException | RepassaException e) {
+            ScanResponse scanResponse = dynamoDB.scan(scanRequest.build());
+
+            scanResponse.items().forEach(item -> {
+                Map<String, AttributeValue> itemMap = new HashMap<>();
+
+                String idItem = item.get("id").s();
+                itemMap.put("id", AttributeValue.builder().s(idItem).build());
+
+                // Criando solicitação para excluir o item
+                DeleteItemRequest deleteRequest = DeleteItemRequest.builder()
+                        .tableName(TABLE_NAME)
+                        .key(itemMap)
+                        .build();
+
+                // Excluindo item da tabela
+                dynamoDB.deleteItem(deleteRequest);
+                LOGGER.info("item {} excluído", photoId);
+            });
+        } catch (DynamoDbException e) {
             LOGGER.error("Error remove item photoId. {}", photoId);
             throw new RepassaException(AwsPhotoError.DYNAMO_CONNECTION);
         }

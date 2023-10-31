@@ -1,37 +1,8 @@
 package br.com.repassa.service;
 
-import java.text.Normalizer;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.transaction.Transactional;
-import javax.ws.rs.core.HttpHeaders;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.dto.ChangeTypePhotoDTO;
-import br.com.repassa.dto.IdentificatorsDTO;
-import br.com.repassa.dto.ImageDTO;
-import br.com.repassa.dto.PhotoBase64DTO;
-import br.com.repassa.dto.PhotoFilterDTO;
-import br.com.repassa.dto.PhotoFilterResponseDTO;
-import br.com.repassa.dto.ProcessBarCodeRequestDTO;
-import br.com.repassa.dto.ProductPhotoDTO;
-import br.com.repassa.dto.ProductPhotoListDTO;
+import br.com.repassa.dto.*;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -45,9 +16,25 @@ import br.com.repassa.exception.PhotoError;
 import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.resource.client.PhotoClient;
 import br.com.repassa.service.dynamo.PhotoProcessingService;
+import br.com.repassa.service.rekognition.PhotoRemoveService;
 import br.com.repassa.service.rekognition.RekognitionService;
 import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.transaction.Transactional;
+import javax.ws.rs.core.HttpHeaders;
+import java.text.Normalizer;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class PhotosService {
@@ -82,6 +69,9 @@ public class PhotosService {
     @Inject
     RekognitionService rekognitionService;
 
+    @Inject
+    PhotoRemoveService photoRemoveService;
+
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
 
         LOG.info("Filter {}", filter.getDate());
@@ -95,7 +85,7 @@ public class PhotosService {
     }
 
     public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user,
-            String tokenAuth) throws RepassaException {
+                                        String tokenAuth) throws RepassaException {
         List<ProcessBarCodeRequestDTO.GroupPhoto> groupPhotos = processBarCodeRequestDTO.getGroupPhotos();
         List<IdentificatorsDTO> validateIds = rekognitionService.PhotosRecognition(groupPhotos);
 
@@ -125,7 +115,7 @@ public class PhotosService {
 
     @Transactional
     public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth,
-            Boolean isOcr)
+                                                          Boolean isOcr)
             throws Exception {
         if (identificators.isEmpty()) {
             throw new RepassaException(PhotoError.VALIDATE_IDENTIFICATORS_EMPTY);
@@ -528,13 +518,15 @@ public class PhotosService {
     }
 
     public void deletePhoto(String idPhoto, UserPrincipalDTO userPrincipalDTO) throws RepassaException {
+
+        LOG.debug("Buscando Photo no Dynamo");
+        PhotosManager photosManager = photoClient.findByImageId(idPhoto);
+        if (Objects.isNull(photosManager)) {
+            LOG.debug("Photo não encontrada no Dynamo");
+            throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
+        }
+
         try {
-            LOG.debug("Buscando Photo no Dynamo");
-            PhotosManager photosManager = photoClient.findByImageId(idPhoto);
-            if (Objects.isNull(photosManager)) {
-                LOG.debug("Photo não encontrada no Dynamo");
-                throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
-            }
             photosManager.getGroupPhotos().forEach(groupPhotos -> {
                 List<Photo> photos = groupPhotos.getPhotos();
 
@@ -544,15 +536,7 @@ public class PhotosService {
                     int sizePhoto = Integer.parseInt(photo.getSizePhoto());
                     if (isPhotoEqual(idPhoto, photo) && isEditorEquals(userPrincipalDTO, photosManager)) {
                         if (sizePhoto > 0) {
-                            LOG.info("Removendo Photo {} no S3", photo.getId());
-                            awsS3Client.removeImageByUrl(bucketName, photo.getUrlPhoto().replace("+", " "));
-
-                            LOG.info("Removendo Photo {} na tabela ProcessingTable", photo.getId());
-                            try {
-                                photoProcessingService.removeItemByPhotoId(photo.getId());
-                            } catch (RepassaException e) {
-                                LOG.error("Erro ao remover a PhotoID {} na tabela ProcessingTable", photo.getId());
-                            }
+                            photoRemoveService.remove(photo);
                         }
                         iteratorPhotos.remove();
                     }
@@ -561,7 +545,6 @@ public class PhotosService {
             LOG.debug("Atualizando o PhotosManager no Dynamo");
             photoClient.savePhotosManager(photosManager);
         } catch (RepassaException e) {
-            LOG.debug("Atualizando o PhotosManager no Dynamo");
             throw new RepassaException(PhotoError.DELETE_PHOTO);
         }
     }

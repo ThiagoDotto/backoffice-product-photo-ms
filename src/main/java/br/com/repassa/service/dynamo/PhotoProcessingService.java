@@ -67,7 +67,7 @@ public class PhotoProcessingService {
             // Excluindo item da tabela
             dynamoDB.deleteItem(deleteRequest);
         } catch (DynamoDbException | RepassaException e) {
-            LOGGER.error("Error remove item photoId. {}", photoId);
+            LOGGER.error("Error remove item photoId. {}, {}", photoId , e.getMessage());
             throw new RepassaException(AwsPhotoError.DYNAMO_CONNECTION);
         }
     }

@@ -56,7 +56,8 @@ public class PhotoProcessingService {
             DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
             Map<String, AttributeValue> item = new HashMap<>();
 
-            item.put("image_id", AttributeValue.builder().s(photoId).build());
+//            item.put("image_id", AttributeValue.builder().s(photoId).build());
+            item.put("id", AttributeValue.builder().s("f0c0acb9-8a07-4cc1-87db-8efc74e28ebb").build());
 
             // Criando solicitação para excluir o item
             DeleteItemRequest deleteRequest = DeleteItemRequest.builder()

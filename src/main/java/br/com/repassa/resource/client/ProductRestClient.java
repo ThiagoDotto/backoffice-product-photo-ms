@@ -14,7 +14,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 @RegisterRestClient(configKey = "product-resource")
 public interface ProductRestClient {
     @GET
-    @Path("/validate")
+    @Path("/verifyproduct")
     @Produces(MediaType.APPLICATION_JSON)
-    Response validateProductId(@QueryParam("productId") String productId, @HeaderParam("Authorization") String token);
+    Response verifyProduct(@QueryParam("productId") String productId, @HeaderParam("Authorization") String token);
 }

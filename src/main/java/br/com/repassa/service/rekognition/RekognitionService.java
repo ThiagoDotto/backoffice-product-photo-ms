@@ -1,14 +1,18 @@
 package br.com.repassa.service.rekognition;
 
+import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.dto.IdentificatorsDTO;
+import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.dto.ProcessBarCodeRequestDTO;
 import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.resource.client.RekognitionBarClient;
+import br.com.repassa.service.dynamo.PhotoProcessingService;
 import br.com.repassa.utils.StringUtils;
 import software.amazon.awssdk.services.rekognition.RekognitionClient;
 import software.amazon.awssdk.services.rekognition.model.*;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -16,6 +20,9 @@ import java.util.Objects;
 @ApplicationScoped
 public class RekognitionService {
 
+
+    @Inject
+    PhotoProcessingService photoProcessingService;
 
     public List<IdentificatorsDTO> PhotosRecognition(List<ProcessBarCodeRequestDTO.GroupPhoto> groupPhotos) {
         RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
@@ -28,35 +35,41 @@ public class RekognitionService {
                         String bucket = url.split("\\.")[0].replace("https://", "");
                         String pathImage = url.split("\\.com/")[1].replace("+", " ");
 
-                        DetectTextRequest decReq = DetectTextRequest.builder()
-                                .image(Image.builder()
-                                        .s3Object(S3Object.builder()
-                                                .bucket(bucket)
-                                                .name(pathImage)
-                                                .build())
-                                        .build())
-                                .build();
 
-                        DetectTextResponse decRes = rekognitionClient.detectText(decReq);
+                        PhotoFilterResponseDTO photoFound = photoProcessingService.findPhoto(photo.getIdPhoto());
+                        if (Objects.nonNull(photoFound) &&
+                                Boolean.TRUE.equals(Boolean.valueOf(photoFound.getIsValid()))) {
 
-                        boolean foundText = false;
-                        for (TextDetection textDetection : decRes.textDetections()) {
-                            String productId = StringUtils.extractNumber(textDetection.detectedText());
+                            DetectTextRequest decReq = DetectTextRequest.builder()
+                                    .image(Image.builder()
+                                            .s3Object(S3Object.builder()
+                                                    .bucket(bucket)
+                                                    .name(pathImage)
+                                                    .build())
+                                            .build())
+                                    .build();
 
-                            validateIds.add(IdentificatorsDTO.builder()
-                                    .groupId(item.getId())
-                                    .productId(productId)
-                                    .build());
-                            foundText = true;
-                            break;
-                        }
+                            DetectTextResponse decRes = rekognitionClient.detectText(decReq);
 
-                        if (!foundText) {
-                            validateIds.add(IdentificatorsDTO.builder()
-                                    .groupId(item.getId())
-                                    .productId(null)
-                                    .valid(false)
-                                    .build());
+                            boolean foundText = false;
+                            for (TextDetection textDetection : decRes.textDetections()) {
+                                String productId = StringUtils.extractNumber(textDetection.detectedText());
+
+                                validateIds.add(IdentificatorsDTO.builder()
+                                        .groupId(item.getId())
+                                        .productId(productId)
+                                        .build());
+                                foundText = true;
+                                break;
+                            }
+
+                            if (!foundText) {
+                                validateIds.add(IdentificatorsDTO.builder()
+                                        .groupId(item.getId())
+                                        .productId(null)
+                                        .valid(false)
+                                        .build());
+                            }
                         }
                     }
                 }));

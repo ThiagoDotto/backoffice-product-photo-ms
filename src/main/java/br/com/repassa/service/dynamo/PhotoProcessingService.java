@@ -152,4 +152,27 @@ public class PhotoProcessingService {
 
         return resultList;
     }
+
+    public PhotoFilterResponseDTO findPhoto(String idPhoto) {
+
+        DynamoDbClient dynamoDB;
+        try {
+            dynamoDB = DynamoClient.openDynamoDBConnection();
+            Map<String, AttributeValue> itemFilterMap = new HashMap<>();
+            itemFilterMap.put(":image_id", AttributeValue.builder().s(idPhoto).build());
+
+            ScanRequest.Builder scanRequest = ScanRequest.builder()
+                    .tableName(TABLE_NAME)
+                    .filterExpression("image_id = :image_id")
+                    .expressionAttributeValues(itemFilterMap);
+
+            ScanResponse scanResponse = dynamoDB.scan(scanRequest.build());
+            List<PhotoFilterResponseDTO> photoFilterResponseDTOS = mapPhotoFilter(scanResponse);
+            Optional<PhotoFilterResponseDTO> first = photoFilterResponseDTOS.stream().findFirst();
+            return first.orElse(new PhotoFilterResponseDTO());
+        } catch (RepassaException e) {
+            LOGGER.error(e.getMessage());
+        }
+        return new PhotoFilterResponseDTO();
+    }
 }

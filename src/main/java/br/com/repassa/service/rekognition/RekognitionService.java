@@ -1,14 +1,19 @@
 package br.com.repassa.service.rekognition;
 
+import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.dto.IdentificatorsDTO;
+import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.dto.ProcessBarCodeRequestDTO;
 import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.resource.client.RekognitionBarClient;
+import br.com.repassa.service.PhotosValidate;
+import br.com.repassa.service.dynamo.PhotoProcessingService;
 import br.com.repassa.utils.StringUtils;
 import software.amazon.awssdk.services.rekognition.RekognitionClient;
 import software.amazon.awssdk.services.rekognition.model.*;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -17,9 +22,13 @@ import java.util.Objects;
 public class RekognitionService {
 
 
+    @Inject
+    PhotoProcessingService photoProcessingService;
+
     public List<IdentificatorsDTO> PhotosRecognition(List<ProcessBarCodeRequestDTO.GroupPhoto> groupPhotos) {
         RekognitionClient rekognitionClient = new RekognitionBarClient().openConnection();
         List<IdentificatorsDTO> validateIds = new ArrayList<>();
+
 
         groupPhotos.forEach(item ->
                 item.getPhotos().forEach(photo -> {

@@ -235,7 +235,10 @@ public class PhotosService {
         var photosValidate = new PhotosValidate();
         AtomicReference<String> urlImage = new AtomicReference<>(new String());
 
-        photosValidate.validatePhotos(imageDTO);
+        if (!photosValidate.validate(imageDTO)) {
+            throw new RepassaException(PhotoError.ERROR_VALID_PHOTO);
+        }
+
         var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
         AtomicReference<PhotosManager> photosManager = new AtomicReference<>(new PhotosManager());
         imageDTO.getPhotoBase64().forEach(photo -> {

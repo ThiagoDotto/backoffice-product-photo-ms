@@ -167,7 +167,9 @@ public class PhotoProcessingService {
                     .expressionAttributeValues(itemFilterMap);
 
             ScanResponse scanResponse = dynamoDB.scan(scanRequest.build());
-            return mapPhotoFilter(scanResponse).stream().findFirst().get();
+            List<PhotoFilterResponseDTO> photoFilterResponseDTOS = mapPhotoFilter(scanResponse);
+            Optional<PhotoFilterResponseDTO> first = photoFilterResponseDTOS.stream().findFirst();
+            return first.orElse(new PhotoFilterResponseDTO());
         } catch (RepassaException e) {
             LOGGER.error(e.getMessage());
         }

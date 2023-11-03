@@ -1,8 +1,37 @@
 package br.com.repassa.service;
 
+import java.text.Normalizer;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.transaction.Transactional;
+import javax.ws.rs.core.HttpHeaders;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.dto.*;
+import br.com.repassa.dto.ChangeTypePhotoDTO;
+import br.com.repassa.dto.IdentificatorsDTO;
+import br.com.repassa.dto.ImageDTO;
+import br.com.repassa.dto.PhotoBase64DTO;
+import br.com.repassa.dto.PhotoFilterDTO;
+import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.dto.ProcessBarCodeRequestDTO;
+import br.com.repassa.dto.ProductPhotoDTO;
+import br.com.repassa.dto.ProductPhotoListDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -20,21 +49,6 @@ import br.com.repassa.service.rekognition.PhotoRemoveService;
 import br.com.repassa.service.rekognition.RekognitionService;
 import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.transaction.Transactional;
-import javax.ws.rs.core.HttpHeaders;
-import java.text.Normalizer;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class PhotosService {
@@ -85,19 +99,17 @@ public class PhotosService {
     }
 
     public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user,
-                                        String tokenAuth) throws RepassaException {
+            String tokenAuth) throws RepassaException {
         List<ProcessBarCodeRequestDTO.GroupPhoto> groupPhotos = processBarCodeRequestDTO.getGroupPhotos();
 
         List<PhotoFilterResponseDTO> photosError = new ArrayList<>();
-        groupPhotos.forEach(item ->
-                item.getPhotos().forEach(photo -> {
-                            PhotoFilterResponseDTO photoFound = photoProcessingService.findPhoto(photo.getIdPhoto());
-                            if (Objects.nonNull(photoFound) &&
-                                    Boolean.FALSE.equals(Boolean.valueOf(photoFound.getIsValid()))) {
-                                photosError.add(photoFound);
-                            }
-                        }
-                ));
+        groupPhotos.forEach(item -> item.getPhotos().forEach(photo -> {
+            PhotoFilterResponseDTO photoFound = photoProcessingService.findPhoto(photo.getIdPhoto());
+            if (Objects.nonNull(photoFound) &&
+                    Boolean.FALSE.equals(Boolean.valueOf(photoFound.getIsValid()))) {
+                photosError.add(photoFound);
+            }
+        }));
 
         if (!photosError.isEmpty()) {
             throw new RepassaException(PhotoError.ERROR_VALID_PHOTO);
@@ -131,7 +143,7 @@ public class PhotosService {
 
     @Transactional
     public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth,
-                                                          Boolean isOcr)
+            Boolean isOcr)
             throws Exception {
         if (identificators.isEmpty()) {
             throw new RepassaException(PhotoError.VALIDATE_IDENTIFICATORS_EMPTY);
@@ -164,7 +176,7 @@ public class PhotosService {
 
                     if (photosManager == null) {
                         identificator.setValid(true);
-                        identificator.setMessage("ID de Produto disponível");
+                        identificator.setMessage("ID Disponível");
                     } else {
                         if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.IN_PROGRESS) {
                             // Verifica se encontrou outro Grupo com o mesmo ID
@@ -174,28 +186,19 @@ public class PhotosService {
                                             && !identificator.getGroupId().equals(group.getId()))
                                     .collect(Collectors.toList());
 
-                            if (foundGroupPhotos.size() >= 2) {
+                            if (foundGroupPhotos.size() >= 1) {
                                 identificator.setMessage(
-                                        "O ID do Produto " + identificator.getProductId()
-                                                + " está sendo utilizado em outro Grupo.");
+                                        "Essa peça já está com imagens associadas. A adição de novas imagens não é possível.");
                                 identificator.setValid(false);
                                 photosManager = photoClient.findByGroupId(identificator.getGroupId());
 
-                            } else if (foundGroupPhotos.size() == 1
-                                    && !foundGroupPhotos.get(0).getId().equals(identificator.getGroupId())) {
-                                identificator.setMessage(
-                                        "O ID do Produto " + identificator.getProductId()
-                                                + " está sendo utilizado em outro Grupo.");
-                                identificator.setValid(false);
-
-                                photosManager = photoClient.findByGroupId(identificator.getGroupId());
                             } else {
                                 identificator.setValid(true);
-                                identificator.setMessage("ID de Produto disponível");
+                                identificator.setMessage("ID Disponível");
                             }
                         } else if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
-                            identificator.setMessage("O ID do Produto " + identificator.getProductId()
-                                    + " está sendo utilizado em outro Grupo com status Finalizado.");
+                            identificator.setMessage(
+                                    "Essa peça já está com imagens associadas. A adição de novas imagens não é possível.");
                             identificator.setValid(false);
                         }
                     }
@@ -214,7 +217,7 @@ public class PhotosService {
             } catch (RepassaException repassaException) {
                 if (repassaException.getRepassaUtilError().getErrorCode().equals(PhotoError.PRODUCT_ID_INVALIDO
                         .getErrorCode())) {
-                    identificator.setMessage("O ID " + identificator.getProductId() + " é inválido");
+                    identificator.setMessage("ID não encontrado");
                     identificator.setValid(false);
                     response.add(identificator);
                 } else {
@@ -482,7 +485,8 @@ public class PhotosService {
         photos.add(photoError);
     }
 
-    private PhotosManager savePhotoManager(ImageDTO imageDTO, String urlImage, PhotoProcessed photoProcessed) throws RepassaException {
+    private PhotosManager savePhotoManager(ImageDTO imageDTO, String urlImage, PhotoProcessed photoProcessed)
+            throws RepassaException {
         try {
             var photoManager = photoClient.findByGroupId(imageDTO.getGroupId());
 
@@ -515,7 +519,8 @@ public class PhotosService {
         }
     }
 
-    public PhotoProcessed savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name, AtomicReference<String> urlImage)
+    public PhotoProcessed savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name,
+            AtomicReference<String> urlImage)
             throws RepassaException {
         PhotoProcessed photoProcessed = new PhotoProcessed();
 

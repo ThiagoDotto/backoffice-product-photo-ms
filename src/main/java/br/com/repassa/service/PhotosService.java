@@ -156,7 +156,7 @@ public class PhotosService {
                 } else {
                     LOG.info("PRODUCT_ID: " + identificator.getProductId());
 
-                    productService.validateProductIDResponse(identificator.getProductId(), tokenAuth);
+                    productService.verifyProduct(identificator.getProductId(), tokenAuth);
 
                     photosManager = photoClient.findByProductId(identificator.getProductId());
 

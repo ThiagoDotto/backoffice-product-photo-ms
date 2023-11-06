@@ -29,6 +29,7 @@ import br.com.repassa.dto.ImageDTO;
 import br.com.repassa.dto.PhotoBase64DTO;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.dto.PhotoInsertValidateDTO;
 import br.com.repassa.dto.ProcessBarCodeRequestDTO;
 import br.com.repassa.dto.ProductPhotoDTO;
 import br.com.repassa.dto.ProductPhotoListDTO;
@@ -254,27 +255,35 @@ public class PhotosService {
         var photosValidate = new PhotosValidate();
         AtomicReference<String> urlImage = new AtomicReference<>(new String());
 
-        if (!photosValidate.validate(imageDTO)) {
-            throw new RepassaException(PhotoError.ERROR_VALID_PHOTO);
-        }
-
         var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
         AtomicReference<PhotosManager> photosManager = new AtomicReference<>(new PhotosManager());
-        imageDTO.getPhotoBase64().forEach(photo -> {
+
+        for (var i = 0; i < imageDTO.getPhotoBase64().size(); i++) {
+            PhotoBase64DTO photo = imageDTO.getPhotoBase64().get(i);
 
             try {
                 photo.setName(photo.getName().substring(0, photo.getName().lastIndexOf(".")));
                 String objKey = objectKey.concat(photo.getName() + "." + photo.getType());
 
                 urlImage.set(URL_BASE_S3 + objKey);
-                awsS3Client.uploadBase64FileToS3(bucketName, objKey, photo.getBase64());
-                PhotoProcessed photoProcessed = this.savePhotoProcessingDynamo(photo, name, urlImage);
-                photosManager.set(savePhotoManager(imageDTO, urlImage.get(), photoProcessed));
+
+                PhotoInsertValidateDTO photoInsertValidate = photosValidate.validatePhoto(photo);
+
+                if (photoInsertValidate.isValid()) {
+                    awsS3Client.uploadBase64FileToS3(bucketName, objKey, photo.getBase64());
+                    PhotoProcessed photoProcessed = this.savePhotoProcessingDynamo(photo, name, urlImage);
+                    photosManager.set(savePhotoManager(imageDTO, urlImage.get(), photoProcessed));
+                } else {
+                    imageDTO.getPhotoBase64().add(i, photoInsertValidate.getPhoto());
+
+                    photosManager.set(savePhotoManager(imageDTO, urlImage.get(), null));
+                }
+
             } catch (RepassaException e) {
                 LOG.debug("Erro ao tentar salvar as imagens para o GroupId {} ", imageDTO.getGroupId());
                 throw new RuntimeException(e);
             }
-        });
+        }
 
         return photosManager.get();
     }
@@ -384,13 +393,6 @@ public class PhotosService {
                 count.set(0);
                 isPhotoValid.set(Boolean.TRUE);
 
-            } else if (photos.size() < 4
-                    && (resultList.size() - managerGroupPhotos.getTotalPhotos()) == photos.size()) {
-
-                while (photos.size() < 4) {
-                    createPhotosError(photos);
-                }
-                managerGroupPhotos.addPhotos(photos, new AtomicBoolean(Boolean.FALSE));
             }
         });
 
@@ -474,17 +476,6 @@ public class PhotosService {
         }
     }
 
-    private void createPhotosError(List<Photo> photos) {
-        Photo photoError = Photo.builder()
-                .urlPhoto(errorImage)
-                .id(UUID.randomUUID().toString())
-                .namePhoto("error")
-                .base64("")
-                .sizePhoto("0")
-                .build();
-        photos.add(photoError);
-    }
-
     private PhotosManager savePhotoManager(ImageDTO imageDTO, String urlImage, PhotoProcessed photoProcessed)
             throws RepassaException {
         try {
@@ -497,17 +488,29 @@ public class PhotosService {
             AtomicReference<Photo> photo = new AtomicReference<>(new Photo());
             photoManager.getGroupPhotos()
                     .forEach(groupPhotos -> {
+
                         if (Objects.equals(groupPhotos.getId(), imageDTO.getGroupId())) {
                             imageDTO.getPhotoBase64().forEach(photoTela -> {
+                                String imageId = UUID.randomUUID().toString();
+                                String imageBase64 = null;
+
+                                if(photoProcessed == null) {
+                                    groupPhotos.setImageError(TypeError.IMAGE_ERROR.name());
+                                } else {
+                                    imageId = photoProcessed.getImageId();
+                                    imageBase64 = PhotoUtils.thumbnail(urlImage);
+                                }
+
                                 photo.set(Photo.builder()
-                                        .id(photoProcessed.getImageId())
-                                        .namePhoto(photoTela.getName())
+                                        .id(imageId)
+                                         .namePhoto(photoTela.getName())
                                         .urlPhoto(urlImage)
                                         .sizePhoto(photoTela.getSize())
-                                        .base64(PhotoUtils.thumbnail(urlImage))
+                                        .base64(imageBase64)
                                         .build());
                             });
                         }
+
                         groupPhotos.getPhotos().add(photo.get());
                     });
 

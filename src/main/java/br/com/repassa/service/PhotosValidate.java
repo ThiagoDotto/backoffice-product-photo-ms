@@ -1,39 +1,36 @@
 package br.com.repassa.service;
 
-import br.com.repassa.dto.ImageDTO;
-
 import java.text.Normalizer;
 import java.util.Base64;
-import java.util.concurrent.atomic.AtomicBoolean;
+
+import br.com.repassa.dto.PhotoBase64DTO;
+import br.com.repassa.dto.PhotoInsertValidateDTO;
 
 public class PhotosValidate {
 
     private static final int MAX_SIZE_PHOTO = 15728640;
 
+    public PhotoInsertValidateDTO validatePhoto(PhotoBase64DTO photo) {
+        PhotoInsertValidateDTO responseDto = new PhotoInsertValidateDTO();
 
-    public boolean validate(ImageDTO imageDTO) {
+        byte[] decodedBytes = Base64.getMimeDecoder().decode(photo.getBase64());
+        photo.setSize(String.valueOf(decodedBytes.length));
+        photo.setType(photo.getType().replaceAll("image/", ""));
+        var photoIsValid = extensionTypeValidation(photo.getType());
 
-        var isValid = new AtomicBoolean(Boolean.TRUE);
+        if (Boolean.FALSE.equals(photoIsValid)) {
+            responseDto.setValid(false);
+            photo.setNote("Formato de arquivo inválido. São aceitos somente JPG ou JPEG");
+        }
 
-        imageDTO.getPhotoBase64().forEach(photo -> {
+        if (Integer.parseInt(photo.getSize()) > MAX_SIZE_PHOTO) {
+            responseDto.setValid(false);
+            photo.setNote("Tamanho do arquivo inválido. São aceitos arquivos de até 15Mb");
+        }
 
-            byte[] decodedBytes = Base64.getMimeDecoder().decode(photo.getBase64());
-            photo.setSize(String.valueOf(decodedBytes.length));
-            photo.setType(photo.getType().replaceAll("image/", ""));
-            var photoIsValid = extensionTypeValidation(photo.getType());
+        responseDto.setPhoto(photo);
 
-            if (Boolean.FALSE.equals(photoIsValid)) {
-                isValid.set(Boolean.FALSE);
-                photo.setNote("invalid file type");
-            }
-
-            if (Integer.parseInt(photo.getSize()) > MAX_SIZE_PHOTO) {
-                isValid.set(Boolean.FALSE);
-                photo.setNote("file size exceeded");
-            }
-        });
-        return isValid.get();
-
+        return responseDto;
     }
 
     public String validatePathBucket(String name, String date) {

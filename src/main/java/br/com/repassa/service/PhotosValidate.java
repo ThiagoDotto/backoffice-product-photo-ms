@@ -23,14 +23,16 @@ public class PhotosValidate {
             photo.setNote("Formato de arquivo inválido. São aceitos somente JPG ou JPEG");
         }
 
-        if (Integer.parseInt(photo.getSize()) > MAX_SIZE_PHOTO) {
+        if (isGreatThanMaxSize(photo.getSize())) {
             responseDto.setValid(false);
             photo.setNote("Tamanho do arquivo inválido. São aceitos arquivos de até 15Mb");
         }
-
         responseDto.setPhoto(photo);
-
         return responseDto;
+    }
+
+    public static boolean isGreatThanMaxSize(String photoMaxSize) {
+        return Integer.parseInt(photoMaxSize) > MAX_SIZE_PHOTO;
     }
 
     public String validatePathBucket(String name, String date) {
@@ -44,7 +46,7 @@ public class PhotosValidate {
         return objectKeyWithCount;
     }
 
-    public static Boolean extensionTypeValidation(String type) {
+    public static boolean extensionTypeValidation(String type) {
 
         if (type.contains("jpeg") || type.contains("jpg")) {
             return true;

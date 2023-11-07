@@ -1,29 +1,8 @@
 package br.com.repassa.service;
 
-import java.text.Normalizer;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.transaction.Transactional;
-import javax.ws.rs.core.HttpHeaders;
-
-import br.com.repassa.dto.*;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
+import br.com.repassa.dto.*;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -41,6 +20,21 @@ import br.com.repassa.service.rekognition.PhotoRemoveService;
 import br.com.repassa.service.rekognition.RekognitionService;
 import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.transaction.Transactional;
+import javax.ws.rs.core.HttpHeaders;
+import java.text.Normalizer;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class PhotosService {
@@ -354,8 +348,8 @@ public class PhotosService {
         AtomicInteger count = new AtomicInteger();
         AtomicBoolean isPhotoValid = new AtomicBoolean(Boolean.TRUE);
 
-        resultList.forEach(photosFilter -> {
-            // CRIA PHOTO
+        for (int pos = 0; pos <= resultList.size() - 1; pos++) {
+            PhotoFilterResponseDTO photosFilter = resultList.get(pos);
             var photo = Photo.builder().namePhoto(photosFilter.getImageName())
                     .sizePhoto(photosFilter.getSizePhoto())
                     .id(photosFilter.getImageId())
@@ -371,24 +365,27 @@ public class PhotosService {
             photos.add(photo);
             count.set(count.get() + 1);
 
-            if (!Boolean.valueOf(photosFilter.getIsValid())) {
+            if (Boolean.FALSE.equals(Boolean.valueOf(photosFilter.getIsValid()))) {
                 isPhotoValid.set(Boolean.FALSE);
             }
 
-            if (photos.size() == 4) {
+            if (photos.size() % 4 == 0) {
                 managerGroupPhotos.addPhotos(photos, isPhotoValid);
                 photos.clear();
                 count.set(0);
                 isPhotoValid.set(Boolean.TRUE);
-
             }
-        });
 
+            if (photos.size() % 4 != 0 && resultList.size() - 1 == pos) {
+                managerGroupPhotos.addPhotos(photos, isPhotoValid);
+                photos.clear();
+                count.set(0);
+                isPhotoValid.set(Boolean.TRUE);
+            }
+        }
         photoManager.setStatusManagerPhotos(StatusManagerPhotos.IN_PROGRESS);
         photoManager.setGroupPhotos(groupPhotos);
-
         persistPhotoManagerDynamoDB(photoManager);
-
     }
 
     @Transactional

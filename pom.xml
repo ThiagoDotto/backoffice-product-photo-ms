@@ -19,7 +19,7 @@
 <!--        <quarkus-amazon-services.version>2.5.2</quarkus-amazon-services.version>-->
 
         <surefire-plugin.version>3.0.0</surefire-plugin.version>
-        <org.mapstruct.version>1.5.3.Final</org.mapstruct.version>
+        <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
         <projectlombok.version>1.18.26</projectlombok.version>
         <jacoco.version>0.8.8</jacoco.version>
         <coverage.minimum.test>0.0</coverage.minimum.test>

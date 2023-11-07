@@ -1,15 +1,15 @@
 package br.com.repassa.service;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.reactive.ClientWebApplicationException;
+
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.resource.client.ProductRestClient;
 import io.quarkus.logging.Log;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.resteasy.reactive.ClientWebApplicationException;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.ws.rs.core.Response;
 
 @ApplicationScoped
 public class ProductService {

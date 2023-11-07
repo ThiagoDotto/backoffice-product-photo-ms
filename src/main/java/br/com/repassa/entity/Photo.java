@@ -26,5 +26,7 @@ public class Photo implements Serializable {
     private String sizePhoto;
     private String base64;
     private TypePhoto typePhoto;
+    @Builder.Default
+    private String note = null;
 
 }

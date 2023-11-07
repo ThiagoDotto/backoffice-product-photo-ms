@@ -44,9 +44,9 @@ public class PhotoProcessingService {
                     .build();
 
             dynamoDB.putItem(putItemRequest);
-            LOGGER.debug("Item saved successfully!");
+            LOGGER.debug("Item saved on DynamoDB successfully!");
         } catch (DynamoDbException | RepassaException e) {
-            LOGGER.error("Unable to save item. {}", photoProcessed.getId());
+            LOGGER.error("Unable to save item. {} on DynamoDB", photoProcessed.getId());
             throw new RepassaException(AwsPhotoError.DYNAMO_CONNECTION);
         }
     }

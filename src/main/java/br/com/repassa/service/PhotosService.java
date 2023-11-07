@@ -17,22 +17,13 @@ import javax.inject.Inject;
 import javax.transaction.Transactional;
 import javax.ws.rs.core.HttpHeaders;
 
+import br.com.repassa.dto.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.dto.ChangeTypePhotoDTO;
-import br.com.repassa.dto.IdentificatorsDTO;
-import br.com.repassa.dto.ImageDTO;
-import br.com.repassa.dto.PhotoBase64DTO;
-import br.com.repassa.dto.PhotoFilterDTO;
-import br.com.repassa.dto.PhotoFilterResponseDTO;
-import br.com.repassa.dto.PhotoInsertValidateDTO;
-import br.com.repassa.dto.ProcessBarCodeRequestDTO;
-import br.com.repassa.dto.ProductPhotoDTO;
-import br.com.repassa.dto.ProductPhotoListDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -100,7 +91,7 @@ public class PhotosService {
     }
 
     public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user,
-            String tokenAuth) throws RepassaException {
+                                        String tokenAuth) throws RepassaException {
         List<ProcessBarCodeRequestDTO.GroupPhoto> groupPhotos = processBarCodeRequestDTO.getGroupPhotos();
 
         List<PhotoFilterResponseDTO> photosError = new ArrayList<>();
@@ -144,7 +135,7 @@ public class PhotosService {
 
     @Transactional
     public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth,
-            Boolean isOcr)
+                                                          Boolean isOcr)
             throws Exception {
         if (identificators.isEmpty()) {
             throw new RepassaException(PhotoError.VALIDATE_IDENTIFICATORS_EMPTY);
@@ -264,9 +255,7 @@ public class PhotosService {
             try {
                 photo.setName(photo.getName().substring(0, photo.getName().lastIndexOf(".")));
                 String objKey = objectKey.concat(photo.getName() + "." + photo.getType());
-
                 urlImage.set(URL_BASE_S3 + objKey);
-
                 PhotoInsertValidateDTO photoInsertValidate = photosValidate.validatePhoto(photo);
 
                 if (photoInsertValidate.isValid()) {
@@ -274,8 +263,7 @@ public class PhotosService {
                     PhotoProcessed photoProcessed = this.savePhotoProcessingDynamo(photo, name, urlImage);
                     photosManager.set(savePhotoManager(imageDTO, urlImage.get(), photoProcessed));
                 } else {
-                    imageDTO.getPhotoBase64().add(i, photoInsertValidate.getPhoto());
-
+                    imageDTO.getPhotoBase64().set(i, photoInsertValidate.getPhoto());
                     photosManager.set(savePhotoManager(imageDTO, urlImage.get(), null));
                 }
 
@@ -494,7 +482,7 @@ public class PhotosService {
                                 String imageId = UUID.randomUUID().toString();
                                 String imageBase64 = null;
 
-                                if(photoProcessed == null) {
+                                if (photoProcessed == null) {
                                     groupPhotos.setImageError(TypeError.IMAGE_ERROR.name());
                                 } else {
                                     imageId = photoProcessed.getImageId();
@@ -503,10 +491,11 @@ public class PhotosService {
 
                                 photo.set(Photo.builder()
                                         .id(imageId)
-                                         .namePhoto(photoTela.getName())
+                                        .namePhoto(photoTela.getName())
                                         .urlPhoto(urlImage)
                                         .sizePhoto(photoTela.getSize())
                                         .base64(imageBase64)
+                                        .note(photoTela.getNote())
                                         .build());
                             });
                         }
@@ -523,7 +512,7 @@ public class PhotosService {
     }
 
     public PhotoProcessed savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name,
-            AtomicReference<String> urlImage)
+                                                    AtomicReference<String> urlImage)
             throws RepassaException {
         PhotoProcessed photoProcessed = new PhotoProcessed();
 

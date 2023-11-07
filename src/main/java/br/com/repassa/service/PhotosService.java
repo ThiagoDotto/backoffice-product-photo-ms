@@ -435,19 +435,24 @@ public class PhotosService {
             }
 
             final var lastGroupPhotoIndex = photoManager.getGroupPhotos().size() - 1;
-
-            final var productPhotoDTOList = photoManager.getGroupPhotos().get(lastGroupPhotoIndex).getPhotos().stream()
-                    .map(p -> ProductPhotoDTO.builder()
-                            .id(p.getId())
-                            .typePhoto(Objects.nonNull(p.getTypePhoto()) ? p.getTypePhoto().toString() : "")
-                            .sizePhoto(p.getSizePhoto())
-                            .namePhoto(p.getNamePhoto())
-                            .urlPhoto(StringUtils.formatToCloudFrontURL(p.getUrlPhoto(), cloudFrontURL))
-                            .build())
-                    .toList();
+            final var groupPhotos = photoManager.getGroupPhotos().get(lastGroupPhotoIndex);
 
             LOG.info("Busca de fotos para o productId {} realizada com sucesso", productId);
-            return ProductPhotoListDTO.builder().photos(productPhotoDTOList).build();
+
+            if (StatusProduct.FINISHED.equals(groupPhotos.getStatusProduct())) {
+                var productPhotoDTOList = groupPhotos.getPhotos().stream()
+                        .map(p -> ProductPhotoDTO.builder()
+                                .id(p.getId())
+                                .typePhoto(Objects.nonNull(p.getTypePhoto()) ? p.getTypePhoto().toString() : "")
+                                .sizePhoto(p.getSizePhoto())
+                                .namePhoto(p.getNamePhoto())
+                                .urlPhoto(StringUtils.formatToCloudFrontURL(p.getUrlPhoto(), cloudFrontURL))
+                                .build())
+                        .toList();
+                return ProductPhotoListDTO.builder().photos(productPhotoDTOList).build();
+            } else {
+                return ProductPhotoListDTO.builder().photos(List.of()).build();
+            }
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_IMAGENS);
         }

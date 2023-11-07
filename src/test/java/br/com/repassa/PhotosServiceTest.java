@@ -10,6 +10,7 @@ import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
+import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.resource.client.PhotoClient;
@@ -93,6 +94,7 @@ public class PhotosServiceTest {
 
         final var groupPhoto = GroupPhotos.builder()
                 .photos(List.of(photo))
+                .statusProduct(StatusProduct.FINISHED)
                 .build();
 
         final var productManager = PhotosManager.builder()
@@ -106,6 +108,35 @@ public class PhotosServiceTest {
         assertNotNull(actual);
         assertEquals(1, actual.getPhotos().size());
         assertEquals("PRINCIPAL", actual.getPhotos().get(0).getTypePhoto());
+    }
+
+    @Test
+    void shouldNotGetPhotosByProductIdWhenNotFinished() throws Exception {
+        final var productId = "10203040";
+
+        final var photo = Photo.builder()
+                .id("id")
+                .namePhoto("name")
+                .urlPhoto("url")
+                .typePhoto(TypePhoto.PRINCIPAL)
+                .sizePhoto("size")
+                .build();
+
+        final var groupPhoto = GroupPhotos.builder()
+                .photos(List.of(photo))
+                .statusProduct(StatusProduct.IN_PROGRESS)
+                .build();
+
+        final var productManager = PhotosManager.builder()
+                .groupPhotos(List.of(groupPhoto))
+                .build();
+
+        when(photoClient.findByProductId(anyString())).thenReturn(productManager);
+
+        final var actual = photosService.findPhotoByProductId(productId);
+
+        assertNotNull(actual);
+        assertEquals(0, actual.getPhotos().size());
     }
 
     @Test

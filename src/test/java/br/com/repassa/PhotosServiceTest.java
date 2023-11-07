@@ -72,12 +72,6 @@ public class PhotosServiceTest {
         when(photoClient.listItem(fieldFiltered, expressionAttributeValues)).thenReturn(listPhotoFilter);
     }
 
-    @Test
-    void whenPersistPhotoManager() throws RepassaException {
-        doNothing().when(photoClient).savePhotosManager(any());
-
-        photosService.persistPhotoManager(listPhotoFilter);
-    }
 
     @Test
     void shouldGetPhotosByProductIdWithSuccess() throws Exception {

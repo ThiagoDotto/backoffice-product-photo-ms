@@ -350,12 +350,23 @@ public class PhotosService {
 
         for (int pos = 0; pos <= resultList.size() - 1; pos++) {
             PhotoFilterResponseDTO photosFilter = resultList.get(pos);
+            String[] imageName = photosFilter.getImageName().split("\\.");
+
             var photo = Photo.builder().namePhoto(photosFilter.getImageName())
                     .sizePhoto(photosFilter.getSizePhoto())
                     .id(photosFilter.getImageId())
                     .typePhoto(TypePhoto.getPosition(count.get()))
                     .urlPhoto(photosFilter.getOriginalImageUrl())
                     .base64(photosFilter.getThumbnailBase64()).build();
+
+
+            if (Boolean.FALSE.equals(PhotosValidate.extensionTypeValidation(imageName[1]))) {
+                photo.setNote("Formato de arquivo inválido. São aceitos somente JPG ou JPEG");
+            }
+
+            if (PhotosValidate.isGreatThanMaxSize(photo.getSizePhoto())) {
+                photo.setNote("Tamanho do arquivo inválido. São aceitos arquivos de até 15Mb");
+            }
 
             // Seta photoManager
             photoManager.setEditor(photosFilter.getEditedBy());

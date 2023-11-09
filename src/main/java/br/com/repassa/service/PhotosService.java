@@ -455,8 +455,10 @@ public class PhotosService {
                 return ProductPhotoListDTO.builder().photos(List.of()).build();
             }
 
-            final var lastGroupPhotoIndex = photoManager.getGroupPhotos().size() - 1;
-            final var groupPhotos = photoManager.getGroupPhotos().get(lastGroupPhotoIndex);
+            final var groupPhotos = photoManager.getGroupPhotos().stream()
+                    .filter(p -> productId.equals(p.getProductId()))
+                    .findFirst()
+                    .orElse(new GroupPhotos());
 
             LOG.info("Busca de fotos para o productId {} realizada com sucesso", productId);
 

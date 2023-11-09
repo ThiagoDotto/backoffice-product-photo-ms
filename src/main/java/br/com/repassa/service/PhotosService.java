@@ -15,12 +15,14 @@ import br.com.repassa.exception.AwsPhotoError;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.resource.client.PhotoClient;
+import br.com.repassa.resource.client.ProductRestClient;
 import br.com.repassa.service.dynamo.PhotoProcessingService;
 import br.com.repassa.service.rekognition.PhotoRemoveService;
 import br.com.repassa.service.rekognition.RekognitionService;
 import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +67,9 @@ public class PhotosService {
 
     @Inject
     AwsS3Client awsS3Client;
+
+    @RestClient
+    ProductRestClient productRestClient;
 
     @Inject
     RekognitionService rekognitionService;
@@ -402,6 +407,8 @@ public class PhotosService {
     @Transactional
     public void finishManagerPhotos(String id, UserPrincipalDTO loggerUser, HttpHeaders headers) throws Exception {
 
+        String tokenAuth = headers.getHeaderString("Authorization");
+
         if (Objects.isNull(id)) {
             throw new RepassaException(PhotoError.OBJETO_VAZIO);
         }
@@ -431,6 +438,9 @@ public class PhotosService {
         try {
             photoClient.savePhotosManager(photosManager);
             historyService.save(photosManager, loggerUser, headers);
+            photosManager.getGroupPhotos().stream()
+                    .map(groupPhotos -> Long.parseLong(groupPhotos.getProductId()))
+                    .forEach(productId -> productRestClient.updatePhotographyStatus(productId, tokenAuth));
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_SALVAR_NO_DYNAMO);
         }

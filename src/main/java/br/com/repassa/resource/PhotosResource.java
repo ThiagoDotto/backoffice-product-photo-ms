@@ -136,7 +136,7 @@ public class PhotosResource {
     @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Finaliza Gerencia de Fotos",
-            description = "endpoint usado para finalizar o procosesso de gerencia de fotos")
+            description = "endpoint usado para finalizar o processo de gerencia de fotos")
     @Path("/finish-manager-bags")
     public void finishManagerPhotos(@RequestBody FinishPhotoManagerDTO finishPhotoManagerDTO) throws Exception {
         UserPrincipalDTO userPrincipalDTO = UserPrincipalDTO.builder()

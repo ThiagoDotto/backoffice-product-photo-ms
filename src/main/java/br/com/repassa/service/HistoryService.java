@@ -40,21 +40,19 @@ public class HistoryService {
 
         List<HistoryDTO> historyDTOS = historiesObjsBuilder(loggerUser, groupPhotos, histories);
         LOGGER.debug("Salvando no History as photos");
-        historyDTOS.stream().forEach(historyDTO ->
+        historyDTOS.forEach(historyDTO ->
                 historyClient.updateHistory(historyDTO,headers.getHeaderString("Authorization")));
     }
 
     private static List<HistoryDTO> historiesObjsBuilder(UserPrincipalDTO loggerUser, List<GroupPhotos> groupPhotos, List<HistoryDTO> histories) {
         groupPhotos
-                .stream()
                 .forEach(groupPhoto -> {
                     String productId = groupPhoto.getProductId();
-                    String bagID = productId.substring(1, productId.length() - 3);
+                    String bagID = productId.substring(0, productId.length() - 3);
                     List<Photo> photos = groupPhoto.getPhotos();
 
                     List<PhotoDTO> foto = new ArrayList<>();
-                    photos.stream()
-                            .forEach(photo -> {
+                    photos.forEach(photo -> {
                                 PhotoDTO photoDTO = new PhotoDTO();
                                 photoDTO.setName(photo.getNamePhoto());
                                 photoDTO.setId(photo.getId());

@@ -177,7 +177,7 @@ public class PhotoClient {
 
             return responseDTO;
         } catch (Exception e) {
-            log.error("Erro nao esperado ao buscar as Fotoso no DynamoDB");
+            log.error("Erro nao esperado ao buscar as Fotos no DynamoDB");
             e.printStackTrace();
             throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_IMAGENS);
         }

@@ -90,6 +90,7 @@ public class PhotosServiceTest {
 
         final var groupPhoto = GroupPhotos.builder()
                 .photos(List.of(photo))
+                .productId("10203040")
                 .statusProduct(StatusProduct.FINISHED)
                 .build();
 

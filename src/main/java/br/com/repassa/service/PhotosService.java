@@ -544,10 +544,11 @@ public class PhotosService {
                                         .base64(imageBase64)
                                         .note(photoTela.getNote())
                                         .build());
+
+                                groupPhotos.getPhotos().add(photo.get());
                             });
                         }
 
-                        groupPhotos.getPhotos().add(photo.get());
                     });
 
             photoClient.savePhotosManager(photoManager);

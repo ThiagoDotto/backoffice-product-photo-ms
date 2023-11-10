@@ -122,7 +122,7 @@ public class PhotosService {
             });
 
             if (count.get() == validateIds.size()) {
-                if(validateIds.size() > 1) {
+                if (validateIds.size() > 1) {
                     throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND_N);
                 } else {
                     throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND);
@@ -270,8 +270,8 @@ public class PhotosService {
             PhotoBase64DTO photo = imageDTO.getPhotoBase64().get(i);
 
             try {
-                String[] nameAux = photo.getName().split("."); // [0] - Apenas o nome do arquivo
-                String[] typeAux = photo.getType().split("/"); // [1] - Apenas a extensão do arquivo
+                String[] nameAux = photo.getName().split("\\."); // [0] - Apenas o nome do arquivo
+                String[] typeAux = photo.getType().split("\\/"); // [1] - Apenas a extensão do arquivo
                 String newNameFile = nameAux[0] + "." + typeAux[1]; // Nome do arquivo com base na extensão que está
                                                                     // sendo passada
 

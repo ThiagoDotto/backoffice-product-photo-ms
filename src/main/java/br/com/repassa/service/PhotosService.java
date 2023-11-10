@@ -112,6 +112,24 @@ public class PhotosService {
             throw new RepassaException(AwsPhotoError.REKOGNITION_PHOTO_EMPTY);
         }
 
+        if (groupPhotos.size() == validateIds.size()) {
+            AtomicInteger count = new AtomicInteger(0);
+
+            validateIds.forEach(productId -> {
+                if (!productId.getValid()) {
+                    count.incrementAndGet();
+                }
+            });
+
+            if (count.get() == validateIds.size()) {
+                if(validateIds.size() > 1) {
+                    throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND_N);
+                } else {
+                    throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND);
+                }
+            }
+        }
+
         try {
             validateIdentificators(validateIds, tokenAuth, true);
         } catch (Exception e) {
@@ -254,8 +272,9 @@ public class PhotosService {
             try {
                 String[] nameAux = photo.getName().split("."); // [0] - Apenas o nome do arquivo
                 String[] typeAux = photo.getType().split("/"); // [1] - Apenas a extensão do arquivo
-                String newNameFile = nameAux[0] + "." + typeAux[1]; // Nome do arquivo com base na extensão que está sendo passada
-                
+                String newNameFile = nameAux[0] + "." + typeAux[1]; // Nome do arquivo com base na extensão que está
+                                                                    // sendo passada
+
                 photo.setName(newNameFile);
                 String objKey = objectKey.concat(newNameFile);
                 urlImage.set(URL_BASE_S3 + objKey);

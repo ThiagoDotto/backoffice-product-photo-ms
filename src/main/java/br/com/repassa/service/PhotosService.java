@@ -90,7 +90,7 @@ public class PhotosService {
     }
 
     public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user,
-                                        String tokenAuth) throws RepassaException {
+            String tokenAuth) throws RepassaException {
         List<ProcessBarCodeRequestDTO.GroupPhoto> groupPhotos = processBarCodeRequestDTO.getGroupPhotos();
 
         List<PhotoFilterResponseDTO> photosError = new ArrayList<>();
@@ -110,6 +110,24 @@ public class PhotosService {
 
         if (validateIds.isEmpty()) {
             throw new RepassaException(AwsPhotoError.REKOGNITION_PHOTO_EMPTY);
+        }
+
+        if (groupPhotos.size() == validateIds.size()) {
+            AtomicInteger count = new AtomicInteger(0);
+
+            validateIds.forEach(productId -> {
+                if (!productId.getValid()) {
+                    count.incrementAndGet();
+                }
+            });
+
+            if (count.get() == validateIds.size()) {
+                if (validateIds.size() > 1) {
+                    throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND_N);
+                } else {
+                    throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND);
+                }
+            }
         }
 
         try {
@@ -134,7 +152,7 @@ public class PhotosService {
 
     @Transactional
     public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth,
-                                                          Boolean isOcr)
+            Boolean isOcr)
             throws Exception {
         if (identificators.isEmpty()) {
             throw new RepassaException(PhotoError.VALIDATE_IDENTIFICATORS_EMPTY);
@@ -244,22 +262,27 @@ public class PhotosService {
 
         var photosValidate = new PhotosValidate();
         AtomicReference<String> urlImage = new AtomicReference<>(new String());
-
-        var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
+        String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
+        var objectKey = photosValidate.validatePathBucket(username, imageDTO.getDate());
         AtomicReference<PhotosManager> photosManager = new AtomicReference<>(new PhotosManager());
 
         for (var i = 0; i < imageDTO.getPhotoBase64().size(); i++) {
             PhotoBase64DTO photo = imageDTO.getPhotoBase64().get(i);
 
             try {
-                photo.setName(photo.getName().substring(0, photo.getName().lastIndexOf(".")));
-                String objKey = objectKey.concat(photo.getName() + "." + photo.getType());
+                String[] nameAux = photo.getName().split("\\."); // [0] - Apenas o nome do arquivo
+                String[] typeAux = photo.getType().split("\\/"); // [1] - Apenas a extensão do arquivo
+                String newNameFile = nameAux[0] + "." + typeAux[1]; // Nome do arquivo com base na extensão que está
+                                                                    // sendo passada
+
+                photo.setName(newNameFile);
+                String objKey = objectKey.concat(newNameFile);
                 urlImage.set(URL_BASE_S3 + objKey);
                 PhotoInsertValidateDTO photoInsertValidate = photosValidate.validatePhoto(photo);
 
                 if (photoInsertValidate.isValid()) {
                     awsS3Client.uploadBase64FileToS3(bucketName, objKey, photo.getBase64());
-                    PhotoProcessed photoProcessed = this.savePhotoProcessingDynamo(photo, name, urlImage);
+                    PhotoProcessed photoProcessed = this.savePhotoProcessingDynamo(photo, username, urlImage);
                     photosManager.set(savePhotoManager(imageDTO, urlImage.get(), photoProcessed));
                 } else {
                     imageDTO.getPhotoBase64().set(i, photoInsertValidate.getPhoto());
@@ -363,7 +386,6 @@ public class PhotosService {
                     .typePhoto(TypePhoto.getPosition(count.get()))
                     .urlPhoto(photosFilter.getOriginalImageUrl())
                     .base64(photosFilter.getThumbnailBase64()).build();
-
 
             if (Boolean.FALSE.equals(PhotosValidate.extensionTypeValidation(imageName[1]))) {
                 photo.setNote("Formato de arquivo inválido. São aceitos somente JPG ou JPEG");
@@ -536,13 +558,9 @@ public class PhotosService {
         }
     }
 
-    public PhotoProcessed savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String name,
-                                                    AtomicReference<String> urlImage)
-            throws RepassaException {
+    public PhotoProcessed savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String username,
+            AtomicReference<String> urlImage) throws RepassaException {
         PhotoProcessed photoProcessed = new PhotoProcessed();
-
-        String username = Normalizer.normalize(name, Normalizer.Form.NFD);
-        username = username.toLowerCase();
 
         photoProcessed.setEditedBy(username);
         photoProcessed.setIsValid("true");

@@ -263,7 +263,7 @@ public class PhotosService {
         var photosValidate = new PhotosValidate();
         AtomicReference<String> urlImage = new AtomicReference<>(new String());
         String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
-        var objectKey = photosValidate.validatePathBucket(username, imageDTO.getDate());
+        var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
         AtomicReference<PhotosManager> photosManager = new AtomicReference<>(new PhotosManager());
 
         for (var i = 0; i < imageDTO.getPhotoBase64().size(); i++) {
@@ -544,10 +544,11 @@ public class PhotosService {
                                         .base64(imageBase64)
                                         .note(photoTela.getNote())
                                         .build());
+
+                                groupPhotos.getPhotos().add(photo.get());
                             });
                         }
 
-                        groupPhotos.getPhotos().add(photo.get());
                     });
 
             photoClient.savePhotosManager(photoManager);

@@ -18,7 +18,7 @@ import java.util.*;
 @ApplicationScoped
 public class PhotoProcessingService {
     private static final Logger LOGGER = LoggerFactory.getLogger(PhotoProcessingService.class);
-    private static final String TABLE_NAME = "PhotoProcessingTable_QA";
+    private static final String TABLE_NAME = "PhotoProcessingTable";
     private static final String SUCCESSFUL_STATS = "successful";
 
     public void save(PhotoProcessed photoProcessed) throws RepassaException {
@@ -109,6 +109,7 @@ public class PhotoProcessingService {
             }
 
             ScanResponse items = dynamoDB.scan(scanRequest.build());
+            LOGGER.info("ENTROU AQUI");
             photoFilterResponseDTOS.addAll(mapPhotoFilter(items));
             lastEvaluatedKey = items.lastEvaluatedKey();
 

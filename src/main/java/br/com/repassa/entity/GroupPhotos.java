@@ -7,6 +7,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import br.com.repassa.enums.StatusProduct;
+import br.com.repassa.enums.TypeError;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

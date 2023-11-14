@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 public class PhotosService {
     private static final Logger LOG = LoggerFactory.getLogger(PhotosService.class);
 
-    private static final String URL_BASE_S3 = "https://backoffice-triage-photo-dev.s3.amazonaws.com/";
+    private static final String URL_BASE_S3 = "https://backoffice-triage-photo-qa.s3.amazonaws.com/";
 
     @ConfigProperty(name = "s3.aws.bucket-name")
     String bucketName;
@@ -263,7 +263,7 @@ public class PhotosService {
         var photosValidate = new PhotosValidate();
         AtomicReference<String> urlImage = new AtomicReference<>(new String());
         String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
-        var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
+        var objectKey = photosValidate.validatePathBucket(username, imageDTO.getDate());
         AtomicReference<PhotosManager> photosManager = new AtomicReference<>(new PhotosManager());
 
         for (var i = 0; i < imageDTO.getPhotoBase64().size(); i++) {

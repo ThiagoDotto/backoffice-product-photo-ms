@@ -109,7 +109,6 @@ public class PhotoProcessingService {
             }
 
             ScanResponse items = dynamoDB.scan(scanRequest.build());
-            LOGGER.info("ENTROU AQUI");
             photoFilterResponseDTOS.addAll(mapPhotoFilter(items));
             lastEvaluatedKey = items.lastEvaluatedKey();
 

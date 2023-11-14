@@ -14,7 +14,7 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 public class PhotosManagerRepositoryImpl  {
 
     private final DynamoDbClient dynamoDB;
-    private final String TABLE_NAME = "PhotosManager_QA";
+    private final String TABLE_NAME = "PhotosManager";
 
     public PhotosManagerRepositoryImpl(DynamoDbClient dynamoDBClient) {
         this.dynamoDB = dynamoDBClient;

@@ -3,8 +3,8 @@ s3:
     access-key-id: AKIAJWITEVM4HXREFLYA
     secret-access-key: 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
     region: us-east-1
-    bucket-name: backoffice-triage-photo-dev
-    error-image : https://backoffice-triage-photo-dev.s3.amazonaws.com/invalidPhoto.png
+    bucket-name: backoffice-triage-photo-stg
+    error-image : https://backoffice-triage-photo-qa.s3.amazonaws.com/invalidPhoto.png
 
 quarkus:
   devservices:
@@ -20,6 +20,7 @@ quarkus:
 
   http:
     root-path: /${project.artifactId}
+    port: 3000
 
   application:
     name: @project.artifactId@ # nome da aplicação será usando para definir o repositório de configura para o config-server
@@ -32,4 +33,4 @@ quarkus:
 
   spring-cloud-config:
     enabled: true # conexão com o config-server está disabilitado por padrão
-    url: https://api-java-dev.repassa.net.br/backoffice-spring-config/
+    url: https://api-java-qa.repassa.net.br/backoffice-spring-config/

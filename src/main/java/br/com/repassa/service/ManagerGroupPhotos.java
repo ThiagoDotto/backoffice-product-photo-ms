@@ -1,15 +1,15 @@
 package br.com.repassa.service;
 
+import br.com.repassa.entity.GroupPhotos;
+import br.com.repassa.entity.Photo;
+import br.com.repassa.enums.StatusProduct;
+import br.com.repassa.enums.TypeError;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import br.com.repassa.entity.GroupPhotos;
-import br.com.repassa.entity.Photo;
-import br.com.repassa.enums.StatusProduct;
-import br.com.repassa.enums.TypeError;
 
 public class ManagerGroupPhotos {
 

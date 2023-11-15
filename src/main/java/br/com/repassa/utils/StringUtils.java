@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 public class StringUtils {
     public static String normalizerNFD(String name) {
-        return Normalizer.normalize(name, Normalizer.Form.NFD);
+        return Normalizer.normalize(name, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", "");
     }
 
     public static String replaceCaracterSpecial(String string) {

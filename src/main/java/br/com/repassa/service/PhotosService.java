@@ -263,7 +263,7 @@ public class PhotosService {
         var photosValidate = new PhotosValidate();
         AtomicReference<String> urlImage = new AtomicReference<>(new String());
         String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
-        var objectKey = photosValidate.validatePathBucket(name, imageDTO.getDate());
+        var objectKey = photosValidate.validatePathBucket(username, imageDTO.getDate());
         AtomicReference<PhotosManager> photosManager = new AtomicReference<>(new PhotosManager());
 
         for (var i = 0; i < imageDTO.getPhotoBase64().size(); i++) {
@@ -554,6 +554,8 @@ public class PhotosService {
             photoClient.savePhotosManager(photoManager);
 
             return photoManager;
+        } catch (RepassaException e) {
+            throw new RepassaException(e.getRepassaUtilError());
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
         }

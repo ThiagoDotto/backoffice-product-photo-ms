@@ -11,8 +11,8 @@ public class StringUtils {
 
     public static String replaceCaracterSpecial(String string) {
         return string.toLowerCase()
-                .replaceAll("\\s", "+")
-                .replaceAll("[^a-zA-Z0-9+]", "");
+                .replaceAll("\\s", ".")
+                .replaceAll("[^a-zA-Z0-9.]", "");
     }
 
     public static String formatToCloudFrontURL(String s3URL, String cloudFrontURL) {

@@ -554,6 +554,8 @@ public class PhotosService {
             photoClient.savePhotosManager(photoManager);
 
             return photoManager;
+        } catch (RepassaException e) {
+            throw new RepassaException(e.getRepassaUtilError());
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
         }

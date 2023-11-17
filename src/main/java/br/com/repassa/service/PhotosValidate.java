@@ -13,7 +13,7 @@ public class PhotosValidate {
     public PhotoInsertValidateDTO validatePhoto(PhotoBase64DTO photo) {
         PhotoInsertValidateDTO responseDto = new PhotoInsertValidateDTO();
 
-        byte[] decodedBytes = Base64.getMimeDecoder().decode(photo.getBase64());
+        byte[] decodedBytes = org.apache.commons.codec.binary.Base64.decodeBase64(photo.getBase64());
         photo.setSize(String.valueOf(decodedBytes.length));
         photo.setType(photo.getType().replaceAll("image/", ""));
         var photoIsValid = extensionTypeValidation(photo.getType());

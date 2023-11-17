@@ -1,8 +1,38 @@
 package br.com.repassa.service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.transaction.Transactional;
+import javax.ws.rs.core.HttpHeaders;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.dto.*;
+import br.com.repassa.dto.ChangeTypePhotoDTO;
+import br.com.repassa.dto.IdentificatorsDTO;
+import br.com.repassa.dto.ImageDTO;
+import br.com.repassa.dto.PhotoBase64DTO;
+import br.com.repassa.dto.PhotoFilterDTO;
+import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.dto.PhotoInsertValidateDTO;
+import br.com.repassa.dto.ProcessBarCodeRequestDTO;
+import br.com.repassa.dto.ProductPhotoDTO;
+import br.com.repassa.dto.ProductPhotoListDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -21,22 +51,6 @@ import br.com.repassa.service.rekognition.PhotoRemoveService;
 import br.com.repassa.service.rekognition.RekognitionService;
 import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.transaction.Transactional;
-import javax.ws.rs.core.HttpHeaders;
-import java.text.Normalizer;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class PhotosService {
@@ -520,6 +534,7 @@ public class PhotosService {
                 throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
             }
 
+            AtomicReference<String> urlImageTemp = new AtomicReference<>(urlImage);
             AtomicReference<Photo> photo = new AtomicReference<>(new Photo());
             photoManager.getGroupPhotos()
                     .forEach(groupPhotos -> {
@@ -531,15 +546,16 @@ public class PhotosService {
 
                                 if (photoProcessed == null) {
                                     groupPhotos.setImageError(TypeError.IMAGE_ERROR.name());
+                                    urlImageTemp.set(errorImage);
                                 } else {
                                     imageId = photoProcessed.getImageId();
-                                    imageBase64 = PhotoUtils.thumbnail(urlImage);
+                                    imageBase64 = PhotoUtils.thumbnail(urlImageTemp.get());
                                 }
 
                                 photo.set(Photo.builder()
                                         .id(imageId)
                                         .namePhoto(photoTela.getName())
-                                        .urlPhoto(urlImage)
+                                        .urlPhoto(urlImageTemp.get())
                                         .sizePhoto(photoTela.getSize())
                                         .base64(imageBase64)
                                         .note(photoTela.getNote())

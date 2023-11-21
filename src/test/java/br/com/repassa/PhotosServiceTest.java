@@ -2,7 +2,7 @@ package br.com.repassa;
 
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.config.DynamoClient;
+import br.com.repassa.config.DynamoConfig;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.entity.GroupPhotos;
@@ -11,7 +11,7 @@ import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.resource.client.AwsS3Client;
-import br.com.repassa.resource.client.PhotoClient;
+import br.com.repassa.repository.aws.PhotoManagerRepository;
 import br.com.repassa.resource.client.PhotoClientInterface;
 import br.com.repassa.service.PhotosService;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -42,10 +41,10 @@ public class PhotosServiceTest {
     PhotosService photosService;
 
     @InjectMocks
-    DynamoClient dynamoDbClient;
+    DynamoConfig dynamoDbClient;
 
     @Mock
-    private PhotoClient photoClient = mock(PhotoClient.class);
+    private PhotoManagerRepository photoManagerRepository = mock(PhotoManagerRepository.class);
 
     @Mock
     AwsS3Client awsS3Client;
@@ -98,7 +97,7 @@ public class PhotosServiceTest {
                 .groupPhotos(List.of(groupPhoto))
                 .build();
 
-        when(photoClient.findByProductId(anyString())).thenReturn(productManager);
+        when(photoManagerRepository.findByProductId(anyString())).thenReturn(productManager);
 
         final var actual = photosService.findPhotoByProductId(productId);
 
@@ -128,7 +127,7 @@ public class PhotosServiceTest {
                 .groupPhotos(List.of(groupPhoto))
                 .build();
 
-        when(photoClient.findByProductId(anyString())).thenReturn(productManager);
+        when(photoManagerRepository.findByProductId(anyString())).thenReturn(productManager);
 
         final var actual = photosService.findPhotoByProductId(productId);
 
@@ -140,7 +139,7 @@ public class PhotosServiceTest {
     void shouldReturnEmptyListWhenProductIdNotFound() throws Exception {
         final var productId = "10203040";
 
-        when(photoClient.findByProductId(anyString())).thenReturn(null);
+        when(photoManagerRepository.findByProductId(anyString())).thenReturn(null);
 
         final var actual = photosService.findPhotoByProductId(productId);
 
@@ -151,7 +150,7 @@ public class PhotosServiceTest {
     void shouldThrowRepassaExceptionWhenDynamoError() throws Exception {
         final var productId = "10203040";
 
-        when(photoClient.findByProductId(anyString())).thenThrow(DynamoDbException.class);
+        when(photoManagerRepository.findByProductId(anyString())).thenThrow(DynamoDbException.class);
 
         assertThrows(RepassaException.class, () -> photosService.findPhotoByProductId(productId));
     }

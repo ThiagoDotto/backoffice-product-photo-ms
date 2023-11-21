@@ -2,7 +2,7 @@ package br.com.repassa;
 
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.config.DynamoConfig;
+import br.com.repassa.config.AwsConfig;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.entity.GroupPhotos;
@@ -10,8 +10,8 @@ import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.enums.StatusProduct;
 import br.com.repassa.enums.TypePhoto;
-import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.repository.aws.PhotoManagerRepository;
+import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.resource.client.PhotoClientInterface;
 import br.com.repassa.service.PhotosService;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,28 +21,20 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static io.smallrye.common.constraint.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 
 public class PhotosServiceTest {
     @InjectMocks
     PhotosService photosService;
 
-    @InjectMocks
-    DynamoConfig dynamoDbClient;
-
+    @Mock
+    AwsConfig awsConfig;
     @Mock
     private PhotoManagerRepository photoManagerRepository = mock(PhotoManagerRepository.class);
 

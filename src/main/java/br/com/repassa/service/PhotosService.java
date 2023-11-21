@@ -107,42 +107,29 @@ public class PhotosService {
             String tokenAuth) throws RepassaException {
         List<ProcessBarCodeRequestDTO.GroupPhoto> groupPhotos = processBarCodeRequestDTO.getGroupPhotos();
 
-        List<PhotoFilterResponseDTO> photosError = new ArrayList<>();
-        groupPhotos.forEach(item -> item.getPhotos().forEach(photo -> {
-            PhotoFilterResponseDTO photoFound = photoProcessingService.findPhoto(photo.getIdPhoto());
-            if (Objects.nonNull(photoFound) &&
-                    Boolean.FALSE.equals(Boolean.valueOf(photoFound.getIsValid()))) {
-                photosError.add(photoFound);
-            }
-        }));
-
-        if (!photosError.isEmpty()) {
-            throw new RepassaException(PhotoError.ERROR_VALID_PHOTO);
-        }
-
         List<IdentificatorsDTO> validateIds = rekognitionService.PhotosRecognition(groupPhotos);
 
         if (validateIds.isEmpty()) {
             throw new RepassaException(AwsPhotoError.REKOGNITION_PHOTO_EMPTY);
         }
 
-        if (groupPhotos.size() == validateIds.size()) {
-            AtomicInteger count = new AtomicInteger(0);
-
-            validateIds.forEach(productId -> {
-                if (!productId.getValid()) {
-                    count.incrementAndGet();
-                }
-            });
-
-            if (count.get() == validateIds.size()) {
-                if (validateIds.size() > 1) {
-                    throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND_N);
-                } else {
-                    throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND);
-                }
-            }
-        }
+//        if (groupPhotos.size() == validateIds.size()) {
+//            AtomicInteger count = new AtomicInteger(0);
+//
+//            validateIds.forEach(productId -> {
+//                if (!productId.getValid()) {
+//                    count.incrementAndGet();
+//                }
+//            });
+//
+//            if (count.get() == validateIds.size()) {
+//                if (validateIds.size() > 1) {
+//                    throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND_N);
+//                } else {
+//                    throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND);
+//                }
+//            }
+//        }
 
         try {
             validateIdentificators(validateIds, tokenAuth, true);

@@ -2,16 +2,27 @@ package br.com.repassa.config;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.exception.AwsPhotoError;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-public class DynamoClient {
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class DynamoConfig {
+
+    @ConfigProperty(name = "dynamo.table.photoProcessing")
+    String photoProcessingTable;
+
+    @ConfigProperty(name = "dynamo.table.photosManager")
+    String photosManager;
+
 
     private static DynamoDbClient clientInstance;
 
-    private DynamoClient() {
+    private DynamoConfig() {
     }
 
     public static synchronized DynamoDbClient openDynamoDBConnection() throws RepassaException {
@@ -38,4 +49,12 @@ public class DynamoClient {
         clientInstance.close();
     }
 
+
+    public String getPhotoProcessingTable() {
+        return photoProcessingTable;
+    }
+
+    public String getPhotosManager() {
+        return photosManager;
+    }
 }

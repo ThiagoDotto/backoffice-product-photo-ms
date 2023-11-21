@@ -20,6 +20,6 @@ public class PhotoProcessed {
     private String originalImageUrl;
     private String sizePhoto;
     private String imageName;
-    private String thumbnailBase64;
+    private String urlThumbnail;
     private String uploadDate;
 }

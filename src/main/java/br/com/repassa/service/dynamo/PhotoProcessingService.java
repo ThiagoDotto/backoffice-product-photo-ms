@@ -35,7 +35,7 @@ public class PhotoProcessingService {
             item.put("notes", AttributeValue.builder().s(SUCCESSFUL_STATS).build());
             item.put("original_image_url", AttributeValue.builder().s(photoProcessed.getOriginalImageUrl()).build());
             item.put("size_photo", AttributeValue.builder().s(photoProcessed.getSizePhoto()).build());
-            item.put("thumbnail_base64", AttributeValue.builder().s(photoProcessed.getThumbnailBase64()).build());
+            item.put("thumbnail", AttributeValue.builder().s(photoProcessed.getUrlThumbnail()).build());
             item.put("upload_date", AttributeValue.builder().s(photoProcessed.getUploadDate()).build());
 
             PutItemRequest putItemRequest = PutItemRequest.builder()
@@ -83,6 +83,42 @@ public class PhotoProcessingService {
             });
         } catch (DynamoDbException e) {
             LOGGER.error("Error remove item photoId. {}", photoId);
+            throw new RepassaException(AwsPhotoError.DYNAMO_CONNECTION);
+        }
+    }
+
+    public void removeItemByOriginalImageUrl(String originalImageUrl) throws RepassaException {
+        try {
+            DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+
+            Map<String, AttributeValue> itemFilterMap = new HashMap<>();
+            itemFilterMap.put(":original_image_url", AttributeValue.builder().s(originalImageUrl).build());
+
+            ScanRequest.Builder scanRequest = ScanRequest.builder()
+                    .tableName(TABLE_NAME)
+                    .filterExpression("original_image_url = :original_image_url")
+                    .expressionAttributeValues(itemFilterMap);
+
+            ScanResponse scanResponse = dynamoDB.scan(scanRequest.build());
+
+            scanResponse.items().forEach(item -> {
+                Map<String, AttributeValue> itemMap = new HashMap<>();
+
+                String idItem = item.get("id").s();
+                itemMap.put("id", AttributeValue.builder().s(idItem).build());
+
+                // Criando solicitação para excluir o item
+                DeleteItemRequest deleteRequest = DeleteItemRequest.builder()
+                        .tableName(TABLE_NAME)
+                        .key(itemMap)
+                        .build();
+
+                // Excluindo item da tabela
+                dynamoDB.deleteItem(deleteRequest);
+                LOGGER.info("item {} excluído", originalImageUrl);
+            });
+        } catch (DynamoDbException e) {
+            LOGGER.error("Error remove item original_image_url. {}", originalImageUrl);
             throw new RepassaException(AwsPhotoError.DYNAMO_CONNECTION);
         }
     }
@@ -144,7 +180,7 @@ public class PhotoProcessingService {
             responseDTO.setIsValid(item.get("is_valid").s());
             responseDTO.setOriginalImageUrl(item.get("original_image_url").s());
             responseDTO.setSizePhoto(item.get("size_photo").s());
-            responseDTO.setThumbnailBase64(item.get("thumbnail_base64").s());
+            responseDTO.setUrlThumbnail(item.get("thumbnail").s());
             responseDTO.setUploadDate(item.get("upload_date").s());
 
             resultList.add(responseDTO);

@@ -29,10 +29,20 @@ public class PhotoRemoveService {
 
     public void remove(Photo photo) {
         try {
-            LOG.info("Removendo Photo {} no S3", photo.getId());
-            awsS3Client.removeImageByUrl(bucketName, photo.getUrlPhoto().replace("+", " "));
-            LOG.info("Removendo Photo {} na tabela ProcessingTable", photo.getId());
-            photoProcessingService.removeItemByPhotoId(photo.getId());
+            if (!photo.getUrlThumbnail().isEmpty()) {
+                LOG.info("Removendo Photo {} no S3", photo.getUrlThumbnail());
+                awsS3Client.removeImageByUrl(bucketName, photo.getUrlThumbnail().replace("+", " "));
+                awsS3Client.removeImageByUrl(bucketName, photo.getUrlPhoto().replace("+", " "));
+                LOG.info("Removendo Photo {} na tabela ProcessingTable", photo.getUrlThumbnail());
+                photoProcessingService.removeItemByOriginalImageUrl(photo.getUrlThumbnail());
+                photoProcessingService.removeItemByPhotoId(photo.getId());
+            } else {
+                LOG.info("Removendo Photo {} no S3", photo.getId());
+                awsS3Client.removeImageByUrl(bucketName, photo.getUrlPhoto().replace("+", " "));
+                LOG.info("Removendo Photo {} na tabela ProcessingTable", photo.getId());
+                photoProcessingService.removeItemByPhotoId(photo.getId());
+            }
+
         } catch (RepassaException e) {
             LOG.error("Erro ao remover a PhotoID {} na tabela ProcessingTable, erro: {} ", photo.getId(), e.getMessage());
         }

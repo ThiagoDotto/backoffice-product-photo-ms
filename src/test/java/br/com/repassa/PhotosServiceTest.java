@@ -32,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -63,7 +62,7 @@ public class PhotosServiceTest {
     void testFilterAndPersist() throws RepassaException {
         // Arrange
         PhotoFilterDTO filter = new PhotoFilterDTO("2023-09-22");
-        String fieldFiltered = "id, bag_id, edited_by, image_id, imagem_name, is_valid, original_image_url, size_photo, thumbnail_base64, upload_date";
+        String fieldFiltered = "id, bag_id, edited_by, image_id, imagem_name, is_valid, original_image_url, size_photo, thumbnail, upload_date";
         String username = "Daniel Oliveira";
         Map<String, Object> expressionAttributeValues = new HashMap<String, Object>();
 
@@ -195,7 +194,7 @@ public class PhotosServiceTest {
         filterResponseDTO.setOriginalImageUrl(
                 "https://backoffice-triage-photo-dev.s3.amazonaws.com/fotografia/daniel+oliveira/2023-09-20/BlackMarble_2016_1400m_africa_m_labeled.jpg");
         filterResponseDTO.setSizePhoto("12746487");
-        filterResponseDTO.setThumbnailBase64(
+        filterResponseDTO.setUrlThumbnail(
                 "/9j/4AAQSkZJRgABAgAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC");
         filterResponseDTO.setUploadDate("2023-09-22T14:29:03.553Z");
 
@@ -208,7 +207,7 @@ public class PhotosServiceTest {
         filterResponseDTO.setOriginalImageUrl(
                 "https://backoffice-triage-photo-dev.s3.amazonaws.com/fotografia/daniel+oliveira/2023-09-20/BlackMarble_2016_1400m_africa_m_labeled.jpg");
         filterResponseDTO.setSizePhoto("12746487");
-        filterResponseDTO.setThumbnailBase64(
+        filterResponseDTO.setUrlThumbnail(
                 "/9j/4AAQSkZJRgABAgAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC");
         filterResponseDTO.setUploadDate("2023-09-22T14:29:03.553Z");
 
@@ -221,7 +220,7 @@ public class PhotosServiceTest {
         filterResponseDTO.setOriginalImageUrl(
                 "https://backoffice-triage-photo-dev.s3.amazonaws.com/fotografia/daniel+oliveira/2023-09-20/BlackMarble_2016_1400m_africa_m_labeled.jpg");
         filterResponseDTO.setSizePhoto("12746487");
-        filterResponseDTO.setThumbnailBase64(
+        filterResponseDTO.setUrlThumbnail(
                 "/9j/4AAQSkZJRgABAgAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC");
         filterResponseDTO.setUploadDate("2023-09-22T14:29:03.553Z");
 
@@ -234,7 +233,7 @@ public class PhotosServiceTest {
         filterResponseDTO.setOriginalImageUrl(
                 "https://backoffice-triage-photo-dev.s3.amazonaws.com/fotografia/daniel+oliveira/2023-09-20/BlackMarble_2016_1400m_africa_m_labeled.jpg");
         filterResponseDTO.setSizePhoto("12746487");
-        filterResponseDTO.setThumbnailBase64(
+        filterResponseDTO.setUrlThumbnail(
                 "/9j/4AAQSkZJRgABAgAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC");
         filterResponseDTO.setUploadDate("2023-09-22T14:29:03.553Z");
 
@@ -247,7 +246,7 @@ public class PhotosServiceTest {
         filterResponseDTO.setOriginalImageUrl(
                 "https://backoffice-triage-photo-dev.s3.amazonaws.com/fotografia/daniel+oliveira/2023-09-20/BlackMarble_2016_1400m_africa_m_labeled.jpg");
         filterResponseDTO.setSizePhoto("12746487");
-        filterResponseDTO.setThumbnailBase64(
+        filterResponseDTO.setUrlThumbnail(
                 "/9j/4AAQSkZJRgABAgAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC");
         filterResponseDTO.setUploadDate("2023-09-22T14:29:03.553Z");
 
@@ -260,7 +259,7 @@ public class PhotosServiceTest {
         filterResponseDTO.setOriginalImageUrl(
                 "https://backoffice-triage-photo-dev.s3.amazonaws.com/fotografia/daniel+oliveira/2023-09-20/BlackMarble_2016_1400m_africa_m_labeled.jpg");
         filterResponseDTO.setSizePhoto("12746487");
-        filterResponseDTO.setThumbnailBase64(
+        filterResponseDTO.setUrlThumbnail(
                 "/9j/4AAQSkZJRgABAgAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC");
         filterResponseDTO.setUploadDate("2023-09-22T14:29:03.553Z");
 

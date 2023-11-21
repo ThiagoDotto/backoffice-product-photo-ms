@@ -57,9 +57,6 @@ public class PhotosService {
     @Inject
     HistoryService historyService;
 
-    @ConfigProperty(name = "cloudfront.url")
-    String cloudFrontURL;
-
     @Inject
     AwsS3Client awsS3Client;
 
@@ -473,7 +470,7 @@ public class PhotosService {
                                 .typePhoto(Objects.nonNull(p.getTypePhoto()) ? p.getTypePhoto().toString() : "")
                                 .sizePhoto(p.getSizePhoto())
                                 .namePhoto(p.getNamePhoto())
-                                .urlPhoto(StringUtils.formatToCloudFrontURL(p.getUrlPhoto(), cloudFrontURL))
+                                .urlPhoto(StringUtils.formatToCloudFrontURL(p.getUrlPhoto(), awsConfig.getCloudFrontURL()))
                                 .build())
                         .toList();
                 return ProductPhotoListDTO.builder().photos(productPhotoDTOList).build();

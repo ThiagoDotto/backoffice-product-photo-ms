@@ -513,6 +513,7 @@ public class PhotosService {
                                     groupPhotos.setImageError(TypeError.IMAGE_ERROR.name());
                                     urlImageTemp.set(awsConfig.getErrorImage());
                                 } else {
+                                    groupPhotos.setImageError(null);
                                     imageId = photoProcessed.getImageId();
                                     imageBase64 = PhotoUtils.thumbnail(urlImageTemp.get());
                                 }

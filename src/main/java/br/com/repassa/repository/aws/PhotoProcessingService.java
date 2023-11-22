@@ -1,7 +1,7 @@
-package br.com.repassa.service.dynamo;
+package br.com.repassa.repository.aws;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.config.DynamoClient;
+import br.com.repassa.config.DynamoConfig;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.entity.dynamo.PhotoProcessed;
 import br.com.repassa.exception.AwsPhotoError;
@@ -12,18 +12,21 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import java.time.LocalDateTime;
 import java.util.*;
 
 @ApplicationScoped
 public class PhotoProcessingService {
     private static final Logger LOGGER = LoggerFactory.getLogger(PhotoProcessingService.class);
-    private static final String TABLE_NAME = "PhotoProcessingTable";
+    @Inject
+    DynamoConfig dynamoConfig;
+
     private static final String SUCCESSFUL_STATS = "successful";
 
     public void save(PhotoProcessed photoProcessed) throws RepassaException {
         try {
-            DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+            DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
             Map<String, AttributeValue> item = new HashMap<>();
 
             item.put("id", AttributeValue.builder().s(photoProcessed.getId()).build());
@@ -39,7 +42,7 @@ public class PhotoProcessingService {
             item.put("upload_date", AttributeValue.builder().s(photoProcessed.getUploadDate()).build());
 
             PutItemRequest putItemRequest = PutItemRequest.builder()
-                    .tableName(TABLE_NAME)
+                    .tableName(dynamoConfig.getPhotoProcessingTable())
                     .item(item)
                     .build();
 
@@ -53,13 +56,13 @@ public class PhotoProcessingService {
 
     public void removeItemByPhotoId(String photoId) throws RepassaException {
         try {
-            DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+            DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
 
             Map<String, AttributeValue> itemFilterMap = new HashMap<>();
             itemFilterMap.put(":image_id", AttributeValue.builder().s(photoId).build());
 
             ScanRequest.Builder scanRequest = ScanRequest.builder()
-                    .tableName(TABLE_NAME)
+                    .tableName(dynamoConfig.getPhotoProcessingTable())
                     .filterExpression("image_id = :image_id")
                     .expressionAttributeValues(itemFilterMap);
 
@@ -73,7 +76,7 @@ public class PhotoProcessingService {
 
                 // Criando solicitação para excluir o item
                 DeleteItemRequest deleteRequest = DeleteItemRequest.builder()
-                        .tableName(TABLE_NAME)
+                        .tableName(dynamoConfig.getPhotoProcessingTable())
                         .key(itemMap)
                         .build();
 
@@ -125,7 +128,7 @@ public class PhotoProcessingService {
 
     public List<PhotoFilterResponseDTO> listItensByDateAndUser(String date, String username) throws RepassaException {
 
-        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+        DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
         expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(date).build());
@@ -136,7 +139,7 @@ public class PhotoProcessingService {
 
         do {
             ScanRequest.Builder scanRequest = ScanRequest.builder()
-                    .tableName(TABLE_NAME)
+                    .tableName(dynamoConfig.getPhotoProcessingTable())
                     .filterExpression("contains(upload_date, :upload_date) AND edited_by = :edited_by")
                     .expressionAttributeValues(expressionAttributeValues);
 
@@ -193,12 +196,12 @@ public class PhotoProcessingService {
 
         DynamoDbClient dynamoDB;
         try {
-            dynamoDB = DynamoClient.openDynamoDBConnection();
+            dynamoDB = DynamoConfig.openDynamoDBConnection();
             Map<String, AttributeValue> itemFilterMap = new HashMap<>();
             itemFilterMap.put(":image_id", AttributeValue.builder().s(idPhoto).build());
 
             ScanRequest.Builder scanRequest = ScanRequest.builder()
-                    .tableName(TABLE_NAME)
+                    .tableName(dynamoConfig.getPhotoProcessingTable())
                     .filterExpression("image_id = :image_id")
                     .expressionAttributeValues(itemFilterMap);
 

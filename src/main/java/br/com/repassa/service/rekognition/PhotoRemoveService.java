@@ -2,10 +2,10 @@ package br.com.repassa.service.rekognition;
 
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
+import br.com.repassa.config.AwsConfig;
 import br.com.repassa.entity.Photo;
+import br.com.repassa.repository.aws.PhotoProcessingService;
 import br.com.repassa.resource.client.AwsS3Client;
-import br.com.repassa.service.dynamo.PhotoProcessingService;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,8 +17,8 @@ public class PhotoRemoveService {
 
     private static final Logger LOG = LoggerFactory.getLogger(PhotoRemoveService.class);
 
-    @ConfigProperty(name = "s3.aws.bucket-name")
-    String bucketName;
+    @Inject
+    AwsConfig awsConfig;
 
     @Inject
     PhotoProcessingService photoProcessingService;
@@ -28,6 +28,7 @@ public class PhotoRemoveService {
 
 
     public void remove(Photo photo) {
+        String bucketName = awsConfig.getBucketName();
         try {
             if (!photo.getUrlThumbnail().isEmpty()) {
                 LOG.info("Removendo Photo {} no S3", photo.getUrlThumbnail());

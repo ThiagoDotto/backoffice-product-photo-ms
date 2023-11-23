@@ -1,12 +1,13 @@
-package br.com.repassa.resource.client;
+package br.com.repassa.repository.aws;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.config.DynamoClient;
+import br.com.repassa.config.DynamoConfig;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.exception.AwsPhotoError;
 import br.com.repassa.exception.PhotoError;
+import br.com.repassa.resource.client.PhotosManagerRepositoryImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,24 +19,26 @@ import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @ApplicationScoped
-public class PhotoClient {
+public class PhotoManagerRepository {
 
-    private static final String TABLE_NAME_PHOTOS = "PhotosManager_QA";
+    @Inject
+    DynamoConfig dynamoConfig;
 
     public void savePhotosManager(PhotosManager manager) throws RepassaException {
-        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+        DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
         PhotosManagerRepositoryImpl impl = new PhotosManagerRepositoryImpl(dynamoDB);
         impl.save(manager);
     }
 
     public PhotosManager findByProductId(String productId) throws Exception {
-        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+        DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
 
@@ -43,7 +46,7 @@ public class PhotoClient {
                 AttributeValue.builder().s("\"productId\":\"" + productId + "\"").build());
 
         ScanRequest scanRequest = ScanRequest.builder()
-                .tableName(TABLE_NAME_PHOTOS)
+                .tableName(dynamoConfig.getPhotosManager())
                 .filterExpression("contains(groupPhotos, :groupPhotos)")
                 .expressionAttributeValues(expressionAttributeValues)
                 .build();
@@ -55,7 +58,7 @@ public class PhotoClient {
 
     public PhotosManager findByImageId(String imageId) throws RepassaException {
         try {
-            DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+            DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
 
             Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
 
@@ -63,7 +66,7 @@ public class PhotoClient {
                     AttributeValue.builder().s("\"id\":\"" + imageId + "\"").build());
 
             ScanRequest scanRequest = ScanRequest.builder()
-                    .tableName(TABLE_NAME_PHOTOS)
+                    .tableName(dynamoConfig.getPhotosManager())
                     .filterExpression("contains(groupPhotos, :groupPhotos)")
                     .expressionAttributeValues(expressionAttributeValues)
                     .build();
@@ -77,7 +80,7 @@ public class PhotoClient {
     }
 
     public PhotosManager findByImageAndGroupId(String imageId, String groupId) throws Exception {
-        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+        DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
 
@@ -85,7 +88,7 @@ public class PhotoClient {
         expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + groupId + "\"").build());
 
         ScanRequest scanRequest = ScanRequest.builder()
-                .tableName(TABLE_NAME_PHOTOS)
+                .tableName(dynamoConfig.getPhotosManager())
                 .filterExpression("contains(groupPhotos, :groupPhotos)")
                 .expressionAttributeValues(expressionAttributeValues)
                 .build();
@@ -97,14 +100,14 @@ public class PhotoClient {
 
     public PhotosManager findByGroupId(String groupId) throws Exception {
 
-        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+        DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
 
         expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + groupId + "\"").build());
 
         ScanRequest scanRequest = ScanRequest.builder()
-                .tableName(TABLE_NAME_PHOTOS)
+                .tableName(dynamoConfig.getPhotosManager())
                 .filterExpression("contains(groupPhotos, :groupPhotos)")
                 .expressionAttributeValues(expressionAttributeValues)
                 .build();
@@ -116,14 +119,14 @@ public class PhotoClient {
 
     public PhotosManager findById(String id) throws Exception {
 
-        DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+        DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
 
         expressionAttributeValues.put(":id", AttributeValue.builder().s(id).build());
 
         ScanRequest scanRequest = ScanRequest.builder()
-                .tableName(TABLE_NAME_PHOTOS)
+                .tableName(dynamoConfig.getPhotosManager())
                 .filterExpression("id = :id")
                 .expressionAttributeValues(expressionAttributeValues)
                 .build();
@@ -138,7 +141,7 @@ public class PhotoClient {
 
         try {
             PhotosManager responseDTO = null;
-            DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+            DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
 
             Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
             expressionAttributeValues.put(":statusManagerPhotos",
@@ -147,7 +150,7 @@ public class PhotoClient {
             expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(date).build());
 
             ScanRequest scanRequest = ScanRequest.builder()
-                    .tableName(TABLE_NAME_PHOTOS)
+                    .tableName(dynamoConfig.getPhotosManager())
                     .filterExpression(
                             "statusManagerPhotos = :statusManagerPhotos and contains(upload_date, :upload_date) and editor = :editor")
                     .expressionAttributeValues(expressionAttributeValues)

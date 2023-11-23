@@ -21,5 +21,6 @@ public class PhotoBase64DTO {
     private String name;
     private String size;
     private String note;
+    private String urlThumbNail;
 
 }

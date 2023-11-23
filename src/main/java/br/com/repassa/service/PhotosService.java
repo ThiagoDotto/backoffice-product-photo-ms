@@ -251,16 +251,20 @@ public class PhotosService {
             try {
                 String[] nameAux = photo.getName().split("\\."); // [0] - Apenas o nome do arquivo
                 String[] typeAux = photo.getType().split("\\/"); // [1] - Apenas a extensão do arquivo
-                String newNameFile = nameAux[0] + "." + typeAux[1]; // Nome do arquivo com base na extensão que está
-                // sendo passada
+                String newNameFile = nameAux[0] + "." + typeAux[1]; // Nome do arquivo com base na extensão que está sendo passada
+                String newNameThumbnailFile = nameAux[0] + "_thumbnail" + "." + typeAux[1]; // Nome do arquivo com base na extensão que está sendo passada
 
                 photo.setName(newNameFile);
+                photo.setUrlThumbNail(newNameThumbnailFile);
                 String objKey = objectKey.concat(newNameFile);
+                String objThumbnailKey = objectKey.concat(newNameThumbnailFile);
                 urlImage.set(awsConfig.getUrlBase() + objKey);
                 PhotoInsertValidateDTO photoInsertValidate = photosValidate.validatePhoto(photo);
+                String objThumbnailBase64 = PhotoUtils.thumbnail(photo.getBase64());
 
                 if (photoInsertValidate.isValid()) {
                     awsS3Client.uploadBase64FileToS3(awsConfig.getBucketName(), objKey, photo.getBase64());
+                    awsS3Client.uploadBase64FileToS3(awsConfig.getBucketName(), objThumbnailKey, objThumbnailBase64);
                     PhotoProcessed photoProcessed = this.savePhotoProcessingDynamo(photo, username, urlImage);
                     photosManager.set(savePhotoManager(imageDTO, urlImage.get(), photoProcessed));
                 } else {
@@ -364,7 +368,7 @@ public class PhotosService {
                     .id(photosFilter.getImageId())
                     .typePhoto(TypePhoto.getPosition(count.get()))
                     .urlPhoto(photosFilter.getOriginalImageUrl())
-                    .base64(photosFilter.getThumbnailBase64()).build();
+                    .urlThumbnail(photosFilter.getUrlThumbnail()).build();
 
             if (Boolean.FALSE.equals(PhotosValidate.extensionTypeValidation(imageName[1]))) {
                 photo.setNote("Formato de arquivo inválido. São aceitos somente JPG ou JPEG");
@@ -507,7 +511,6 @@ public class PhotosService {
                         if (Objects.equals(groupPhotos.getId(), imageDTO.getGroupId())) {
                             imageDTO.getPhotoBase64().forEach(photoTela -> {
                                 String imageId = UUID.randomUUID().toString();
-                                String imageBase64 = null;
 
                                 if (photoProcessed == null) {
                                     groupPhotos.setImageError(TypeError.IMAGE_ERROR.name());
@@ -515,7 +518,6 @@ public class PhotosService {
                                 } else {
                                     groupPhotos.setImageError(null);
                                     imageId = photoProcessed.getImageId();
-                                    imageBase64 = PhotoUtils.thumbnail(urlImageTemp.get());
                                 }
 
                                 photo.set(Photo.builder()
@@ -523,7 +525,7 @@ public class PhotosService {
                                         .namePhoto(photoTela.getName())
                                         .urlPhoto(urlImageTemp.get())
                                         .sizePhoto(photoTela.getSize())
-                                        .base64(imageBase64)
+                                        .urlThumbnail(photoTela.getUrlThumbNail())
                                         .note(photoTela.getNote())
                                         .build());
 
@@ -536,8 +538,8 @@ public class PhotosService {
             photoManagerRepository.savePhotosManager(photoManager);
 
             return photoManager;
-        } catch (RepassaException e) {
-            throw new RepassaException(e.getRepassaUtilError());
+//        } catch (RepassaException e) {
+//            throw new RepassaException(e.getRepassaUtilError());
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
         }
@@ -554,7 +556,7 @@ public class PhotosService {
         photoProcessed.setImageId(UUID.randomUUID().toString());
         photoProcessed.setSizePhoto(photoBase64DTO.getSize());
         photoProcessed.setImageName(photoBase64DTO.getName());
-        photoProcessed.setThumbnailBase64(photoBase64DTO.getBase64());
+        photoProcessed.setUrlThumbnail(photoBase64DTO.getUrlThumbNail());
         photoProcessed.setOriginalImageUrl(urlImage.get());
 
         photoProcessingService.save(photoProcessed);

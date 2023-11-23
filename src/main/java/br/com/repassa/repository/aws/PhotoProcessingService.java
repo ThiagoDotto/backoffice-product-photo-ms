@@ -92,13 +92,13 @@ public class PhotoProcessingService {
 
     public void removeItemByOriginalImageUrl(String originalImageUrl) throws RepassaException {
         try {
-            DynamoDbClient dynamoDB = DynamoClient.openDynamoDBConnection();
+            DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
 
             Map<String, AttributeValue> itemFilterMap = new HashMap<>();
             itemFilterMap.put(":original_image_url", AttributeValue.builder().s(originalImageUrl).build());
 
             ScanRequest.Builder scanRequest = ScanRequest.builder()
-                    .tableName(TABLE_NAME)
+                    .tableName(dynamoConfig.getPhotoProcessingTable())
                     .filterExpression("original_image_url = :original_image_url")
                     .expressionAttributeValues(itemFilterMap);
 
@@ -112,7 +112,7 @@ public class PhotoProcessingService {
 
                 // Criando solicitação para excluir o item
                 DeleteItemRequest deleteRequest = DeleteItemRequest.builder()
-                        .tableName(TABLE_NAME)
+                        .tableName(dynamoConfig.getPhotoProcessingTable())
                         .key(itemMap)
                         .build();
 

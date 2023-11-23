@@ -1,19 +1,6 @@
-s3:
-  aws:
-    access-key-id: AKIAJWITEVM4HXREFLYA
-    secret-access-key: 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
-    region: us-east-1
-    bucket-name: backoffice-triage-photo-stg
-    error-image : https://backoffice-triage-photo-stg.s3.amazonaws.com/invalidPhoto.png
-
 quarkus:
   devservices:
     enabled: false
-#  dynamodb:
-#    aws:
-#      region:
-#      credentials:
-#        type:
 
   swagger-ui:
     always-include: true

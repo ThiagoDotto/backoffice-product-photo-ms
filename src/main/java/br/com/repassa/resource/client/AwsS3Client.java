@@ -4,9 +4,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
+import br.com.repassa.config.AwsConfig;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -25,16 +27,15 @@ public class AwsS3Client {
 
     S3Client s3Client;
 
-    private final String accessKey = "AKIAJWITEVM4HXREFLYA";
-    private final String secretKey = "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";
-    private final String cloudFrontURL = "https://assets-qa-curadoria.repassa.com.br";
+    @Inject
+    AwsConfig awsConfig;
 
     AwsCredentialsProvider credentialsProvider;
 
     @PostConstruct
     private void init() {
         credentialsProvider = StaticCredentialsProvider.create(
-                AwsBasicCredentials.create(accessKey, secretKey));
+                AwsBasicCredentials.create(awsConfig.getAccessKey(), awsConfig.getSecretKey()));
         s3Client = S3Client.builder()
                 .credentialsProvider(credentialsProvider)
                 .region(Region.US_EAST_1)
@@ -62,7 +63,7 @@ public class AwsS3Client {
         }
         log.info("Retornando endereco da imagem");
 
-        return cloudFrontURL + "/" + objectKey;
+        return awsConfig.getCloudFrontURL() + "/" + objectKey;
     }
 
     public void removeImageByUrl(String bucketName, String url) {

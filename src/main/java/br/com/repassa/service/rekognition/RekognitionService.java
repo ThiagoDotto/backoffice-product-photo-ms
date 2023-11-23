@@ -11,7 +11,7 @@ import br.com.repassa.dto.IdentificatorsDTO;
 import br.com.repassa.dto.ProcessBarCodeRequestDTO;
 import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.resource.client.RekognitionBarClient;
-import br.com.repassa.service.dynamo.PhotoProcessingService;
+import br.com.repassa.repository.aws.PhotoProcessingService;
 import br.com.repassa.utils.StringUtils;
 import software.amazon.awssdk.services.rekognition.RekognitionClient;
 import software.amazon.awssdk.services.rekognition.model.DetectTextRequest;

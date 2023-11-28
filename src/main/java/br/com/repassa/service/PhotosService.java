@@ -28,11 +28,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 import javax.ws.rs.core.HttpHeaders;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.ImageObserver;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -464,8 +473,7 @@ public class PhotosService {
                         if(!photo.getUrlPhoto().isEmpty()) {
                             try {
                                     //Chamar metodo para movimentar adicionar a imagem no bucket do Renova
-                                    Boolean statusMove = true;
-                                    
+                                    Boolean statusMove = movePhotoBucketRenova(photo.getUrlPhoto(), group.getProductId(), photo.getNamePhoto());
                                     /**
                                      * Se ao mover a Foto, retornar SUCESSO, então poderá ser removida do bucket Seler Center
                                      */
@@ -479,6 +487,36 @@ public class PhotosService {
                         });
                     }
                 });
+        }
+    }
+
+    public Boolean movePhotoBucketRenova(String urlPhoto, String productId, String photoName) {
+        try {
+            var photosValidate = new PhotosValidate();
+
+            URL url = new URL(urlPhoto);
+            BufferedImage originalImage = ImageIO.read(url);
+
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ImageIO.write(originalImage, "jpg", byteArrayOutputStream);
+            byte[] resizedImageBytes = byteArrayOutputStream.toByteArray();
+
+            var photoBase64 =  Base64.getEncoder().encodeToString(resizedImageBytes);
+
+            var objectKey = photosValidate.validatePathBucketRenova(productId, "teste", photoName);
+
+            awsS3Client.uploadBase64FileToS3(awsConfig.getBucketNameRenova(), objectKey, photoBase64);
+
+            return Boolean.TRUE;
+        } catch (MalformedURLException e) {
+            LOG.error("Error 1" + e.getMessage());
+            return Boolean.FALSE;
+        } catch (IOException e) {
+            LOG.error("Error 2" + e.getMessage());
+            return Boolean.FALSE;
+        } catch (Exception e) {
+            LOG.error("Error 3" + e.getMessage());
+            return Boolean.FALSE;
         }
     }
 

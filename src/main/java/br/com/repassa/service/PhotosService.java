@@ -410,7 +410,7 @@ public class PhotosService {
     }
 
     @Transactional
-    public void finishManagerPhotos(String id, UserPrincipalDTO loggerUser, HttpHeaders headers) throws Exception {
+    public void finishManagerPhotos(String id, UserPrincipalDTO userPrincipalDTO, HttpHeaders headers) throws Exception {
 
         String tokenAuth = headers.getHeaderString("Authorization");
 
@@ -428,7 +428,7 @@ public class PhotosService {
         AtomicBoolean existError = new AtomicBoolean(false);
         photosManager.getGroupPhotos().forEach(group -> {
 
-            if (group.getIdError() != null || group.getImageError() != null) {
+            if (group.getIdError() != null || group.getImageError() != null || group.getProductId() == null) {
                 existError.set(true);
             }
 
@@ -441,13 +441,44 @@ public class PhotosService {
         }
 
         try {
+            /**
+             * Antes de salvar e finalizar as informações do Grupo, é necessário realizar a movimentação das fotos
+             * entre os buckets
+             */
+            moveBucket(photosManager, userPrincipalDTO);
             photoManagerRepository.savePhotosManager(photosManager);
-            historyService.save(photosManager, loggerUser, headers);
+            historyService.save(photosManager, userPrincipalDTO, headers);
             photosManager.getGroupPhotos().stream()
                     .map(groupPhotos -> Long.parseLong(groupPhotos.getProductId()))
                     .forEach(productId -> productRestClient.updatePhotographyStatus(productId, tokenAuth));
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_SALVAR_NO_DYNAMO);
+        }
+    }
+
+    public void moveBucket(PhotosManager photosManager, UserPrincipalDTO userPrincipalDTO) throws RepassaException {
+        if(photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
+            photosManager.getGroupPhotos().forEach(group -> {
+                if(!group.getPhotos().isEmpty()) {
+                    group.getPhotos().forEach(photo -> {
+                        if(!photo.getUrlPhoto().isEmpty()) {
+                            try {
+                                    //Chamar metodo para movimentar adicionar a imagem no bucket do Renova
+                                    Boolean statusMove = true;
+                                    
+                                    /**
+                                     * Se ao mover a Foto, retornar SUCESSO, então poderá ser removida do bucket Seler Center
+                                     */
+                                    if(statusMove) {
+                                        deletePhoto(photo.getId(), userPrincipalDTO);                                
+                                    }
+                                } catch (RepassaException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+                    }
+                });
         }
     }
 

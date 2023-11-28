@@ -14,11 +14,11 @@ import javax.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class DynamoConfig {
 
-    @ConfigProperty(name = "dynamo.table.photoProcessing")
-    String photoProcessingTable;
+//    @ConfigProperty(name = "dynamo.table.photoProcessing")
+    String photoProcessingTable= ConfigProvider.getConfig().getValue("dynamo.table.photoProcessing", String.class);
 
-    @ConfigProperty(name = "dynamo.table.photosManager")
-    String photosManager;
+//    @ConfigProperty(name = "dynamo.table.photosManager")
+    String photosManager = ConfigProvider.getConfig().getValue("dynamo.table.photosManager", String.class);
 
 
     static String ACEESSKEY = ConfigProvider.getConfig().getValue("s3.aws.access-key", String.class);

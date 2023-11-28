@@ -12,6 +12,9 @@ public class AwsConfig {
     @ConfigProperty(name = "s3.aws.bucket-name")
     String bucketName;
 
+    @ConfigProperty(name = "s3.aws.bucket-name-renova")
+    String bucketNameRenova;
+
     @ConfigProperty(name = "s3.aws.access-key")
     String accessKey;
 

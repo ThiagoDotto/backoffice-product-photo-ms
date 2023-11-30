@@ -473,12 +473,13 @@ public class PhotosService {
                         if(!photo.getUrlPhoto().isEmpty()) {
                             try {
                                     //Chamar metodo para movimentar adicionar a imagem no bucket do Renova
-                                    Boolean statusMove = movePhotoBucketRenova(photo.getUrlPhoto(), group.getProductId(), photo.getNamePhoto());
+                                    AtomicReference<String> urlPhoto = movePhotoBucketRenova(photo.getUrlPhoto(), group.getProductId(), photo.getNamePhoto());
                                     /**
                                      * Se ao mover a Foto, retornar SUCESSO, então poderá ser removida do bucket Seler Center
                                      */
-                                    if(statusMove) {
-                                        deletePhoto(photo.getId(), userPrincipalDTO);                                
+                                    if(urlPhoto != null) {
+                                        deletePhoto(photo.getId(), userPrincipalDTO);     
+                                        photo.setUrlPhoto(urlPhoto.get());                           
                                     }
                                 } catch (RepassaException e) {
                                     e.printStackTrace();
@@ -490,9 +491,10 @@ public class PhotosService {
         }
     }
 
-    public Boolean movePhotoBucketRenova(String urlPhoto, String productId, String photoName) {
+    public AtomicReference<String> movePhotoBucketRenova(String urlPhoto, String productId, String photoName) {
         try {
             var photosValidate = new PhotosValidate();
+            AtomicReference<String> urlImage = new AtomicReference<>(new String());
 
             URL url = new URL(urlPhoto);
             BufferedImage originalImage = ImageIO.read(url);
@@ -504,19 +506,20 @@ public class PhotosService {
             var photoBase64 =  Base64.getEncoder().encodeToString(resizedImageBytes);
 
             var objectKey = photosValidate.validatePathBucketRenova(productId, "teste", photoName);
+            urlImage.set(awsConfig.getUrlBase() + objectKey);
 
             awsS3Client.uploadBase64FileToS3(awsConfig.getBucketNameRenova(), objectKey, photoBase64);
 
-            return Boolean.TRUE;
+            return urlImage;
         } catch (MalformedURLException e) {
             LOG.error("Error 1" + e.getMessage());
-            return Boolean.FALSE;
+            return null;
         } catch (IOException e) {
             LOG.error("Error 2" + e.getMessage());
-            return Boolean.FALSE;
+            return null;
         } catch (Exception e) {
             LOG.error("Error 3" + e.getMessage());
-            return Boolean.FALSE;
+            return null;
         }
     }
 

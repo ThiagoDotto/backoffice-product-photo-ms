@@ -454,7 +454,7 @@ public class PhotosService {
              * Antes de salvar e finalizar as informações do Grupo, é necessário realizar a movimentação das fotos
              * entre os buckets
              */
-            moveBucket(photosManager, userPrincipalDTO);
+            photosManager = moveBucket(photosManager, userPrincipalDTO);
             photoManagerRepository.savePhotosManager(photosManager);
             historyService.save(photosManager, userPrincipalDTO, headers);
             photosManager.getGroupPhotos().stream()
@@ -465,7 +465,7 @@ public class PhotosService {
         }
     }
 
-    public void moveBucket(PhotosManager photosManager, UserPrincipalDTO userPrincipalDTO) throws RepassaException {
+    public PhotosManager moveBucket(PhotosManager photosManager, UserPrincipalDTO userPrincipalDTO) throws RepassaException {
         if(photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
             photosManager.getGroupPhotos().forEach(group -> {
                 if(!group.getPhotos().isEmpty()) {
@@ -489,6 +489,8 @@ public class PhotosService {
                     }
                 });
         }
+
+        return photosManager;
     }
 
     public AtomicReference<String> movePhotoBucketRenova(String urlPhoto, String productId, String photoName) {

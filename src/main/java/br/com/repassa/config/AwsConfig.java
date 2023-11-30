@@ -29,6 +29,14 @@ public class AwsConfig {
     @ConfigProperty(name = "s3.aws.bucket-renova")
     String bucketNameRenova;
 
+    public String getBucketNameRenova() {
+        return bucketNameRenova;
+    }
+
+    public void setBucketNameRenova(String bucketNameRenova) {
+        this.bucketNameRenova = bucketNameRenova;
+    }
+
     public String getBucketName() {
         return bucketName;
     }

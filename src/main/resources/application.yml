@@ -21,3 +21,18 @@ quarkus:
   spring-cloud-config:
     enabled: true # conexão com o config-server está disabilitado por padrão
     url: https://api-java-dev.repassa.net.br/backoffice-spring-config/
+
+s3:
+  aws:
+    access-key: AKIAJWITEVM4HXREFLYA
+    secret-key: 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
+    region: us-east-1
+    bucket-name: backoffice-triage-photo-dev
+    bucket-renova: repassa-assets-homolog
+    url-base: https://${s3.aws.bucket-name}.s3.amazonaws.com
+    error-image: ${s3.aws.url-base}/invalidPhoto.png
+    front-url: https://assets-dev-curadoria.repassa.com.br
+dynamo:
+  table:
+    photoProcessing: PhotoProcessingTable
+    photosManager: PhotosManager

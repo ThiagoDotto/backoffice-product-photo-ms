@@ -1,6 +1,5 @@
 package br.com.repassa.config;
 
-import lombok.Getter;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -27,6 +26,8 @@ public class AwsConfig {
 //    @ConfigProperty(name = "s3.aws.error-image")
     String errorImage = ConfigProvider.getConfig().getValue("s3.aws.error-image", String.class);
 
+    @ConfigProperty(name = "s3.aws.bucket-renova")
+    String bucketNameRenova;
 
     public String getBucketName() {
         return bucketName;

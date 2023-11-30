@@ -46,6 +46,14 @@ public class PhotosValidate {
         return objectKeyWithCount;
     }
 
+    public String validatePathBucketRenova(String productId, String style, String photoName) {
+        String objectKeyWithCount = "spree/products/"
+                .concat(productId + "/")
+                .concat(style + "/")
+                .concat(photoName + "/");
+        return objectKeyWithCount;
+    }
+
     public static boolean extensionTypeValidation(String type) {
 
         if (type.contains("jpeg") || type.contains("jpg")) {

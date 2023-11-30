@@ -28,11 +28,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 import javax.ws.rs.core.HttpHeaders;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.ImageObserver;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -251,16 +260,20 @@ public class PhotosService {
             try {
                 String[] nameAux = photo.getName().split("\\."); // [0] - Apenas o nome do arquivo
                 String[] typeAux = photo.getType().split("\\/"); // [1] - Apenas a extensão do arquivo
-                String newNameFile = nameAux[0] + "." + typeAux[1]; // Nome do arquivo com base na extensão que está
-                // sendo passada
+                String newNameFile = nameAux[0] + "." + typeAux[1]; // Nome do arquivo com base na extensão que está sendo passada
+                String newNameThumbnailFile = nameAux[0] + "_thumbnail" + "." + typeAux[1]; // Nome do arquivo com base na extensão que está sendo passada
 
                 photo.setName(newNameFile);
+                photo.setUrlThumbNail(newNameThumbnailFile);
                 String objKey = objectKey.concat(newNameFile);
+                String objThumbnailKey = objectKey.concat(newNameThumbnailFile);
                 urlImage.set(awsConfig.getUrlBase() + objKey);
                 PhotoInsertValidateDTO photoInsertValidate = photosValidate.validatePhoto(photo);
+                String objThumbnailBase64 = PhotoUtils.thumbnail(photo.getBase64());
 
                 if (photoInsertValidate.isValid()) {
                     awsS3Client.uploadBase64FileToS3(awsConfig.getBucketName(), objKey, photo.getBase64());
+                    awsS3Client.uploadBase64FileToS3(awsConfig.getBucketName(), objThumbnailKey, objThumbnailBase64);
                     PhotoProcessed photoProcessed = this.savePhotoProcessingDynamo(photo, username, urlImage);
                     photosManager.set(savePhotoManager(imageDTO, urlImage.get(), photoProcessed));
                 } else {
@@ -364,7 +377,7 @@ public class PhotosService {
                     .id(photosFilter.getImageId())
                     .typePhoto(TypePhoto.getPosition(count.get()))
                     .urlPhoto(photosFilter.getOriginalImageUrl())
-                    .base64(photosFilter.getThumbnailBase64()).build();
+                    .urlThumbnail(photosFilter.getUrlThumbnail()).build();
 
             if (Boolean.FALSE.equals(PhotosValidate.extensionTypeValidation(imageName[1]))) {
                 photo.setNote("Formato de arquivo inválido. São aceitos somente JPG ou JPEG");
@@ -406,7 +419,7 @@ public class PhotosService {
     }
 
     @Transactional
-    public void finishManagerPhotos(String id, UserPrincipalDTO loggerUser, HttpHeaders headers) throws Exception {
+    public void finishManagerPhotos(String id, UserPrincipalDTO userPrincipalDTO, HttpHeaders headers) throws Exception {
 
         String tokenAuth = headers.getHeaderString("Authorization");
 
@@ -424,7 +437,7 @@ public class PhotosService {
         AtomicBoolean existError = new AtomicBoolean(false);
         photosManager.getGroupPhotos().forEach(group -> {
 
-            if (group.getIdError() != null || group.getImageError() != null) {
+            if (group.getIdError() != null || group.getImageError() != null || group.getProductId() == null) {
                 existError.set(true);
             }
 
@@ -437,13 +450,78 @@ public class PhotosService {
         }
 
         try {
+            /**
+             * Antes de salvar e finalizar as informações do Grupo, é necessário realizar a movimentação das fotos
+             * entre os buckets
+             */
+            photosManager = moveBucket(photosManager, userPrincipalDTO);
             photoManagerRepository.savePhotosManager(photosManager);
-            historyService.save(photosManager, loggerUser, headers);
+            historyService.save(photosManager, userPrincipalDTO, headers);
             photosManager.getGroupPhotos().stream()
                     .map(groupPhotos -> Long.parseLong(groupPhotos.getProductId()))
                     .forEach(productId -> productRestClient.updatePhotographyStatus(productId, tokenAuth));
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_SALVAR_NO_DYNAMO);
+        }
+    }
+
+    public PhotosManager moveBucket(PhotosManager photosManager, UserPrincipalDTO userPrincipalDTO) throws RepassaException {
+        if(photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
+            photosManager.getGroupPhotos().forEach(group -> {
+                if(!group.getPhotos().isEmpty()) {
+                    group.getPhotos().forEach(photo -> {
+                        if(!photo.getUrlPhoto().isEmpty()) {
+                            try {
+                                    //Chamar metodo para movimentar adicionar a imagem no bucket do Renova
+                                    AtomicReference<String> urlPhoto = movePhotoBucketRenova(photo.getUrlPhoto(), group.getProductId(), photo.getNamePhoto());
+                                    /**
+                                     * Se ao mover a Foto, retornar SUCESSO, então poderá ser removida do bucket Seler Center
+                                     */
+                                    if(urlPhoto != null) {
+                                        deletePhoto(photo.getId(), userPrincipalDTO);     
+                                        photo.setUrlPhoto(urlPhoto.get());                           
+                                    }
+                                } catch (RepassaException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+                    }
+                });
+        }
+
+        return photosManager;
+    }
+
+    public AtomicReference<String> movePhotoBucketRenova(String urlPhoto, String productId, String photoName) {
+        try {
+            var photosValidate = new PhotosValidate();
+            AtomicReference<String> urlImage = new AtomicReference<>(new String());
+
+            URL url = new URL(urlPhoto);
+            BufferedImage originalImage = ImageIO.read(url);
+
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ImageIO.write(originalImage, "jpg", byteArrayOutputStream);
+            byte[] resizedImageBytes = byteArrayOutputStream.toByteArray();
+
+            var photoBase64 =  Base64.getEncoder().encodeToString(resizedImageBytes);
+
+            var objectKey = photosValidate.validatePathBucketRenova(productId, "teste", photoName);
+            urlImage.set(awsConfig.getUrlBase() + objectKey);
+
+            awsS3Client.uploadBase64FileToS3(awsConfig.getBucketNameRenova(), objectKey, photoBase64);
+
+            return urlImage;
+        } catch (MalformedURLException e) {
+            LOG.error("Error 1" + e.getMessage());
+            return null;
+        } catch (IOException e) {
+            LOG.error("Error 2" + e.getMessage());
+            return null;
+        } catch (Exception e) {
+            LOG.error("Error 3" + e.getMessage());
+            return null;
         }
     }
 
@@ -507,7 +585,6 @@ public class PhotosService {
                         if (Objects.equals(groupPhotos.getId(), imageDTO.getGroupId())) {
                             imageDTO.getPhotoBase64().forEach(photoTela -> {
                                 String imageId = UUID.randomUUID().toString();
-                                String imageBase64 = null;
 
                                 if (photoProcessed == null) {
                                     groupPhotos.setImageError(TypeError.IMAGE_ERROR.name());
@@ -515,7 +592,6 @@ public class PhotosService {
                                 } else {
                                     groupPhotos.setImageError(null);
                                     imageId = photoProcessed.getImageId();
-                                    imageBase64 = PhotoUtils.thumbnail(urlImageTemp.get());
                                 }
 
                                 photo.set(Photo.builder()
@@ -523,7 +599,7 @@ public class PhotosService {
                                         .namePhoto(photoTela.getName())
                                         .urlPhoto(urlImageTemp.get())
                                         .sizePhoto(photoTela.getSize())
-                                        .base64(imageBase64)
+                                        .urlThumbnail(photoTela.getUrlThumbNail())
                                         .note(photoTela.getNote())
                                         .build());
 
@@ -536,8 +612,8 @@ public class PhotosService {
             photoManagerRepository.savePhotosManager(photoManager);
 
             return photoManager;
-        } catch (RepassaException e) {
-            throw new RepassaException(e.getRepassaUtilError());
+//        } catch (RepassaException e) {
+//            throw new RepassaException(e.getRepassaUtilError());
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
         }
@@ -554,7 +630,7 @@ public class PhotosService {
         photoProcessed.setImageId(UUID.randomUUID().toString());
         photoProcessed.setSizePhoto(photoBase64DTO.getSize());
         photoProcessed.setImageName(photoBase64DTO.getName());
-        photoProcessed.setThumbnailBase64(photoBase64DTO.getBase64());
+        photoProcessed.setUrlThumbnail(photoBase64DTO.getUrlThumbNail());
         photoProcessed.setOriginalImageUrl(urlImage.get());
 
         photoProcessingService.save(photoProcessed);

@@ -45,7 +45,7 @@ public class PhotoFilterResponseDTO implements Serializable {
             photoFilterResponseDTO.setIsValid(item.get("is_valid").s());
             photoFilterResponseDTO.setOriginalImageUrl(item.get("original_image_url").s());
             photoFilterResponseDTO.setSizePhoto(item.get("size_photo").s());
-            photoFilterResponseDTO.setUrlThumbnail(item.get("thumbnail").s());
+            photoFilterResponseDTO.setUrlThumbnail(item.get("url_thumbnail").s());
             photoFilterResponseDTO.setUploadDate(item.get("upload_date").s());
 //            photoFilterResponseDTO.setId((item.get(PhotoAbstractService.FRUIT_NAME_COL).s());
 //            photosManager.setDescription(item.get(AbstractService.FRUIT_DESC_COL).s());

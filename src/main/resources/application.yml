@@ -28,6 +28,7 @@ s3:
     secret-key: P7BFo7MzOfNledX/ggmgFDqVT/3dG1P6cJJxAwK5
     region: us-east-1
     bucket-name: backoffice-triage-photo-stg
+    bucket-renova: repassa-assets-homolog
     url-base: https://${s3.aws.bucket-name}.s3.amazonaws.com
     error-image: ${s3.aws.url-base}/invalidPhoto.png
     front-url: https://assets-qa-curadoria.repassa.com.br

@@ -54,7 +54,7 @@ public class PhotosServiceTest {
     void testFilterAndPersist() throws RepassaException {
         // Arrange
         PhotoFilterDTO filter = new PhotoFilterDTO("2023-09-22");
-        String fieldFiltered = "id, bag_id, edited_by, image_id, imagem_name, is_valid, original_image_url, size_photo, thumbnail, upload_date";
+        String fieldFiltered = "id, bag_id, edited_by, image_id, imagem_name, is_valid, original_image_url, size_photo, url_thumbnail, upload_date";
         String username = "Daniel Oliveira";
         Map<String, Object> expressionAttributeValues = new HashMap<String, Object>();
 

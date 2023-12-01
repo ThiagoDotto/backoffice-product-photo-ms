@@ -38,7 +38,7 @@ public class PhotoProcessingService {
             item.put("notes", AttributeValue.builder().s(SUCCESSFUL_STATS).build());
             item.put("original_image_url", AttributeValue.builder().s(photoProcessed.getOriginalImageUrl()).build());
             item.put("size_photo", AttributeValue.builder().s(photoProcessed.getSizePhoto()).build());
-            item.put("thumbnail", AttributeValue.builder().s(photoProcessed.getUrlThumbnail()).build());
+            item.put("url_thumbnail", AttributeValue.builder().s(photoProcessed.getUrlThumbnail()).build());
             item.put("upload_date", AttributeValue.builder().s(photoProcessed.getUploadDate()).build());
 
             PutItemRequest putItemRequest = PutItemRequest.builder()
@@ -183,7 +183,7 @@ public class PhotoProcessingService {
             responseDTO.setIsValid(item.get("is_valid").s());
             responseDTO.setOriginalImageUrl(item.get("original_image_url").s());
             responseDTO.setSizePhoto(item.get("size_photo").s());
-            responseDTO.setUrlThumbnail(item.get("thumbnail").s());
+            responseDTO.setUrlThumbnail(item.get("url_thumbnail").s());
             responseDTO.setUploadDate(item.get("upload_date").s());
 
             resultList.add(responseDTO);

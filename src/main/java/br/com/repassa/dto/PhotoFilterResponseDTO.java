@@ -45,7 +45,8 @@ public class PhotoFilterResponseDTO implements Serializable {
             photoFilterResponseDTO.setIsValid(item.get("is_valid").s());
             photoFilterResponseDTO.setOriginalImageUrl(item.get("original_image_url").s());
             photoFilterResponseDTO.setSizePhoto(item.get("size_photo").s());
-            photoFilterResponseDTO.setUrlThumbnail(item.get("thumbnail").s());
+            //TODO: ISSO tem que ser alterado com a modificação do PBI-24176
+            photoFilterResponseDTO.setUrlThumbnail(item.get("thumbnail_base64").s());
             photoFilterResponseDTO.setUploadDate(item.get("upload_date").s());
 //            photoFilterResponseDTO.setId((item.get(PhotoAbstractService.FRUIT_NAME_COL).s());
 //            photosManager.setDescription(item.get(AbstractService.FRUIT_DESC_COL).s());

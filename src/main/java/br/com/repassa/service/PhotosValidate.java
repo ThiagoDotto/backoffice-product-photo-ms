@@ -50,7 +50,7 @@ public class PhotosValidate {
         String objectKeyWithCount = "spree/products/"
                 .concat(productId + "/")
                 .concat(style + "/")
-                .concat(photoName + "/");
+                .concat(photoName);
         return objectKeyWithCount;
     }
 

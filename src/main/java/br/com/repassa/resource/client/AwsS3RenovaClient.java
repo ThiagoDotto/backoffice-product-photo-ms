@@ -1,12 +1,5 @@
 package br.com.repassa.resource.client;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.AwsConfig;
 import br.com.repassa.exception.PhotoError;
@@ -21,9 +14,15 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 @Singleton
 @Slf4j
-public class AwsS3Client {
+public class AwsS3RenovaClient {
 
     S3Client s3Client;
 
@@ -38,7 +37,7 @@ public class AwsS3Client {
                 AwsBasicCredentials.create(awsConfig.getAccessKey(), awsConfig.getSecretKey()));
         s3Client = S3Client.builder()
                 .credentialsProvider(credentialsProvider)
-                .region(Region.US_EAST_1)
+                .region(Region.SA_EAST_1)
                 .build();
     }
 

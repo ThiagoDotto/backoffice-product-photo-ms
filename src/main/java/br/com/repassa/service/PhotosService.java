@@ -17,6 +17,7 @@ import br.com.repassa.exception.PhotoError;
 import br.com.repassa.repository.aws.PhotoManagerRepository;
 import br.com.repassa.repository.aws.PhotoProcessingService;
 import br.com.repassa.resource.client.AwsS3Client;
+import br.com.repassa.resource.client.AwsS3RenovaClient;
 import br.com.repassa.resource.client.ProductRestClient;
 import br.com.repassa.service.rekognition.PhotoRemoveService;
 import br.com.repassa.service.rekognition.RekognitionService;
@@ -37,6 +38,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDateTime;
@@ -46,6 +48,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+
+import java.nio.charset.StandardCharsets;
 
 @ApplicationScoped
 public class PhotosService {
@@ -68,6 +72,9 @@ public class PhotosService {
 
     @Inject
     AwsS3Client awsS3Client;
+
+    @Inject
+    AwsS3RenovaClient awsS3RenovaClient;
 
     @RestClient
     ProductRestClient productRestClient;
@@ -435,10 +442,15 @@ public class PhotosService {
 
         photosManager.setStatusManagerPhotos(StatusManagerPhotos.FINISHED);
         AtomicBoolean existError = new AtomicBoolean(false);
+        AtomicBoolean existErrorProductId = new AtomicBoolean(false);
         photosManager.getGroupPhotos().forEach(group -> {
 
-            if (group.getIdError() != null || group.getImageError() != null || group.getProductId() == null) {
+            if (group.getIdError() != null || group.getImageError() != null) {
                 existError.set(true);
+            }
+
+            if (group.getProductId() == null) {
+                existErrorProductId.set(true);
             }
 
             group.setStatusProduct(StatusProduct.FINISHED);
@@ -447,6 +459,10 @@ public class PhotosService {
 
         if (existError.get()) {
             throw new RepassaException(PhotoError.GROUP_ERROR);
+        }
+
+        if (existErrorProductId.get()) {
+            throw new RepassaException(PhotoError.PRODUCT_ID_NULL);
         }
 
         try {
@@ -471,54 +487,46 @@ public class PhotosService {
                 if(!group.getPhotos().isEmpty()) {
                     group.getPhotos().forEach(photo -> {
                         if(!photo.getUrlPhoto().isEmpty()) {
-                            try {
-                                    //Chamar metodo para movimentar adicionar a imagem no bucket do Renova
-                                    AtomicReference<String> urlPhoto = movePhotoBucketRenova(photo.getUrlPhoto(), group.getProductId(), photo.getNamePhoto());
-                                    /**
-                                     * Se ao mover a Foto, retornar SUCESSO, então poderá ser removida do bucket Seler Center
-                                     */
-                                    if(urlPhoto != null) {
-                                        deletePhoto(photo.getId(), userPrincipalDTO);     
-                                        photo.setUrlPhoto(urlPhoto.get());                           
-                                    }
-                                } catch (RepassaException e) {
-                                    e.printStackTrace();
-                                }
+                            //Chamar metodo para movimentar adicionar a imagem no bucket do Renova
+                            String urlPhoto = movePhotoBucketRenova(photo.getUrlPhoto(), group.getProductId(), photo.getNamePhoto());
+                            /**
+                             * Se ao mover a Foto, retornar SUCESSO, então poderá ser removida do bucket Seler Center
+                             */
+                            if(urlPhoto != null) {
+                                photoRemoveService.remove(photo);
+                                photo.setUrlPhoto(urlPhoto);
                             }
-                        });
-                    }
-                });
+                        }
+                    });
+                }
+            });
         }
 
         return photosManager;
     }
 
-    public AtomicReference<String> movePhotoBucketRenova(String urlPhoto, String productId, String photoName) {
+    public String movePhotoBucketRenova(String urlPhoto, String productId, String photoName) {
         try {
-            var photosValidate = new PhotosValidate();
-            AtomicReference<String> urlImage = new AtomicReference<>(new String());
-
+            // Abre uma conexão para a URL
             URL url = new URL(urlPhoto);
-            BufferedImage originalImage = ImageIO.read(url);
+            InputStream is = url.openStream();
 
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            ImageIO.write(originalImage, "jpg", byteArrayOutputStream);
-            byte[] resizedImageBytes = byteArrayOutputStream.toByteArray();
+            // Lê os bytes da imagem
+            byte[] imageBytes = is.readAllBytes();
 
-            var photoBase64 =  Base64.getEncoder().encodeToString(resizedImageBytes);
+            // Codifica os bytes para Base64
+            String base64String = Base64.getEncoder().encodeToString(imageBytes);
 
-            var objectKey = photosValidate.validatePathBucketRenova(productId, "teste", photoName);
-            urlImage.set(awsConfig.getUrlBase() + objectKey);
+            var photosValidate = new PhotosValidate();
 
-            awsS3Client.uploadBase64FileToS3(awsConfig.getBucketNameRenova(), objectKey, photoBase64);
+            String photoBase64 = "data:image/jpg;base64," + base64String;
+
+            String objectKey = photosValidate.validatePathBucketRenova(productId, "original", photoName);
+            String urlImage = awsConfig.getUrlBase() + objectKey;
+
+            awsS3RenovaClient.uploadBase64FileToS3(awsConfig.getBucketNameRenova(), objectKey, photoBase64);
 
             return urlImage;
-        } catch (MalformedURLException e) {
-            LOG.error("Error 1" + e.getMessage());
-            return null;
-        } catch (IOException e) {
-            LOG.error("Error 2" + e.getMessage());
-            return null;
         } catch (Exception e) {
             LOG.error("Error 3" + e.getMessage());
             return null;

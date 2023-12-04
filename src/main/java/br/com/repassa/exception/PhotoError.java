@@ -44,6 +44,9 @@ public class PhotoError implements RepassaUtilError {
         public static final RepassaUtilError DELETE_PHOTO = new PhotoError("019", "Problemas ao Deletar a imagem.");
         public static final RepassaUtilError ENDPOINT_NAO_VALIDO = new PhotoError("020", "Endpoint não válido.");
 
+        public static final RepassaUtilError PRODUCT_ID_NULL = new PhotoError("021",
+                "Existem PRODUCT_ID's não identificados.");
+
         public PhotoError(String errorCode, String errorMessage) {
                 this.errorCode = errorCode;
                 this.errorMessage = errorMessage;

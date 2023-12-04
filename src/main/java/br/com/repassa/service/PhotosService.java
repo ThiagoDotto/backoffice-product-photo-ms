@@ -94,7 +94,7 @@ public class PhotosService {
     }
 
     public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user,
-                                        String tokenAuth) throws RepassaException {
+            String tokenAuth) throws RepassaException {
         List<ProcessBarCodeRequestDTO.GroupPhoto> groupPhotos = processBarCodeRequestDTO.getGroupPhotos();
 
         List<IdentificatorsDTO> validateIds = rekognitionService.PhotosRecognition(groupPhotos);
@@ -103,23 +103,23 @@ public class PhotosService {
             throw new RepassaException(AwsPhotoError.REKOGNITION_PHOTO_EMPTY);
         }
 
-//        if (groupPhotos.size() == validateIds.size()) {
-//            AtomicInteger count = new AtomicInteger(0);
-//
-//            validateIds.forEach(productId -> {
-//                if (!productId.getValid()) {
-//                    count.incrementAndGet();
-//                }
-//            });
-//
-//            if (count.get() == validateIds.size()) {
-//                if (validateIds.size() > 1) {
-//                    throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND_N);
-//                } else {
-//                    throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND);
-//                }
-//            }
-//        }
+        // if (groupPhotos.size() == validateIds.size()) {
+        // AtomicInteger count = new AtomicInteger(0);
+        //
+        // validateIds.forEach(productId -> {
+        // if (!productId.getValid()) {
+        // count.incrementAndGet();
+        // }
+        // });
+        //
+        // if (count.get() == validateIds.size()) {
+        // if (validateIds.size() > 1) {
+        // throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND_N);
+        // } else {
+        // throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND);
+        // }
+        // }
+        // }
 
         try {
             validateIdentificators(validateIds, tokenAuth, true);
@@ -143,7 +143,7 @@ public class PhotosService {
 
     @Transactional
     public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth,
-                                                          Boolean isOcr)
+            Boolean isOcr)
             throws Exception {
         if (identificators.isEmpty()) {
             throw new RepassaException(PhotoError.VALIDATE_IDENTIFICATORS_EMPTY);
@@ -232,7 +232,8 @@ public class PhotosService {
                 try {
                     photosManager = photoManagerRepository.findByProductId(identificator.getProductId());
                     if (photosManager == null) {
-                        PhotosManager photoManagerGroup = photoManagerRepository.findByGroupId(identificator.getGroupId());
+                        PhotosManager photoManagerGroup = photoManagerRepository
+                                .findByGroupId(identificator.getGroupId());
                         updatePhotoManager(photoManagerGroup, identificator);
                     } else {
                         updatePhotoManager(photosManager, identificator);
@@ -263,8 +264,11 @@ public class PhotosService {
             try {
                 String[] nameAux = photo.getName().split("\\."); // [0] - Apenas o nome do arquivo
                 String[] typeAux = photo.getType().split("\\/"); // [1] - Apenas a extensão do arquivo
-                String newNameFile = nameAux[0] + "." + typeAux[1]; // Nome do arquivo com base na extensão que está sendo passada
-                String newNameThumbnailFile = nameAux[0] + "_thumbnail" + "." + typeAux[1]; // Nome do arquivo com base na extensão que está sendo passada
+                String newNameFile = nameAux[0] + "." + typeAux[1]; // Nome do arquivo com base na extensão que está
+                                                                    // sendo passada
+                String newNameThumbnailFile = nameAux[0] + "_thumbnail" + "." + typeAux[1]; // Nome do arquivo com base
+                                                                                            // na extensão que está
+                                                                                            // sendo passada
 
                 photo.setName(newNameFile);
                 photo.setUrlThumbNail(newNameThumbnailFile);
@@ -318,7 +322,8 @@ public class PhotosService {
 
     public ChangeTypePhotoDTO changeStatusPhoto(ChangeTypePhotoDTO data) throws RepassaException {
         try {
-            PhotosManager photoManager = photoManagerRepository.findByImageAndGroupId(data.getPhotoId(), data.getGroupId());
+            PhotosManager photoManager = photoManagerRepository.findByImageAndGroupId(data.getPhotoId(),
+                    data.getGroupId());
             AtomicBoolean updatePhotoManager = new AtomicBoolean(Boolean.FALSE);
 
             if (photoManager == null) {
@@ -422,7 +427,8 @@ public class PhotosService {
     }
 
     @Transactional
-    public void finishManagerPhotos(String id, UserPrincipalDTO userPrincipalDTO, HttpHeaders headers) throws Exception {
+    public void finishManagerPhotos(String id, UserPrincipalDTO userPrincipalDTO, HttpHeaders headers)
+            throws Exception {
 
         String tokenAuth = headers.getHeaderString("Authorization");
 
@@ -463,7 +469,8 @@ public class PhotosService {
 
         try {
             /**
-             * Antes de salvar e finalizar as informações do Grupo, é necessário realizar a movimentação das fotos
+             * Antes de salvar e finalizar as informações do Grupo, é necessário realizar a
+             * movimentação das fotos
              * entre os buckets
              */
             photosManager = moveBucket(photosManager, userPrincipalDTO);
@@ -477,18 +484,21 @@ public class PhotosService {
         }
     }
 
-    public PhotosManager moveBucket(PhotosManager photosManager, UserPrincipalDTO userPrincipalDTO) throws RepassaException {
-        if(photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
+    public PhotosManager moveBucket(PhotosManager photosManager, UserPrincipalDTO userPrincipalDTO)
+            throws RepassaException {
+        if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
             photosManager.getGroupPhotos().forEach(group -> {
-                if(!group.getPhotos().isEmpty()) {
+                if (!group.getPhotos().isEmpty()) {
                     group.getPhotos().forEach(photo -> {
-                        if(!photo.getUrlPhoto().isEmpty()) {
-                            //Chamar metodo para movimentar adicionar a imagem no bucket do Renova
-                            String urlPhoto = movePhotoBucketRenova(photo.getUrlPhoto(), group.getProductId(), photo.getNamePhoto());
+                        if (!photo.getUrlPhoto().isEmpty()) {
+                            // Chamar metodo para movimentar adicionar a imagem no bucket do Renova
+                            String urlPhoto = movePhotoBucketRenova(photo.getUrlPhoto(), group.getProductId(),
+                                    photo.getNamePhoto());
                             /**
-                             * Se ao mover a Foto, retornar SUCESSO, então poderá ser removida do bucket Seler Center
+                             * Se ao mover a Foto, retornar SUCESSO, então poderá ser removida do bucket
+                             * Seler Center
                              */
-                            if(urlPhoto != null) {
+                            if (urlPhoto != null) {
                                 photoRemoveService.remove(photo);
                                 photo.setUrlPhoto(urlPhoto);
                             }
@@ -552,7 +562,8 @@ public class PhotosService {
                                 .typePhoto(Objects.nonNull(p.getTypePhoto()) ? p.getTypePhoto().toString() : "")
                                 .sizePhoto(p.getSizePhoto())
                                 .namePhoto(p.getNamePhoto())
-                                .urlPhoto(StringUtils.formatToCloudFrontURL(p.getUrlPhoto(), awsConfig.getCloudFrontURL()))
+                                .urlPhoto(StringUtils.formatToCloudFrontURL(p.getUrlPhoto(),
+                                        awsConfig.getCloudFrontURL()))
                                 .build())
                         .toList();
                 return ProductPhotoListDTO.builder().photos(productPhotoDTOList).build();
@@ -616,15 +627,15 @@ public class PhotosService {
             photoManagerRepository.savePhotosManager(photoManager);
 
             return photoManager;
-//        } catch (RepassaException e) {
-//            throw new RepassaException(e.getRepassaUtilError());
+            // } catch (RepassaException e) {
+            // throw new RepassaException(e.getRepassaUtilError());
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
         }
     }
 
     public PhotoProcessed savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String username,
-                                                    AtomicReference<String> urlImage) throws RepassaException {
+            AtomicReference<String> urlImage) throws RepassaException {
         PhotoProcessed photoProcessed = new PhotoProcessed();
 
         photoProcessed.setEditedBy(username);

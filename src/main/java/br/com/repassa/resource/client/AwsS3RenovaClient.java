@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Singleton
 @Slf4j
-public class AwsS3Client {
+public class AwsS3RenovaClient {
 
     S3Client s3Client;
 
@@ -38,7 +38,7 @@ public class AwsS3Client {
                 AwsBasicCredentials.create(awsConfig.getAccessKey(), awsConfig.getSecretKey()));
         s3Client = S3Client.builder()
                 .credentialsProvider(credentialsProvider)
-                .region(Region.US_EAST_1)
+                .region(Region.SA_EAST_1)
                 .build();
     }
 

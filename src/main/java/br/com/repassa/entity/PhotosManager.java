@@ -29,4 +29,10 @@ public class PhotosManager implements Serializable {
     private String date;
     private StatusManagerPhotos statusManagerPhotos;
     private List<GroupPhotos> groupPhotos;
+
+    public void removeGroupById(String groupId) {
+        // Utilize um iterador para percorrer a lista e remover elementos
+        // Remova o grupo da lista usando o iterador
+        groupPhotos.removeIf(grupo -> grupo.getId().equals(groupId));
+    }
 }

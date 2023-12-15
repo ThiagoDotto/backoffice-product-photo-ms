@@ -28,15 +28,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 import javax.ws.rs.core.HttpHeaders;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -44,8 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
-import java.nio.charset.StandardCharsets;
 
 @ApplicationScoped
 public class PhotosService {
@@ -322,7 +315,7 @@ public class PhotosService {
 
     public ChangeTypePhotoDTO changeStatusPhoto(ChangeTypePhotoDTO data) throws RepassaException {
         try {
-            PhotosManager photoManager = photoManagerRepository.findByImageAndGroupId(data.getPhotoId(),
+            PhotosManager photoManager = photoManagerRepository.findByImageIdGroupId(data.getPhotoId(),
                     data.getGroupId());
             AtomicBoolean updatePhotoManager = new AtomicBoolean(Boolean.FALSE);
 
@@ -684,6 +677,39 @@ public class PhotosService {
         }
     }
 
+    public void deleteGroupsOfPhoto(DeleteGroupPhotosDTO deleteGroupPhotosDTO) throws RepassaException {
+
+        if(deleteGroupPhotosDTO.getGroups().size() > 0) {
+            PhotosManager photosManager = null;
+
+            try {
+                photosManager = photoManagerRepository.findById(deleteGroupPhotosDTO.getId());
+            } catch (Exception e) {
+                throw new RepassaException(PhotoError.ERROR_SEARCH_DYNAMODB);
+            }
+
+            if (Objects.isNull(photosManager)) {
+                    LOG.debug("PhotoManager não encontrada no Banco de Dados");
+                    throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
+                }
+
+            PhotosManager finalPhotosManager = photosManager;
+            deleteGroupPhotosDTO.getGroups().forEach(groupPhoto -> {
+                finalPhotosManager.getGroupPhotos().forEach(groupPhotosPhotoManager -> {
+                    if(groupPhotosPhotoManager.getId().equals(groupPhoto.getId())) {
+                        groupPhotosPhotoManager.getPhotos().forEach(photo -> {
+                            photoRemoveService.remove(photo);
+                        });
+                    }
+                });
+
+                finalPhotosManager.removeGroupById(groupPhoto.getId());
+            });
+
+            LOG.debug("Atualizando o PhotosManager no Banco de Dados");
+            photoManagerRepository.savePhotosManager(photosManager);
+        }
+    }
     private static boolean isEditorEquals(UserPrincipalDTO userPrincipalDTO, PhotosManager photosManager) {
         String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(userPrincipalDTO.getFirtName()));
         return photosManager.getEditor().equals(username);

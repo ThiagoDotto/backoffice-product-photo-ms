@@ -19,6 +19,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import br.com.repassa.dto.*;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -33,13 +34,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.dto.ChangeTypePhotoDTO;
-import br.com.repassa.dto.FinishPhotoManagerDTO;
-import br.com.repassa.dto.IdentificatorsDTO;
-import br.com.repassa.dto.ImageDTO;
-import br.com.repassa.dto.PhotoFilterDTO;
-import br.com.repassa.dto.ProcessBarCodeRequestDTO;
-import br.com.repassa.dto.ProductPhotoListDTO;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.service.PhotosService;
 
@@ -183,6 +177,19 @@ public class PhotosResource {
                 .firtName(this.token.getClaim("name"))
                 .build();
         photosService.deletePhoto(idPhoto, userPrincipalDTO);
+        return Response.ok().build();
+    }
+
+    @DELETE
+    @Operation(summary = "Deleta os Grupos do Foto", description = "Endpoint com finalidade para deletar a grupo de foto.")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
+    @APIResponses(value = {
+            @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json", schema = @Schema(implementation = DeleteGroupPhotosDTO.class, type = SchemaType.ARRAY))),
+    })
+    public Response deleteGroupsOfPhoto(@RequestBody @Valid DeleteGroupPhotosDTO deleteGroupPhotosDTO) throws Exception {
+        photosService.deleteGroupsOfPhoto(deleteGroupPhotosDTO);
         return Response.ok().build();
     }
 }

@@ -79,13 +79,16 @@ public class PhotoManagerRepository {
         }
     }
 
-    public PhotosManager findByImageAndGroupId(String imageId, String groupId) throws Exception {
+    public PhotosManager findByImageIdGroupId(String imageId, String groupId) throws Exception {
         DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
 
         expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + imageId + "\"").build());
-        expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + groupId + "\"").build());
+
+        if(imageId != null) {
+            expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + groupId + "\"").build());
+        }
 
         ScanRequest scanRequest = ScanRequest.builder()
                 .tableName(dynamoConfig.getPhotosManager())

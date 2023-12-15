@@ -183,7 +183,7 @@ public class PhotoProcessingService {
             responseDTO.setIsValid(item.get("is_valid").s());
             responseDTO.setOriginalImageUrl(item.get("original_image_url").s());
             responseDTO.setSizePhoto(item.get("size_photo").s());
-            responseDTO.setUrlThumbnail(item.get("url_thumbnail").s());
+            responseDTO.setUrlThumbnail(item.get("thumbnail").s());
             responseDTO.setUploadDate(item.get("upload_date").s());
 
             resultList.add(responseDTO);

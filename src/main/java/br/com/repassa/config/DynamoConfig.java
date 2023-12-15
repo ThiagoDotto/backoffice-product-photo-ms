@@ -41,6 +41,7 @@ public class DynamoConfig {
                 throw new RepassaException(AwsPhotoError.DYNAMO_CONNECTION, e);
             }
         }
+
         return clientInstance;
     }
 

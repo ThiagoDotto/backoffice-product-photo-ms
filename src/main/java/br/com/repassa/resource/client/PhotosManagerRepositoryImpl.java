@@ -3,6 +3,7 @@ package br.com.repassa.resource.client;
 import java.util.HashMap;
 import java.util.Map;
 
+import br.com.repassa.config.DynamoConfig;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -14,11 +15,12 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 public class PhotosManagerRepositoryImpl  {
 
     private final DynamoDbClient dynamoDB;
-    private final String TABLE_NAME = "PhotosManager_QA";
+	private final DynamoConfig dynamoConfig;
 
-    public PhotosManagerRepositoryImpl(DynamoDbClient dynamoDBClient) {
+    public PhotosManagerRepositoryImpl(DynamoDbClient dynamoDBClient, DynamoConfig dynamoConfig) {
         this.dynamoDB = dynamoDBClient;
-    }
+		this.dynamoConfig = dynamoConfig;
+	}
 
     public <S extends PhotosManager> S save(S entity) {
 
@@ -38,7 +40,7 @@ public class PhotosManagerRepositoryImpl  {
 		    item.put("groupPhotos", AttributeValue.builder().s(writeValueAsString).build());
 
 		    PutItemRequest putItemRequest = PutItemRequest.builder()
-		        .tableName(TABLE_NAME)
+		        .tableName(dynamoConfig.getPhotosManager())
 		        .item(item)
 		        .build();
 

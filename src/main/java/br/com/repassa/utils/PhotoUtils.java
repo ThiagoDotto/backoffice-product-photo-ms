@@ -13,7 +13,9 @@ import java.net.URLConnection;
 import java.util.Base64;
 import javax.imageio.ImageIO;
 
+import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.entity.Photo;
+import br.com.repassa.exception.PhotoError;
 import org.apache.tika.Tika;
 import org.apache.tika.io.IOUtils;
 import org.slf4j.Logger;
@@ -74,11 +76,15 @@ public class PhotoUtils {
         }
     }
 
-    public static void urlToBase64AndMimeType(String urlStr, Photo photo) throws IOException {
-        String base64 = urlToBase64(urlStr);
-        String mimeType = getMimeTypeFromBase64(base64);
+    public static void urlToBase64AndMimeType(String urlStr, Photo photo) throws RepassaException {
+        try{
+            String base64 = urlToBase64(urlStr);
+            String mimeType = getMimeTypeFromBase64(base64);
 
-        photo.setMimeType(mimeType);
+            photo.setMimeType(mimeType);
+        } catch (IOException e) {
+            throw new RepassaException(PhotoError.ERROR_VALIDATE_MIMETYPE);
+        }
     }
     public static String getMimeTypeFromBase64(String base64Image) throws IOException {
         byte[] imageBytes = Base64.getDecoder().decode(base64Image);

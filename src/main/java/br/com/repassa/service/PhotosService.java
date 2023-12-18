@@ -82,7 +82,7 @@ public class PhotosService {
     @Inject
     PhotoRemoveService photoRemoveService;
 
-    public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException, IOException {
+    public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
 
         LOG.info("Filter {}", filter.getDate());
         String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
@@ -366,7 +366,7 @@ public class PhotosService {
     }
 
     @Transactional
-    public void persistPhotoManager(List<PhotoFilterResponseDTO> resultList) throws RepassaException, IOException {
+    public void persistPhotoManager(List<PhotoFilterResponseDTO> resultList) throws RepassaException {
         LOG.info("Iniciando processo de persistencia");
 
         var photoManager = new PhotosManager();

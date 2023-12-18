@@ -33,7 +33,7 @@ public class PhotoManagerRepository {
 
     public void savePhotosManager(PhotosManager manager) throws RepassaException {
         DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
-        PhotosManagerRepositoryImpl impl = new PhotosManagerRepositoryImpl(dynamoDB);
+        PhotosManagerRepositoryImpl impl = new PhotosManagerRepositoryImpl(dynamoDB, dynamoConfig);
         impl.save(manager);
     }
 

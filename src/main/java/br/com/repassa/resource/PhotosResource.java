@@ -1,5 +1,6 @@
 package br.com.repassa.resource;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -98,7 +99,7 @@ public class PhotosResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Buscar fotos por filtro", description = "As fotos existentes no Bucket, poderá ser buscadas através de filtros pré-configurados.")
     @Path("/filter-and-persist")
-    public Response getAllDate(@QueryParam("date") String date) throws RepassaException {
+    public Response getAllDate(@QueryParam("date") String date) throws RepassaException, IOException {
         PhotoFilterDTO filter = new PhotoFilterDTO(date);
         photosService.filterAndPersist(filter, token.getClaim("name"));
         return Response.ok().build();

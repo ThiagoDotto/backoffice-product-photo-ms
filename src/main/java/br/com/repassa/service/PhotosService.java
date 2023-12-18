@@ -376,7 +376,7 @@ public class PhotosService {
         AtomicInteger count = new AtomicInteger();
         AtomicBoolean isPhotoValid = new AtomicBoolean(Boolean.TRUE);
 
-        for (int pos = 0; pos <= resultList.size() - 1; pos++) {
+        for (int pos = 0; pos < resultList.size(); pos++) {
             PhotoFilterResponseDTO photosFilter = resultList.get(pos);
             String[] imageName = photosFilter.getImageName().split("\\.");
 

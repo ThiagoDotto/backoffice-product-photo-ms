@@ -86,7 +86,7 @@ public class PhotoManagerRepository {
 
         expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + imageId + "\"").build());
 
-        if(imageId != null) {
+        if(groupId != null) {
             expressionAttributeValues.put(":groupPhotos", AttributeValue.builder().s("\"id\":\"" + groupId + "\"").build());
         }
 

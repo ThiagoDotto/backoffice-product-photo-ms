@@ -42,6 +42,8 @@ public class PhotoError implements RepassaUtilError {
 
         public static final RepassaUtilError PRODUCT_ID_NULL = new PhotoError("021",
                 "Existem PRODUCT_ID's não identificados.");
+        public static final RepassaUtilError ERROR_SEARCH_DYNAMODB = new PhotoError("022",
+                "Erro ao buscar as informações no Banco de Dados. Tente novamente mais tarde.");
 
         public static final RepassaUtilError ERROR_VALIDATE_MIMETYPE = new PhotoError("022",
                 "Erro ao validar a Extensão do Arquivo.");

@@ -188,6 +188,7 @@ public class PhotosResource {
     @APIResponses(value = {
             @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json", schema = @Schema(implementation = DeleteGroupPhotosDTO.class, type = SchemaType.ARRAY))),
     })
+    @Path("/groups")
     public Response deleteGroupsOfPhoto(@RequestBody @Valid DeleteGroupPhotosDTO deleteGroupPhotosDTO) throws Exception {
         photosService.deleteGroupsOfPhoto(deleteGroupPhotosDTO);
         return Response.ok().build();

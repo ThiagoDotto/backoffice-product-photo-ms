@@ -6,6 +6,7 @@ import java.io.Serializable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import br.com.repassa.enums.TypePhoto;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Getter
@@ -26,7 +27,13 @@ public class Photo implements Serializable {
     private String sizePhoto;
     private String urlThumbnail;
     private TypePhoto typePhoto;
+
     @Builder.Default
     private String note = null;
 
+    @JsonProperty("is_valid")
+    private Boolean IsValid;
+
+    @JsonProperty("mime_type")
+    private String mimeType;
 }

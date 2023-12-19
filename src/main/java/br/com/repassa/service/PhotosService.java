@@ -21,6 +21,7 @@ import br.com.repassa.resource.client.AwsS3RenovaClient;
 import br.com.repassa.resource.client.ProductRestClient;
 import br.com.repassa.service.rekognition.PhotoRemoveService;
 import br.com.repassa.service.rekognition.RekognitionService;
+import br.com.repassa.utils.CommonsUtil;
 import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -369,9 +370,8 @@ public class PhotosService {
         AtomicInteger count = new AtomicInteger();
         AtomicBoolean isPhotoValid = new AtomicBoolean(Boolean.TRUE);
 
-        for (int pos = 0; pos <= resultList.size() - 1; pos++) {
+        for (int pos = 0; pos < resultList.size(); pos++) {
             PhotoFilterResponseDTO photosFilter = resultList.get(pos);
-            String[] imageName = photosFilter.getImageName().split("\\.");
 
             var photo = Photo.builder().namePhoto(photosFilter.getImageName())
                     .sizePhoto(photosFilter.getSizePhoto())
@@ -380,13 +380,9 @@ public class PhotosService {
                     .urlPhoto(photosFilter.getOriginalImageUrl())
                     .urlThumbnail(photosFilter.getUrlThumbnail()).build();
 
-            if (Boolean.FALSE.equals(PhotosValidate.extensionTypeValidation(imageName[1]))) {
-                photo.setNote("Formato de arquivo inválido. São aceitos somente JPG ou JPEG");
-            }
+            PhotoUtils.urlToBase64AndMimeType(photo.getUrlPhoto(), photo);
 
-            if (PhotosValidate.isGreatThanMaxSize(photo.getSizePhoto())) {
-                photo.setNote("Tamanho do arquivo inválido. São aceitos arquivos de até 15Mb");
-            }
+            CommonsUtil.validatePhoto(Long.valueOf(photo.getSizePhoto()), photo, awsConfig.getUrlBase());
 
             // Seta photoManager
             photoManager.setEditor(photosFilter.getEditedBy());
@@ -396,9 +392,7 @@ public class PhotosService {
             photos.add(photo);
             count.set(count.get() + 1);
 
-            if (Boolean.FALSE.equals(Boolean.valueOf(photosFilter.getIsValid()))) {
-                isPhotoValid.set(Boolean.FALSE);
-            }
+            isPhotoValid.set(Boolean.parseBoolean(photosFilter.getIsValid()));
 
             if (photos.size() % 4 == 0) {
                 managerGroupPhotos.addPhotos(photos, isPhotoValid);

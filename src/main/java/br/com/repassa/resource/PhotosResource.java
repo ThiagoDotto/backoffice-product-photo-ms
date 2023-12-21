@@ -168,9 +168,6 @@ public class PhotosResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
-    @APIResponses(value = {
-            @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ChangeTypePhotoDTO.class, type = SchemaType.ARRAY))),
-    })
     public Response deletePhoto(@QueryParam("idPhoto") String idPhoto) throws Exception {
         UserPrincipalDTO userPrincipalDTO = UserPrincipalDTO.builder()
                 .id(this.token.getClaim(Claims.sub))
@@ -186,9 +183,6 @@ public class PhotosResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
-    @APIResponses(value = {
-            @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json", schema = @Schema(implementation = DeleteGroupPhotosDTO.class, type = SchemaType.ARRAY))),
-    })
     @Path("/group")
     public Response deleteGroupsOfPhoto(@QueryParam("groupId") String groupId) throws Exception {
         photosService.deleteGroupsOfPhoto(groupId);

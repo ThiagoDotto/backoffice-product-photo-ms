@@ -285,6 +285,17 @@ public class PhotosService {
                     photosManager.set(savePhotoManager(imageDTO, urlImage.get(), null));
                 }
 
+                boolean thumbnailExist = false;
+
+                do {
+                    thumbnailExist = awsS3Client.checkExistFileInBucket(awsConfig.getBucketName(), objThumbnailKey);
+
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        LOG.debug("Erro enquanto processa o Thumbnail ");
+                    }
+                } while (!thumbnailExist);
             } catch (RepassaException e) {
                 LOG.debug("Erro ao tentar salvar as imagens para o GroupId {} ", imageDTO.getGroupId());
                 throw new RuntimeException(e);

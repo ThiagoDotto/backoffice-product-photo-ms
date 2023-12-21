@@ -13,10 +13,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
-import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
-import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.awssdk.services.dynamodb.model.*;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -137,6 +134,24 @@ public class PhotoManagerRepository {
         ScanResponse items = dynamoDB.scan(scanRequest);
 
         return parseJsonToObject(items);
+    }
+
+    public void deletePhotoManager(String photoManagerId) throws RepassaException {
+        try {
+            DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
+
+            HashMap<String, AttributeValue> keyToGet = new HashMap<>();
+            keyToGet.put("id", AttributeValue.builder().s(photoManagerId).build());
+
+            DeleteItemRequest deleteReq = DeleteItemRequest.builder()
+                    .tableName(dynamoConfig.getPhotosManager())
+                    .key(keyToGet)
+                    .build();
+
+            dynamoDB.deleteItem(deleteReq);
+        } catch (RepassaException | DynamoDbException e) {
+            throw new RepassaException(PhotoError.ERROR_FAILED_CONNECT_DYNAMODB);
+        }
     }
 
     public PhotosManager getByEditorUploadDateAndInProgressStatus(String date, String userName)

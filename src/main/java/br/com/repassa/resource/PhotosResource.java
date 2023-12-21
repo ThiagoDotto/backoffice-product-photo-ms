@@ -89,7 +89,7 @@ public class PhotosResource {
     }
 
     @POST
-    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
+//    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Buscar fotos por filtro", description = "As fotos existentes no Bucket, poderá ser buscadas através de filtros pré-configurados.")
     @Path("/filter-and-persist")
@@ -189,9 +189,23 @@ public class PhotosResource {
     @APIResponses(value = {
             @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json", schema = @Schema(implementation = DeleteGroupPhotosDTO.class, type = SchemaType.ARRAY))),
     })
-    @Path("/groups")
-    public Response deleteGroupsOfPhoto(@RequestBody @Valid DeleteGroupPhotosDTO deleteGroupPhotosDTO) throws Exception {
-        photosService.deleteGroupsOfPhoto(deleteGroupPhotosDTO);
+    @Path("/group")
+    public Response deleteGroupsOfPhoto(@QueryParam("groupId") String groupId) throws Exception {
+        photosService.deleteGroupsOfPhoto(groupId);
+        return Response.ok().build();
+    }
+
+    @DELETE
+    @Operation(summary = "Deleta os Grupos do Foto", description = "Endpoint com finalidade para deletar a grupo de foto.")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
+    @APIResponses(value = {
+            @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json", schema = @Schema(implementation = DeleteGroupPhotosDTO.class, type = SchemaType.ARRAY))),
+    })
+    @Path("/photo-manager")
+    public Response deletePhotoManager(@QueryParam("photoManagerId") String photoManagerId) throws Exception {
+        photosService.deletePhotoManager(photoManagerId);
         return Response.ok().build();
     }
 }

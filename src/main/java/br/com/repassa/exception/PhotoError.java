@@ -48,6 +48,9 @@ public class PhotoError implements RepassaUtilError {
         public static final RepassaUtilError ERROR_VALIDATE_MIMETYPE = new PhotoError("022",
                 "Erro ao validar a Extensão do Arquivo.");
 
+        public static final RepassaUtilError ERROR_FAILED_CONNECT_DYNAMODB = new PhotoError("023",
+                "Falhar ao conectar com Banco de Dados. Tente novamente mais tarde.");
+
         public PhotoError(String errorCode, String errorMessage) {
                 this.errorCode = errorCode;
                 this.errorMessage = errorMessage;

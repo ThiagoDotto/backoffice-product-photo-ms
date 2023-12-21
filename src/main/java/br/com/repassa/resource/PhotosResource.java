@@ -89,7 +89,7 @@ public class PhotosResource {
     }
 
     @POST
-//    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
+    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Buscar fotos por filtro", description = "As fotos existentes no Bucket, poderá ser buscadas através de filtros pré-configurados.")
     @Path("/filter-and-persist")
@@ -196,7 +196,7 @@ public class PhotosResource {
     }
 
     @DELETE
-    @Operation(summary = "Deleta os Grupos do Foto", description = "Endpoint com finalidade para deletar a grupo de foto.")
+    @Operation(summary = "Deleta os Grupos do Foto", description = "Endpoint com finalidade para deletar todos os grupos vinculado no PhotoManager.")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})

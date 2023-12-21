@@ -11,7 +11,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ImageDTO {
-
     @NotNull
     private String groupId;
 
@@ -20,4 +19,5 @@ public class ImageDTO {
     @NotNull
     private String date;
 
+    private Integer size;
 }

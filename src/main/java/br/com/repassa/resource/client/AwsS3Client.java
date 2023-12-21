@@ -42,22 +42,16 @@ public class AwsS3Client {
                 .build();
     }
 
-    public String uploadBase64FileToS3(String bucketName, String objectKey, String base64Data) throws RepassaException {
+    public String uploadBase64FileToS3(String bucketName, String objectKey, String base64Data, String mimeType) throws RepassaException {
         log.info("Iniciando o upload da imagem no S3");
         try {
-            String[] parts = base64Data.split(",");
-            if (parts.length == 2) {
-                String contentType = parts[0].split(":")[1].split(";")[0];
-                String base64 = parts[1];
-                byte[] data = java.util.Base64.getDecoder().decode(base64);
-                s3Client.putObject(PutObjectRequest.builder()
-                        .bucket(bucketName)
-                        .key(objectKey)
-                        .contentType(contentType)
-                        .build(), RequestBody.fromBytes(data));
-            } else {
-                throw new RepassaException(PhotoError.BASE64_INVALIDO);
-            }
+            byte[] data = java.util.Base64.getDecoder().decode(base64Data);
+
+            s3Client.putObject(PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(objectKey)
+                    .contentType(mimeType)
+                    .build(), RequestBody.fromBytes(data));
         } catch (IllegalArgumentException ignored) {
             throw new RepassaException(PhotoError.BASE64_INVALIDO);
         }

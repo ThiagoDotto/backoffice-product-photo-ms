@@ -32,6 +32,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 import javax.ws.rs.core.HttpHeaders;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.time.LocalDateTime;
@@ -253,29 +254,31 @@ public class PhotosService {
         AtomicReference<PhotosManager> photosManager = new AtomicReference<>(new PhotosManager());
 
         for (var i = 0; i < imageDTO.getPhotoBase64().size(); i++) {
-            PhotoBase64DTO photo = imageDTO.getPhotoBase64().get(i);
+            PhotoBase64DTO photoBase64DTO = imageDTO.getPhotoBase64().get(i);
+            Photo photo = Photo.builder().build();
 
             try {
-                String[] nameAux = photo.getName().split("\\."); // [0] - Apenas o nome do arquivo
-                String[] typeAux = photo.getType().split("\\/"); // [1] - Apenas a extensão do arquivo
-                String newNameFile = nameAux[0] + "." + typeAux[1]; // Nome do arquivo com base na extensão que está
-                                                                    // sendo passada
-                String newNameThumbnailFile = nameAux[0] + "_thumbnail" + "." + typeAux[1]; // Nome do arquivo com base
-                                                                                            // na extensão que está
-                                                                                            // sendo passada
-
-                photo.setName(newNameFile);
-                photo.setUrlThumbNail(newNameThumbnailFile);
+                String[] nameAux = photoBase64DTO.getName().split("\\."); // [0] - Apenas o nome do arquivo
+                String[] typeAux = photoBase64DTO.getType().split("\\/"); // [1] - Apenas a extensão do arquivo
+                String newNameFile = nameAux[0] + "." + typeAux[1]; // Nome do arquivo com base na extensão que está sendo passada
+                String newNameThumbnailFile = nameAux[0] + "_thumbnail" + "." + typeAux[1]; // Nome do arquivo com base na extensão que está sendo passada
                 String objKey = objectKey.concat(newNameFile);
                 String objThumbnailKey = objectKey.concat(newNameThumbnailFile);
+
                 urlImage.set(awsConfig.getUrlBase() + objKey);
-                PhotoInsertValidateDTO photoInsertValidate = photosValidate.validatePhoto(photo);
-                String objThumbnailBase64 = PhotoUtils.thumbnail(photo.getBase64());
+
+                PhotoInsertValidateDTO photoInsertValidate = photosValidate.validatePhoto(photoBase64DTO);
+
+                String base64Data = PhotoUtils.extractDataBase64(photoBase64DTO.getBase64());
+                String mimeType = PhotoUtils.getMimeTypeFromBase64(base64Data);
+
+                photoBase64DTO.setName(newNameFile);
+                photoBase64DTO.setUrlThumbNail(awsConfig.getUrlBase() + "/" + objThumbnailKey);
 
                 if (photoInsertValidate.isValid()) {
-                    awsS3Client.uploadBase64FileToS3(awsConfig.getBucketName(), objKey, photo.getBase64());
-                    awsS3Client.uploadBase64FileToS3(awsConfig.getBucketName(), objThumbnailKey, objThumbnailBase64);
-                    PhotoProcessed photoProcessed = this.savePhotoProcessingDynamo(photo, username, urlImage);
+                    awsS3Client.uploadBase64FileToS3(awsConfig.getBucketName(), objKey, base64Data, mimeType);
+
+                    PhotoProcessed photoProcessed = this.savePhotoProcessingDynamo(photoBase64DTO, username, urlImage);
                     photosManager.set(savePhotoManager(imageDTO, urlImage.get(), photoProcessed));
                 } else {
                     imageDTO.getPhotoBase64().set(i, photoInsertValidate.getPhoto());
@@ -284,6 +287,8 @@ public class PhotosService {
 
             } catch (RepassaException e) {
                 LOG.debug("Erro ao tentar salvar as imagens para o GroupId {} ", imageDTO.getGroupId());
+                throw new RuntimeException(e);
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -614,8 +619,6 @@ public class PhotosService {
             photoManagerRepository.savePhotosManager(photoManager);
 
             return photoManager;
-            // } catch (RepassaException e) {
-            // throw new RepassaException(e.getRepassaUtilError());
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_PERSISTIR);
         }

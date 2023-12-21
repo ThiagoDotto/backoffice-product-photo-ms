@@ -11,11 +11,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Base64;
+import java.util.List;
 import javax.imageio.ImageIO;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.exception.PhotoError;
+import com.amazonaws.services.lambda.runtime.Context;
 import org.apache.tika.Tika;
 import org.apache.tika.io.IOUtils;
 import org.slf4j.Logger;
@@ -24,37 +26,6 @@ import org.slf4j.LoggerFactory;
 public class PhotoUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(PhotoUtils.class);
-
-    public static String thumbnail (String urlStr) {
-        try {
-            URL url = new URL(urlStr);
-            BufferedImage originalImage = ImageIO.read(url);
-            int newWidth = 180;
-            int newHeight = 180;
-            Image resizedImage = originalImage.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
-
-            BufferedImage resizedBufferedImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
-            resizedBufferedImage.getGraphics().drawImage(resizedImage, 0, 0, new ImageObserver() {
-                @Override
-                public boolean imageUpdate(Image img, int infoflags, int x, int y, int width, int height) {
-                    return false;
-                }
-            });
-
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            ImageIO.write(resizedBufferedImage, "jpg", byteArrayOutputStream);
-            byte[] resizedImageBytes = byteArrayOutputStream.toByteArray();
-
-            return Base64.getEncoder().encodeToString(resizedImageBytes);
-        } catch (MalformedURLException e) {
-            LOG.error("Error 1" + e.getMessage());
-        } catch (IOException e) {
-            LOG.error("Error 2" + e.getMessage());
-        } catch (Exception e) {
-            LOG.error("Error 3" + e.getMessage());
-        }
-        return "";
-    }
 
     public static String urlToBase64(String urlStr) throws IOException {
         URL imageUrl = new URL(urlStr);
@@ -86,6 +57,13 @@ public class PhotoUtils {
             throw new RepassaException(PhotoError.ERROR_VALIDATE_MIMETYPE);
         }
     }
+
+    public static String extractDataBase64(String base64) {
+        String[] parts = base64.split(",");
+
+        return parts[1];
+    }
+
     public static String getMimeTypeFromBase64(String base64Image) throws IOException {
         byte[] imageBytes = Base64.getDecoder().decode(base64Image);
         ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes);

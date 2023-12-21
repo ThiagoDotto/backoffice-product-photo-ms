@@ -671,37 +671,60 @@ public class PhotosService {
         }
     }
 
-    public void deleteGroupsOfPhoto(DeleteGroupPhotosDTO deleteGroupPhotosDTO) throws RepassaException {
+    public void deleteGroupsOfPhoto(String groupId) throws RepassaException {
 
-        if(deleteGroupPhotosDTO.getGroups().size() > 0) {
+        if(Objects.nonNull(groupId)) {
             PhotosManager photosManager = null;
 
             try {
-                photosManager = photoManagerRepository.findById(deleteGroupPhotosDTO.getId());
+                photosManager = photoManagerRepository.findByGroupId(groupId);
             } catch (Exception e) {
                 throw new RepassaException(PhotoError.ERROR_SEARCH_DYNAMODB);
             }
 
             if (Objects.isNull(photosManager)) {
-                    LOG.debug("PhotoManager não encontrada no Banco de Dados");
-                    throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
-                }
+                LOG.debug("PhotoManager não encontrada no Banco de Dados");
+                throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
+            }
 
             PhotosManager finalPhotosManager = photosManager;
-            deleteGroupPhotosDTO.getGroups().forEach(groupPhoto -> {
-                finalPhotosManager.getGroupPhotos().forEach(groupPhotosPhotoManager -> {
-                    if(groupPhotosPhotoManager.getId().equals(groupPhoto.getId())) {
-                        groupPhotosPhotoManager.getPhotos().forEach(photo -> {
-                            photoRemoveService.remove(photo);
-                        });
-                    }
-                });
-
-                finalPhotosManager.removeGroupById(groupPhoto.getId());
+            finalPhotosManager.getGroupPhotos().forEach(groupPhotosPhotoManager -> {
+                if(groupPhotosPhotoManager.getId().equals(groupId)) {
+                    groupPhotosPhotoManager.getPhotos().forEach(photo -> {
+                        photoRemoveService.remove(photo);
+                    });
+                }
             });
+
+            finalPhotosManager.removeGroupById(groupId);
 
             LOG.debug("Atualizando o PhotosManager no Banco de Dados");
             photoManagerRepository.savePhotosManager(photosManager);
+        }
+    }
+
+    public void deletePhotoManager(String photoManagerId) throws RepassaException {
+        if(Objects.nonNull(photoManagerId)) {
+            PhotosManager photosManager;
+            try {
+                photosManager = photoManagerRepository.findById(photoManagerId);
+            } catch (Exception e) {
+                throw new RepassaException(PhotoError.ERROR_SEARCH_DYNAMODB);
+            }
+
+            if (Objects.isNull(photosManager)) {
+                LOG.debug("PhotoManager não encontrada no Banco de Dados");
+                throw new RepassaException(PhotoError.PHOTO_MANAGER_IS_NULL);
+            }
+
+            photosManager.getGroupPhotos().forEach(groupPhotosPhotoManager -> {
+                groupPhotosPhotoManager.getPhotos().forEach(photo -> {
+                    photoRemoveService.remove(photo);
+                });
+            });
+
+            photoManagerRepository.deletePhotoManager(photoManagerId);
+
         }
     }
     private static boolean isEditorEquals(UserPrincipalDTO userPrincipalDTO, PhotosManager photosManager) {

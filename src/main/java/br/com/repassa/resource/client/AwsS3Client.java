@@ -19,6 +19,8 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Singleton
@@ -58,6 +60,21 @@ public class AwsS3Client {
         log.info("Retornando endereco da imagem");
 
         return awsConfig.getCloudFrontURL() + "/" + objectKey;
+    }
+
+    public boolean checkExistFileInBucket(String bucketName, String objectKey) {
+        try {
+            // Verifica se o objeto existe
+            HeadObjectResponse headObjectResponse = s3Client.headObject(HeadObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(objectKey)
+                    .build());
+
+            return true;
+        } catch (Exception e) {
+            // Se ocorrer uma exceção, assume-se que o objeto não existe
+            return false;
+        }
     }
 
     public void removeImageByUrl(String bucketName, String url) {

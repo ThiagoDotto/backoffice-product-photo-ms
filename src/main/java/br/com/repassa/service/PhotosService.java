@@ -428,13 +428,15 @@ public class PhotosService {
         photoManager.setGroupPhotos(groupPhotos);
         persistPhotoManagerDynamoDB(photoManager);
     }
-
-    @Transactional
-    public void finishManagerPhotos(String id, UserPrincipalDTO userPrincipalDTO, HttpHeaders headers)
-            throws Exception {
-
+    public void finishManager(String id, UserPrincipalDTO userPrincipalDTO, HttpHeaders headers) throws Exception {
         String tokenAuth = headers.getHeaderString("Authorization");
 
+        PhotosManager photosManager = finishManagerPhotos(id, userPrincipalDTO, headers);
+
+        updatePhotographyStatus(photosManager, tokenAuth);
+    }
+    @Transactional
+    public PhotosManager finishManagerPhotos(String id, UserPrincipalDTO userPrincipalDTO, HttpHeaders headers) throws Exception {
         if (Objects.isNull(id)) {
             throw new RepassaException(PhotoError.OBJETO_VAZIO);
         }
@@ -473,18 +475,22 @@ public class PhotosService {
         try {
             /**
              * Antes de salvar e finalizar as informações do Grupo, é necessário realizar a
-             * movimentação das fotos
-             * entre os buckets
+             * movimentação das fotos entre os buckets
              */
             photosManager = moveBucket(photosManager, userPrincipalDTO);
             photoManagerRepository.savePhotosManager(photosManager);
             historyService.save(photosManager, userPrincipalDTO, headers);
-            photosManager.getGroupPhotos().stream()
-                    .map(groupPhotos -> Long.parseLong(groupPhotos.getProductId()))
-                    .forEach(productId -> productRestClient.updatePhotographyStatus(productId, tokenAuth));
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_SALVAR_NO_DYNAMO);
         }
+
+        return photosManager;
+    }
+
+    public void updatePhotographyStatus(PhotosManager photosManager, String tokenAuth) {
+        photosManager.getGroupPhotos().stream()
+                .map(groupPhotos -> Long.parseLong(groupPhotos.getProductId()))
+                .forEach(productId -> productRestClient.updatePhotographyStatus(productId, tokenAuth));
     }
 
     public PhotosManager moveBucket(PhotosManager photosManager, UserPrincipalDTO userPrincipalDTO)
@@ -494,16 +500,20 @@ public class PhotosService {
                 if (!group.getPhotos().isEmpty()) {
                     group.getPhotos().forEach(photo -> {
                         if (!photo.getUrlPhoto().isEmpty()) {
-                            // Chamar metodo para movimentar adicionar a imagem no bucket do Renova
-                            String urlPhoto = movePhotoBucketRenova(photo.getUrlPhoto(), group.getProductId(),
-                                    photo.getNamePhoto());
+                            var photosValidate = new PhotosValidate();
+
+                            // Chama o metodo para movimentar adicionar a imagem no bucket do Renova
+                            String urlPhoto = movePhotoBucketRenova(photo.getUrlPhoto(), group.getProductId(), photo.getNamePhoto());
+                            String urlThumbnail = movePhotoBucketRenova(photo.getUrlThumbnail(), group.getProductId(), photosValidate.generateThumbnailName(photo.getNamePhoto()));
                             /**
                              * Se ao mover a Foto, retornar SUCESSO, então poderá ser removida do bucket
                              * Seler Center
                              */
-                            if (urlPhoto != null) {
+                            if (urlPhoto != null && urlThumbnail != null) {
                                 photoRemoveService.remove(photo);
+
                                 photo.setUrlPhoto(urlPhoto);
+                                photo.setUrlThumbnail(urlThumbnail);
                             }
                         }
                     });

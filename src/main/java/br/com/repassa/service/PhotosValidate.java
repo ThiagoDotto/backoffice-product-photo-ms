@@ -47,11 +47,18 @@ public class PhotosValidate {
     }
 
     public String validatePathBucketRenova(String productId, String style, String photoName) {
-        String objectKeyWithCount = "spree/products/"
+        String objectKeyWithCount = "/spree/products/"
                 .concat(productId + "/")
                 .concat(style + "/")
                 .concat(photoName);
+
         return objectKeyWithCount;
+    }
+
+    public String generateThumbnailName(String photoName) {
+        String parts[] = photoName.split("\\.");
+
+        return parts[0] + "_thumbnail." + parts[1];
     }
 
     public static boolean extensionTypeValidation(String type) {

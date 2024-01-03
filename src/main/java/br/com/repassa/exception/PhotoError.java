@@ -51,6 +51,9 @@ public class PhotoError implements RepassaUtilError {
         public static final RepassaUtilError ERROR_FAILED_CONNECT_DYNAMODB = new PhotoError("023",
                 "Falhar ao conectar com Banco de Dados. Tente novamente mais tarde.");
 
+        public static final RepassaUtilError PHOTOMANAGER_FINISHED = new PhotoError("024",
+                "As imagens associadas a esta data foram todas concluídas com sucesso!");
+
         public PhotoError(String errorCode, String errorMessage) {
                 this.errorCode = errorCode;
                 this.errorMessage = errorMessage;

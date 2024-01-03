@@ -154,7 +154,7 @@ public class PhotoManagerRepository {
         }
     }
 
-    public PhotosManager getByEditorUploadDateAndInProgressStatus(String date, String userName)
+    public PhotosManager getByEditorUploadDateAndStatus(String date, String userName)
             throws RepassaException {
 
         try {
@@ -162,15 +162,13 @@ public class PhotoManagerRepository {
             DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
 
             Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
-            expressionAttributeValues.put(":statusManagerPhotos",
-                    AttributeValue.builder().s(StatusManagerPhotos.IN_PROGRESS.name()).build());
             expressionAttributeValues.put(":editor", AttributeValue.builder().s(userName).build());
             expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(date).build());
 
             ScanRequest scanRequest = ScanRequest.builder()
                     .tableName(dynamoConfig.getPhotosManager())
                     .filterExpression(
-                            "statusManagerPhotos = :statusManagerPhotos and contains(upload_date, :upload_date) and editor = :editor")
+                            "contains(upload_date, :upload_date) and editor = :editor")
                     .expressionAttributeValues(expressionAttributeValues)
                     .build();
 

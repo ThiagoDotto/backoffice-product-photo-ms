@@ -1,6 +1,5 @@
 package br.com.repassa.resource;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,6 +20,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import br.com.repassa.dto.*;
+import br.com.repassa.exception.PhotoError;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -65,8 +65,21 @@ public class PhotosResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Busca por photos", description = "Buscar todas as Photos.")
     @Path("/search")
-    public PhotosManager getAllPhotos(@QueryParam("date") String date) {
-        return photosService.searchPhotos(date, token.getClaim("name"));
+    public Response getAllPhotos(@QueryParam("date") String date) throws RepassaException {
+        try {
+            PhotosManager photosManager = photosService.searchPhotos(date, token.getClaim("name"));
+
+            return Response.ok(photosManager).status(Response.Status.OK).build();
+        } catch (RepassaException exception) {
+            if(exception.getRepassaUtilError().getErrorCode().equals(PhotoError.PHOTOMANAGER_FINISHED.getErrorCode())) {
+                return Response
+                    .ok(ProductResponseDTO.builder().message(ProductResponseDTO.PHOTOMANAGER_FINISHED).build())
+                    .status(Response.Status.OK)
+                    .build();
+            }
+
+            throw new RepassaException(exception.getRepassaUtilError());
+        }
     }
 
     @GET

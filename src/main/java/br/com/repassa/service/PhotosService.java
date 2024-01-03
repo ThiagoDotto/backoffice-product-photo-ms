@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class PhotosService {
     private static final Logger LOG = LoggerFactory.getLogger(PhotosService.class);
+    private static final String AUTHORIZATION = "Authorization";
 
     @Inject
     AwsConfig awsConfig;
@@ -88,6 +89,26 @@ public class PhotosService {
         persistPhotoManager(photoFilterResponseDTOS);
     }
 
+    private List<String> extractBagIdFromDTO(List<IdentificatorsDTO> validateIds) {
+        Set<String> modifiedProductIdsSet = new HashSet<>();
+        for (IdentificatorsDTO dto : validateIds) {
+            String productId = dto.getProductId();
+            String modifiedProductId = productId.substring(0, productId.length() - 3);
+            modifiedProductIdsSet.add(modifiedProductId);
+        }
+        return new ArrayList<>(modifiedProductIdsSet);
+    }
+
+    private List<String> extractBagIdFromGroup(List<GroupPhotos> groupPhotos) {
+        Set<String> modifiedProductIdsSet = new HashSet<>();
+        for (GroupPhotos groupPhoto : groupPhotos) {
+            String productId = groupPhoto.getProductId();
+            String modifiedProductId = productId.substring(0, productId.length() - 3);
+            modifiedProductIdsSet.add(modifiedProductId);
+        }
+        return new ArrayList<>(modifiedProductIdsSet);
+    }
+
     public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user, String tokenAuth) throws RepassaException {
         List<ProcessBarCodeRequestDTO.GroupPhoto> groupPhotos = processBarCodeRequestDTO.getGroupPhotos();
 
@@ -95,6 +116,11 @@ public class PhotosService {
 
         if (validateIds.isEmpty()) {
             throw new RepassaException(AwsPhotoError.REKOGNITION_PHOTO_EMPTY);
+        }
+
+        List<String> bagIds = extractBagIdFromDTO(validateIds);
+        for(String bagId : bagIds){
+            historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), "IN_PROGRESS", null);
         }
 
         // if (groupPhotos.size() == validateIds.size()) {
@@ -490,6 +516,25 @@ public class PhotosService {
             historyService.save(photosManager, userPrincipalDTO, headers);
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_SALVAR_NO_DYNAMO);
+        }
+
+        List<GroupPhotos> groupPhotosList = photosManager.getGroupPhotos();
+        int qtyFinisheds = 0;
+        boolean statusFinished = true;
+        for(GroupPhotos groupPhotos : groupPhotosList){
+            if(groupPhotos.getStatusProduct().equals(StatusProduct.FINISHED)){
+                qtyFinisheds += 1;
+            }else{
+                statusFinished = false;
+            }
+        }
+        String statusPhoto = "IN_PROGRESS";
+        if(statusFinished){
+            statusPhoto = "FINISHED";
+        }
+        List<String> bagIds = extractBagIdFromGroup(groupPhotosList);
+        for(String bagId : bagIds){
+            historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), statusPhoto, String.valueOf(qtyFinisheds));
         }
 
         return photosManager;

@@ -5,16 +5,19 @@ import br.com.backoffice_repassa_utils_lib.dto.history.HistoryDTO;
 import br.com.backoffice_repassa_utils_lib.dto.history.PhotoDTO;
 import br.com.backoffice_repassa_utils_lib.dto.history.PhotographyDTO;
 import br.com.backoffice_repassa_utils_lib.dto.history.UserSystem;
+import br.com.repassa.dto.PhotographyUpdateDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.resource.client.HistoryClient;
+import io.quarkus.runtime.util.StringUtil;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,14 +27,13 @@ import java.util.List;
 public class HistoryService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HistoryService.class);
+    private static final String AUTHORIZATION = "Authorization";
 
+    @RestClient
     HistoryClient historyClient;
 
-    @Inject
-    public void historyService(@RestClient HistoryClient historyClient) {
-        this.historyClient = historyClient;
-    }
-
+    @Context
+    HttpHeaders headers;
 
     public void save(PhotosManager photosManager, UserPrincipalDTO loggerUser, HttpHeaders headers) {
 
@@ -41,7 +43,7 @@ public class HistoryService {
         List<HistoryDTO> historyDTOS = historiesObjsBuilder(loggerUser, groupPhotos, histories);
         LOGGER.debug("Salvando no History as photos");
         historyDTOS.forEach(historyDTO ->
-                historyClient.updateHistory(historyDTO,headers.getHeaderString("Authorization")));
+                historyClient.updateHistory(historyDTO,headers.getHeaderString(AUTHORIZATION)));
     }
 
     private static List<HistoryDTO> historiesObjsBuilder(UserPrincipalDTO loggerUser, List<GroupPhotos> groupPhotos, List<HistoryDTO> histories) {
@@ -75,5 +77,18 @@ public class HistoryService {
                     histories.add(historyDTO);
                 });
         return histories;
+    }
+
+    public void savePhotographyStatusInHistory(Long bagId, String status, String qty){
+        PhotographyUpdateDTO photographyUpdateDTO = PhotographyUpdateDTO.builder()
+                .photographyUpdateDate(LocalDateTime.now().toString())
+                .photographyStatus(status)
+                .bagId(bagId)
+                .build();
+        if(!StringUtil.isNullOrEmpty(qty)){
+            photographyUpdateDTO.setPhotographyFinishedQty(qty);
+        }
+        String tokenAuth = headers.getHeaderString(AUTHORIZATION);
+        historyClient.updatePhotographyhistory(photographyUpdateDTO, tokenAuth);
     }
 }

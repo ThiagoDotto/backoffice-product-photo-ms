@@ -88,8 +88,7 @@ public class PhotosService {
         persistPhotoManager(photoFilterResponseDTOS);
     }
 
-    public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user,
-            String tokenAuth) throws RepassaException {
+    public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user, String tokenAuth) throws RepassaException {
         List<ProcessBarCodeRequestDTO.GroupPhoto> groupPhotos = processBarCodeRequestDTO.getGroupPhotos();
 
         List<IdentificatorsDTO> validateIds = rekognitionService.PhotosRecognition(groupPhotos);
@@ -125,15 +124,23 @@ public class PhotosService {
         return searchPhotos(processBarCodeRequestDTO.getDate(), user);
     }
 
-    public PhotosManager searchPhotos(String date, String name) {
-        try {
-            String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
-            LOG.info("Fetered by Name: {}", username);
-            return photoManagerRepository.getByEditorUploadDateAndInProgressStatus(date, username);
-        } catch (RepassaException e) {
-            e.printStackTrace();
-            return null;
+    public PhotosManager searchPhotos(String date, String name) throws RepassaException {
+        String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
+        LOG.info("Fetered by Name: {}", username);
+        PhotosManager photosManager = photoManagerRepository.getByEditorUploadDateAndStatus(date, username);
+
+        if(Objects.isNull(photosManager)) {
+            PhotoFilterDTO photoFilterDTO = new PhotoFilterDTO();
+            photoFilterDTO.setDate(date);
+
+            filterAndPersist(photoFilterDTO, name);
+
+            photosManager = photoManagerRepository.getByEditorUploadDateAndStatus(date, username);
+        } else if(photosManager.getStatusManagerPhotos().equals(StatusManagerPhotos.FINISHED)) {
+            throw new RepassaException(PhotoError.PHOTOMANAGER_FINISHED);
         }
+
+        return photosManager;
     }
 
     @Transactional
@@ -216,6 +223,7 @@ public class PhotosService {
                     identificator.setValid(false);
                     response.add(identificator);
                 } else {
+
                     LOG.info("Erro ao persistir o ID: " + repassaException.getMessage());
 
                     identificator.setMessage("Houve um erro ao processar o ID " + identificator.getProductId());

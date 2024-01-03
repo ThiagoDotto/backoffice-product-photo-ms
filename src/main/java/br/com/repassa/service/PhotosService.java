@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class PhotosService {
     private static final Logger LOG = LoggerFactory.getLogger(PhotosService.class);
-    private static final String AUTHORIZATION = "Authorization";
 
     @Inject
     AwsConfig awsConfig;

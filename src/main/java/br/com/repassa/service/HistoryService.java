@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import java.time.LocalDateTime;
@@ -84,6 +83,7 @@ public class HistoryService {
         PhotographyUpdateDTO photographyUpdateDTO = PhotographyUpdateDTO.builder()
                 .photographyUpdateDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                 .photographyStatus(status)
+                .photographyFinishedQty("0")
                 .bagId(bagId)
                 .build();
         if(!StringUtil.isNullOrEmpty(qty)){

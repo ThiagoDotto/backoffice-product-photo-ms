@@ -20,6 +20,7 @@ import javax.inject.Inject;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -81,7 +82,7 @@ public class HistoryService {
 
     public void savePhotographyStatusInHistory(Long bagId, String status, String qty){
         PhotographyUpdateDTO photographyUpdateDTO = PhotographyUpdateDTO.builder()
-                .photographyUpdateDate(LocalDateTime.now().toString())
+                .photographyUpdateDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                 .photographyStatus(status)
                 .bagId(bagId)
                 .build();

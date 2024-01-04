@@ -519,21 +519,13 @@ public class PhotosService {
 
         List<GroupPhotos> groupPhotosList = photosManager.getGroupPhotos();
         int qtyFinisheds = 0;
-        boolean statusFinished = true;
         for(GroupPhotos groupPhotos : groupPhotosList){
-            if(groupPhotos.getStatusProduct().equals(StatusProduct.FINISHED)){
+            if(groupPhotos.getStatusProduct().equals(StatusProduct.FINISHED))
                 qtyFinisheds += 1;
-            }else{
-                statusFinished = false;
-            }
-        }
-        String statusPhoto = "IN_PROGRESS";
-        if(statusFinished){
-            statusPhoto = "FINISHED";
         }
         List<String> bagIds = extractBagIdFromGroup(groupPhotosList);
         for(String bagId : bagIds){
-            historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), statusPhoto, String.valueOf(qtyFinisheds));
+            historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), "IN_PROGRESS", String.valueOf(qtyFinisheds));
         }
 
         return photosManager;

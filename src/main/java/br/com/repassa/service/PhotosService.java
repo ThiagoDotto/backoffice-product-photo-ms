@@ -24,6 +24,7 @@ import br.com.repassa.service.rekognition.RekognitionService;
 import br.com.repassa.utils.CommonsUtil;
 import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
+import io.quarkus.runtime.util.StringUtil;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,8 +93,10 @@ public class PhotosService {
         Set<String> modifiedProductIdsSet = new HashSet<>();
         for (IdentificatorsDTO dto : validateIds) {
             String productId = dto.getProductId();
-            String modifiedProductId = productId.substring(0, productId.length() - 3);
-            modifiedProductIdsSet.add(modifiedProductId);
+            if(!StringUtil.isNullOrEmpty(productId)){
+                String modifiedProductId = productId.substring(0, productId.length() - 3);
+                modifiedProductIdsSet.add(modifiedProductId);
+            }
         }
         return new ArrayList<>(modifiedProductIdsSet);
     }
@@ -102,8 +105,11 @@ public class PhotosService {
         Set<String> modifiedProductIdsSet = new HashSet<>();
         for (GroupPhotos groupPhoto : groupPhotos) {
             String productId = groupPhoto.getProductId();
-            String modifiedProductId = productId.substring(0, productId.length() - 3);
-            modifiedProductIdsSet.add(modifiedProductId);
+            if(!StringUtil.isNullOrEmpty(productId)){
+                String modifiedProductId = productId.substring(0, productId.length() - 3);
+                modifiedProductIdsSet.add(modifiedProductId);
+            }
+
         }
         return new ArrayList<>(modifiedProductIdsSet);
     }
@@ -119,7 +125,11 @@ public class PhotosService {
 
         List<String> bagIds = extractBagIdFromDTO(validateIds);
         for(String bagId : bagIds){
-            historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), "IN_PROGRESS", null);
+            try{
+                historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), "IN_PROGRESS", null);
+            }catch (Exception e){
+                throw new RepassaException(PhotoError.PHOTO_STATUS_ERROR);
+            }
         }
 
         // if (groupPhotos.size() == validateIds.size()) {
@@ -525,7 +535,11 @@ public class PhotosService {
         }
         List<String> bagIds = extractBagIdFromGroup(groupPhotosList);
         for(String bagId : bagIds){
-            historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), "IN_PROGRESS", String.valueOf(qtyFinisheds));
+            try{
+                historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), "IN_PROGRESS", String.valueOf(qtyFinisheds));
+            }catch (Exception e){
+                throw new RepassaException(PhotoError.PHOTO_STATUS_ERROR);
+            }
         }
 
         return photosManager;

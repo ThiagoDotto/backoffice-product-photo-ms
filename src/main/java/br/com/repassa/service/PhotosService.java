@@ -132,24 +132,6 @@ public class PhotosService {
             }
         }
 
-        // if (groupPhotos.size() == validateIds.size()) {
-        // AtomicInteger count = new AtomicInteger(0);
-        //
-        // validateIds.forEach(productId -> {
-        // if (!productId.getValid()) {
-        // count.incrementAndGet();
-        // }
-        // });
-        //
-        // if (count.get() == validateIds.size()) {
-        // if (validateIds.size() > 1) {
-        // throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND_N);
-        // } else {
-        // throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND);
-        // }
-        // }
-        // }
-
         try {
             validateIdentificators(validateIds, tokenAuth, true);
         } catch (Exception e) {
@@ -308,7 +290,7 @@ public class PhotosService {
                 String objKey = objectKey.concat(newNameFile);
                 String objThumbnailKey = objectKey.concat(newNameThumbnailFile);
 
-                urlImage.set(awsConfig.getUrlBase() + objKey);
+                urlImage.set(awsConfig.getUrlBase() + "/" + objKey);
 
                 PhotoInsertValidateDTO photoInsertValidate = photosValidate.validatePhoto(photoBase64DTO);
 

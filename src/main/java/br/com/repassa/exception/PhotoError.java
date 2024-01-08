@@ -55,7 +55,7 @@ public class PhotoError implements RepassaUtilError {
                 "As imagens associadas a esta data foram todas concluídas com sucesso!");
 
         public static final RepassaUtilError PHOTO_STATUS_ERROR = new PhotoError("025",
-                "Essa bag não atende aos requisitos para esta ação!");
+                "Essa sacola não atende aos requisitos para esta ação!");
 
         public PhotoError(String errorCode, String errorMessage) {
                 this.errorCode = errorCode;

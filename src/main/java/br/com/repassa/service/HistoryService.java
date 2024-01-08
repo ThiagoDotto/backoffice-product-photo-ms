@@ -16,9 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -28,15 +25,11 @@ import java.util.List;
 public class HistoryService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HistoryService.class);
-    private static final String AUTHORIZATION = "Authorization";
 
     @RestClient
     HistoryClient historyClient;
 
-    @Context
-    HttpHeaders headers;
-
-    public void save(PhotosManager photosManager, UserPrincipalDTO loggerUser, HttpHeaders headers) {
+    public void save(PhotosManager photosManager, UserPrincipalDTO loggerUser) {
 
         List<GroupPhotos> groupPhotos = photosManager.getGroupPhotos();
         List<HistoryDTO> histories = new ArrayList<>();
@@ -44,7 +37,7 @@ public class HistoryService {
         List<HistoryDTO> historyDTOS = historiesObjsBuilder(loggerUser, groupPhotos, histories);
         LOGGER.debug("Salvando no History as photos");
         historyDTOS.forEach(historyDTO ->
-                historyClient.updateHistory(historyDTO,headers.getHeaderString(AUTHORIZATION)));
+                historyClient.updateHistory(historyDTO));
     }
 
     private static List<HistoryDTO> historiesObjsBuilder(UserPrincipalDTO loggerUser, List<GroupPhotos> groupPhotos, List<HistoryDTO> histories) {
@@ -56,13 +49,13 @@ public class HistoryService {
 
                     List<PhotoDTO> foto = new ArrayList<>();
                     photos.forEach(photo -> {
-                                PhotoDTO photoDTO = new PhotoDTO();
-                                photoDTO.setName(photo.getNamePhoto());
-                                photoDTO.setId(photo.getId());
-                                photoDTO.setType(photo.getTypePhoto().toString());
-                                photoDTO.setUrl(photo.getUrlPhoto());
-                                foto.add(photoDTO);
-                            });
+                        PhotoDTO photoDTO = new PhotoDTO();
+                        photoDTO.setName(photo.getNamePhoto());
+                        photoDTO.setId(photo.getId());
+                        photoDTO.setType(photo.getTypePhoto().toString());
+                        photoDTO.setUrl(photo.getUrlPhoto());
+                        foto.add(photoDTO);
+                    });
 
                     PhotographyDTO photographyDTO = PhotographyDTO.builder()
                             .date(LocalDateTime.now().toString())
@@ -80,16 +73,15 @@ public class HistoryService {
         return histories;
     }
 
-    public void savePhotographyStatusInHistory(Long bagId, String status, String qty){
+    public void savePhotographyStatusInHistory(Long bagId, String status, String qty) {
         PhotographyUpdateDTO photographyUpdateDTO = PhotographyUpdateDTO.builder()
                 .photographyUpdateDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                 .photographyStatus(status)
                 .bagId(bagId)
                 .build();
-        if(!StringUtil.isNullOrEmpty(qty)){
+        if (!StringUtil.isNullOrEmpty(qty)) {
             photographyUpdateDTO.setPhotographyFinishedQty(qty);
         }
-        String tokenAuth = headers.getHeaderString(AUTHORIZATION);
-        historyClient.updatePhotographyhistory(photographyUpdateDTO, tokenAuth);
+        historyClient.updatePhotographyhistory(photographyUpdateDTO);
     }
 }

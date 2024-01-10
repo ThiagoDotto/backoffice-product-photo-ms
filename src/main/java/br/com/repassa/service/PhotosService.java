@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
-import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -46,36 +45,33 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class PhotosService {
     private static final Logger LOG = LoggerFactory.getLogger(PhotosService.class);
-
-    @Inject
     AwsConfig awsConfig;
-
-    @Inject
     ProductService productService;
-
-    @Inject
     PhotoManagerRepository photoManagerRepository;
-
-    @Inject
     PhotoProcessingService photoProcessingService;
-
-    @Inject
     HistoryService historyService;
-
-    @Inject
     AwsS3Client awsS3Client;
-
-    @Inject
     AwsS3RenovaClient awsS3RenovaClient;
-
-    @RestClient
     ProductRestClient productRestClient;
-
-    @Inject
     RekognitionService rekognitionService;
+    PhotoRemoveService photoRemoveService;
 
     @Inject
-    PhotoRemoveService photoRemoveService;
+    public PhotosService(AwsConfig awsConfig, ProductService productService, PhotoManagerRepository photoManagerRepository,
+                         PhotoProcessingService photoProcessingService, HistoryService historyService, AwsS3Client awsS3Client,
+                         AwsS3RenovaClient awsS3RenovaClient, RekognitionService rekognitionService,
+                         PhotoRemoveService photoRemoveService, @RestClient ProductRestClient productRestClient) {
+        this.awsConfig = awsConfig;
+        this.productService = productService;
+        this.photoManagerRepository = photoManagerRepository;
+        this.photoProcessingService = photoProcessingService;
+        this.historyService = historyService;
+        this.awsS3Client = awsS3Client;
+        this.awsS3RenovaClient = awsS3RenovaClient;
+        this.productRestClient = productRestClient;
+        this.rekognitionService = rekognitionService;
+        this.photoRemoveService = photoRemoveService;
+    }
 
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
 
@@ -114,7 +110,7 @@ public class PhotosService {
         return new ArrayList<>(modifiedProductIdsSet);
     }
 
-    public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user, String tokenAuth) throws RepassaException {
+    public PhotosManager processBarCode(ProcessBarCodeRequestDTO processBarCodeRequestDTO, String user) throws RepassaException {
         List<ProcessBarCodeRequestDTO.GroupPhoto> groupPhotos = processBarCodeRequestDTO.getGroupPhotos();
 
         List<IdentificatorsDTO> validateIds = rekognitionService.PhotosRecognition(groupPhotos);
@@ -132,26 +128,8 @@ public class PhotosService {
             }
         }
 
-        // if (groupPhotos.size() == validateIds.size()) {
-        // AtomicInteger count = new AtomicInteger(0);
-        //
-        // validateIds.forEach(productId -> {
-        // if (!productId.getValid()) {
-        // count.incrementAndGet();
-        // }
-        // });
-        //
-        // if (count.get() == validateIds.size()) {
-        // if (validateIds.size() > 1) {
-        // throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND_N);
-        // } else {
-        // throw new RepassaException(AwsPhotoError.REKOGNITION_PRODUCT_ID_NOT_FOUND);
-        // }
-        // }
-        // }
-
         try {
-            validateIdentificators(validateIds, tokenAuth, true);
+            validateIdentificators(validateIds, true);
         } catch (Exception e) {
             throw new RepassaException(AwsPhotoError.REKOGNITION_ERROR);
         }
@@ -162,16 +140,26 @@ public class PhotosService {
     public PhotosManager searchPhotos(String date, String name) throws RepassaException {
         String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
         LOG.info("Fetered by Name: {}", username);
-        PhotosManager photosManager = photoManagerRepository.getByEditorUploadDateAndStatus(date, username);
 
-        if(Objects.isNull(photosManager)) {
+        long inicio = System.currentTimeMillis();
+        System.out.println("inicio da busca (getByEditorUploadDateAndStatus) de fotos por usuário " + inicio);
+        PhotosManager photosManager = photoManagerRepository.getByEditorUploadDateAndStatus(date, username);
+        long fim = System.currentTimeMillis();
+        System.out.println("FIM da busca (getByEditorUploadDateAndStatus) de fotos por usuário " + fim);
+        System.out.println("total " + (fim - inicio));
+
+        if (Objects.isNull(photosManager)) {
             PhotoFilterDTO photoFilterDTO = new PhotoFilterDTO();
             photoFilterDTO.setDate(date);
 
             filterAndPersist(photoFilterDTO, name);
-
+            long inicio2 = System.currentTimeMillis();
+            System.out.println("inicio da busca (getByEditorUploadDateAndStatus2) de fotos por usuário " + inicio2);
             photosManager = photoManagerRepository.getByEditorUploadDateAndStatus(date, username);
-        } else if(photosManager.getStatusManagerPhotos().equals(StatusManagerPhotos.FINISHED)) {
+            long fim2 = System.currentTimeMillis();
+            System.out.println("FIM da busca (getByEditorUploadDateAndStatus2) de fotos por usuário " + fim2);
+            System.out.println("total " + (fim2 - inicio2));
+        } else if (photosManager.getStatusManagerPhotos().equals(StatusManagerPhotos.FINISHED)) {
             throw new RepassaException(PhotoError.PHOTOMANAGER_FINISHED);
         }
 
@@ -179,8 +167,8 @@ public class PhotosService {
     }
 
     @Transactional
-    public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators, String tokenAuth,
-            Boolean isOcr)
+    public List<IdentificatorsDTO> validateIdentificators(List<IdentificatorsDTO> identificators,
+                                                          Boolean isOcr)
             throws Exception {
         if (identificators.isEmpty()) {
             throw new RepassaException(PhotoError.VALIDATE_IDENTIFICATORS_EMPTY);
@@ -205,7 +193,7 @@ public class PhotosService {
                 } else {
                     LOG.info("PRODUCT_ID: " + identificator.getProductId());
 
-                    productService.verifyProduct(identificator.getProductId(), tokenAuth);
+                    productService.verifyProduct(identificator.getProductId());
 
                     photosManager = photoManagerRepository.findByProductId(identificator.getProductId());
 
@@ -471,15 +459,14 @@ public class PhotosService {
         photoManager.setGroupPhotos(groupPhotos);
         persistPhotoManagerDynamoDB(photoManager);
     }
-    public void finishManager(String id, UserPrincipalDTO userPrincipalDTO, HttpHeaders headers) throws Exception {
-        String tokenAuth = headers.getHeaderString("Authorization");
 
-        PhotosManager photosManager = finishManagerPhotos(id, userPrincipalDTO, headers);
-
-        updatePhotographyStatus(photosManager, tokenAuth);
+    public void finishManager(String id, UserPrincipalDTO userPrincipalDTO) throws Exception {
+        PhotosManager photosManager = finishManagerPhotos(id, userPrincipalDTO);
+        updatePhotographyStatus(photosManager);
     }
+
     @Transactional
-    public PhotosManager finishManagerPhotos(String id, UserPrincipalDTO userPrincipalDTO, HttpHeaders headers) throws Exception {
+    public PhotosManager finishManagerPhotos(String id, UserPrincipalDTO userPrincipalDTO) throws Exception {
         if (Objects.isNull(id)) {
             throw new RepassaException(PhotoError.OBJETO_VAZIO);
         }
@@ -522,15 +509,15 @@ public class PhotosService {
              */
             photosManager = moveBucket(photosManager, userPrincipalDTO);
             photoManagerRepository.savePhotosManager(photosManager);
-            historyService.save(photosManager, userPrincipalDTO, headers);
+            historyService.save(photosManager, userPrincipalDTO);
         } catch (Exception e) {
             throw new RepassaException(PhotoError.ERRO_AO_SALVAR_NO_DYNAMO);
         }
 
         List<GroupPhotos> groupPhotosList = photosManager.getGroupPhotos();
         int qtyFinisheds = 0;
-        for(GroupPhotos groupPhotos : groupPhotosList){
-            if(groupPhotos.getStatusProduct().equals(StatusProduct.FINISHED))
+        for (GroupPhotos groupPhotos : groupPhotosList) {
+            if (groupPhotos.getStatusProduct().equals(StatusProduct.FINISHED))
                 qtyFinisheds += 1;
         }
         List<String> bagIds = extractBagIdFromGroup(groupPhotosList);
@@ -545,10 +532,10 @@ public class PhotosService {
         return photosManager;
     }
 
-    public void updatePhotographyStatus(PhotosManager photosManager, String tokenAuth) {
+    public void updatePhotographyStatus(PhotosManager photosManager) {
         photosManager.getGroupPhotos().stream()
                 .map(groupPhotos -> Long.parseLong(groupPhotos.getProductId()))
-                .forEach(productId -> productRestClient.updatePhotographyStatus(productId, tokenAuth));
+                .forEach(productId -> productRestClient.updatePhotographyStatus(productId));
     }
 
     public PhotosManager moveBucket(PhotosManager photosManager, UserPrincipalDTO userPrincipalDTO)
@@ -704,7 +691,7 @@ public class PhotosService {
     }
 
     public PhotoProcessed savePhotoProcessingDynamo(PhotoBase64DTO photoBase64DTO, String username,
-            AtomicReference<String> urlImage) throws RepassaException {
+                                                    AtomicReference<String> urlImage) throws RepassaException {
         PhotoProcessed photoProcessed = new PhotoProcessed();
 
         photoProcessed.setEditedBy(username);
@@ -755,7 +742,7 @@ public class PhotosService {
 
     public void deleteGroupsOfPhoto(String groupId) throws RepassaException {
 
-        if(Objects.nonNull(groupId)) {
+        if (Objects.nonNull(groupId)) {
             PhotosManager photosManager = null;
 
             try {
@@ -771,7 +758,7 @@ public class PhotosService {
 
             PhotosManager finalPhotosManager = photosManager;
             finalPhotosManager.getGroupPhotos().forEach(groupPhotosPhotoManager -> {
-                if(groupPhotosPhotoManager.getId().equals(groupId)) {
+                if (groupPhotosPhotoManager.getId().equals(groupId)) {
                     groupPhotosPhotoManager.getPhotos().forEach(photo -> {
                         photoRemoveService.remove(photo);
                     });
@@ -786,7 +773,7 @@ public class PhotosService {
     }
 
     public void deletePhotoManager(String photoManagerId) throws RepassaException {
-        if(Objects.nonNull(photoManagerId)) {
+        if (Objects.nonNull(photoManagerId)) {
             PhotosManager photosManager;
             try {
                 photosManager = photoManagerRepository.findById(photoManagerId);
@@ -809,6 +796,7 @@ public class PhotosService {
 
         }
     }
+
     private static boolean isEditorEquals(UserPrincipalDTO userPrincipalDTO, PhotosManager photosManager) {
         String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(userPrincipalDTO.getFirtName()));
         return photosManager.getEditor().equals(username);

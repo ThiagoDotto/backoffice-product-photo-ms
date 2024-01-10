@@ -134,16 +134,16 @@ public class PhotosService {
             throw new RepassaException(AwsPhotoError.REKOGNITION_ERROR);
         }
 
-        return searchPhotos(processBarCodeRequestDTO.getDate(), user);
+        return searchPhotos(processBarCodeRequestDTO.getDate(), user, lastEvaluatedKey);
     }
 
-    public PhotosManager searchPhotos(String date, String name) throws RepassaException {
+    public PhotosManager searchPhotos(String date, String name, String lastEvaluatedKey) throws RepassaException {
         String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
         LOG.info("Fetered by Name: {}", username);
 
         long inicio = System.currentTimeMillis();
         System.out.println("inicio da busca (getByEditorUploadDateAndStatus) de fotos por usuário " + inicio);
-        PhotosManager photosManager = photoManagerRepository.getByEditorUploadDateAndStatus(date, username);
+        PhotosManager photosManager = photoManagerRepository.getByEditorUploadDateAndStatus(date, username, lastEvaluatedKey);
         long fim = System.currentTimeMillis();
         System.out.println("FIM da busca (getByEditorUploadDateAndStatus) de fotos por usuário " + fim);
         System.out.println("total " + (fim - inicio));
@@ -155,7 +155,7 @@ public class PhotosService {
             filterAndPersist(photoFilterDTO, name);
             long inicio2 = System.currentTimeMillis();
             System.out.println("inicio da busca (getByEditorUploadDateAndStatus2) de fotos por usuário " + inicio2);
-            photosManager = photoManagerRepository.getByEditorUploadDateAndStatus(date, username);
+            photosManager = photoManagerRepository.getByEditorUploadDateAndStatus(date, username, lastEvaluatedKey);
             long fim2 = System.currentTimeMillis();
             System.out.println("FIM da busca (getByEditorUploadDateAndStatus2) de fotos por usuário " + fim2);
             System.out.println("total " + (fim2 - inicio2));

@@ -47,16 +47,18 @@ public class PhotosResource {
     }
 
     @GET
-    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
+//    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Busca por photos", description = "Buscar todas as Photos.")
     @Path("/search")
-    public Response getAllPhotos(@QueryParam("date") String date) throws RepassaException {
+    public Response getAllPhotos(@QueryParam("date") String date,
+                                 @QueryParam("lastEvaluatedKey") String lastEvaluatedKey,
+                                 @QueryParam("pageSize") @DefaultValue("10") int pageSize) throws RepassaException {
         try {
 
             long inicio = System.currentTimeMillis();
             System.out.println("inicio da busca (searchPhotos) de fotos por usuário " + inicio);
-            PhotosManager photosManager = photosService.searchPhotos(date, token.getClaim("name"));
+            PhotosManager photosManager = photosService.searchPhotos(date, token.getClaim("name"), lastEvaluatedKey);
             long fim = System.currentTimeMillis();
             System.out.println("FIM da busca (searchPhotos) de fotos por usuário " + fim);
             System.out.println("total " + (fim - inicio));

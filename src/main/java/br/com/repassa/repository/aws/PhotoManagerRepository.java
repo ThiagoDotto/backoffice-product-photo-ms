@@ -8,6 +8,7 @@ import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.exception.AwsPhotoError;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.resource.client.PhotosManagerRepositoryImpl;
+import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -154,7 +155,7 @@ public class PhotoManagerRepository {
         }
     }
 
-    public PhotosManager getByEditorUploadDateAndStatus(String date, String userName)
+    public PhotosManager getByEditorUploadDateAndStatus(String date, String userName, String lastEvaluatedKey)
             throws RepassaException {
 
         try {
@@ -165,11 +166,14 @@ public class PhotoManagerRepository {
             expressionAttributeValues.put(":editor", AttributeValue.builder().s(userName).build());
             expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(date).build());
 
+            Map<String, AttributeValue> lastEvaluatedKey = lastEvaluatedKey != null ? lastEvaluatedKey : null;
+
             ScanRequest scanRequest = ScanRequest.builder()
                     .tableName(dynamoConfig.getPhotosManager())
-                    .filterExpression(
-                            "contains(upload_date, :upload_date) and editor = :editor")
+                    .filterExpression("contains(upload_date, :upload_date) and editor = :editor")
                     .expressionAttributeValues(expressionAttributeValues)
+                    .limit(10)
+                    .exclusiveStartKey()
                     .build();
 
             ScanResponse items = dynamoDB.scan(scanRequest);

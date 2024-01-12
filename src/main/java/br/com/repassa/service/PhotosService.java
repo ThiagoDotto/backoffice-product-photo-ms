@@ -93,7 +93,7 @@ public class PhotosService {
         Set<String> modifiedProductIdsSet = new HashSet<>();
         for (IdentificatorsDTO dto : validateIds) {
             String productId = dto.getProductId();
-            if(!StringUtil.isNullOrEmpty(productId)){
+            if(!StringUtil.isNullOrEmpty(productId) && productId.length() > 3){
                 String modifiedProductId = productId.substring(0, productId.length() - 3);
                 modifiedProductIdsSet.add(modifiedProductId);
             }
@@ -105,7 +105,7 @@ public class PhotosService {
         Set<String> modifiedProductIdsSet = new HashSet<>();
         for (GroupPhotos groupPhoto : groupPhotos) {
             String productId = groupPhoto.getProductId();
-            if(!StringUtil.isNullOrEmpty(productId)){
+            if(!StringUtil.isNullOrEmpty(productId) && productId.length() > 3){
                 String modifiedProductId = productId.substring(0, productId.length() - 3);
                 modifiedProductIdsSet.add(modifiedProductId);
             }

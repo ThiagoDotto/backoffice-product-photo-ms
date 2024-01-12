@@ -6,12 +6,15 @@ import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 @Path("/api/v1/histories")
 @Produces(MediaType.APPLICATION_JSON)
@@ -27,4 +30,10 @@ public interface HistoryClient {
     @PUT
     @Path("/photographystatus")
     void updatePhotographyhistory(@RequestBody PhotographyUpdateDTO photographyUpdateDTO, @HeaderParam("Authorization") String token);
+
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @GET
+    @Path("/findbag")
+    Response getInfoBag(@QueryParam("bagId") String bagId, @HeaderParam("Authorization") String token);
 }

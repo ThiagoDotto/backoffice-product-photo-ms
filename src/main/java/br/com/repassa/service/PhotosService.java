@@ -122,20 +122,15 @@ public class PhotosService {
         if (validateIds.isEmpty()) {
             throw new RepassaException(AwsPhotoError.REKOGNITION_PHOTO_EMPTY);
         }
-
-        List<String> bagIds = extractBagIdFromDTO(validateIds);
-        for(String bagId : bagIds){
-            try{
-                historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), "IN_PROGRESS", null);
-            }catch (Exception e){
-                throw new RepassaException(PhotoError.PHOTO_STATUS_ERROR);
-            }
-        }
-
         try {
             validateIdentificators(validateIds, tokenAuth, true);
         } catch (Exception e) {
             throw new RepassaException(AwsPhotoError.REKOGNITION_ERROR);
+        }
+
+        List<String> bagIds = extractBagIdFromDTO(validateIds);
+        for(String bagId : bagIds){
+                historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), "IN_PROGRESS", null);
         }
 
         return searchPhotos(processBarCodeRequestDTO.getDate(), user);

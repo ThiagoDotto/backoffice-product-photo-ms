@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Tag(name = "Photos", description = "Gerenciar Photos")
-@Produces()
 @Path("/api/v1/photos")
 public class PhotosResource {
     @Inject
@@ -58,11 +57,13 @@ public class PhotosResource {
 
             long inicio = System.currentTimeMillis();
             System.out.println("inicio da busca (searchPhotos) de fotos por usuário " + inicio);
-            PhotosManager photosManager = photosService.searchPhotos(date, token.getClaim("name"), lastEvaluatedKey);
+
+            DinamicPaginationDTO dinamicPaginationDTO = photosService.searchPhotosPagination(date, token.getClaim("name"),  pageSize, lastEvaluatedKey);
             long fim = System.currentTimeMillis();
+
             System.out.println("FIM da busca (searchPhotos) de fotos por usuário " + fim);
-            System.out.println("total " + (fim - inicio));
-            return Response.ok(photosManager).status(Response.Status.OK).build();
+            System.out.printf("total de segundos %.3f ms%n", (fim - inicio) / 1000d);
+            return Response.ok(dinamicPaginationDTO).status(Response.Status.OK).build();
         } catch (RepassaException exception) {
             if (exception.getRepassaUtilError().getErrorCode().equals(PhotoError.PHOTOMANAGER_FINISHED.getErrorCode())) {
                 return Response

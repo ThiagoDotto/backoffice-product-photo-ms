@@ -59,7 +59,7 @@ public class AwsS3Client {
         }
         log.info("Retornando endereco da imagem");
 
-        return awsConfig.getCloudFrontURL() + "/" + objectKey;
+        return "https://" + bucketName + ".s3."+ Region.SA_EAST_1 +".amazonaws.com" + objectKey;
     }
 
     public boolean checkExistFileInBucket(String bucketName, String objectKey) {

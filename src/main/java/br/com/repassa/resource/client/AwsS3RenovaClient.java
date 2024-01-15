@@ -1,5 +1,6 @@
 package br.com.repassa.resource.client;
 
+import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -10,6 +11,7 @@ import javax.inject.Singleton;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.AwsConfig;
 import br.com.repassa.exception.PhotoError;
+import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -30,6 +32,9 @@ public class AwsS3RenovaClient {
     @Inject
     AwsConfig awsConfig;
 
+    @Inject
+    AwsS3Client awsS3Client;
+
     AwsCredentialsProvider credentialsProvider;
 
     @PostConstruct
@@ -42,54 +47,21 @@ public class AwsS3RenovaClient {
                 .build();
     }
 
-    public String uploadBase64FileToS3(String bucketName, String objectKey, String base64Data) throws RepassaException {
+    public String uploadBase64FileToS3(String bucketName, String objectKey, String base64Data, String mimeType) throws RepassaException {
         log.info("Iniciando o upload da imagem no S3");
         try {
-            String[] parts = base64Data.split(",");
-            if (parts.length == 2) {
-                String contentType = parts[0].split(":")[1].split(";")[0];
-                String base64 = parts[1];
-                byte[] data = java.util.Base64.getDecoder().decode(base64);
-                s3Client.putObject(PutObjectRequest.builder()
-                        .bucket(bucketName)
-                        .key(objectKey)
-                        .contentType(contentType)
-                        .build(), RequestBody.fromBytes(data));
-            } else {
-                throw new RepassaException(PhotoError.BASE64_INVALIDO);
-            }
+            byte[] data = java.util.Base64.getDecoder().decode(base64Data);
+
+            s3Client.putObject(PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(objectKey)
+                    .contentType(mimeType)
+                    .build(), RequestBody.fromBytes(data));
         } catch (IllegalArgumentException ignored) {
             throw new RepassaException(PhotoError.BASE64_INVALIDO);
         }
         log.info("Retornando endereco da imagem");
 
-        return awsConfig.getCloudFrontURL() + "/" + objectKey;
-    }
-
-    public void removeImageByUrl(String bucketName, String url) {
-        Pattern pattern = Pattern.compile("fotografia/.*");
-        Matcher matcher = pattern.matcher(url);
-
-        if (matcher.find()) {
-            String objectKey = matcher.group();
-            objectKey = StringUtils.replacePlusToBackspace(objectKey);
-
-            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
-                    .build();
-
-            log.info("Iniciando a remocao da imagem {} no s3", objectKey);
-
-            try {
-                s3Client.deleteObject(deleteObjectRequest);
-            } catch (Exception e) {
-                log.error("Falha na remocao da imagem {} no s3", objectKey);
-            }
-
-            log.info("Imagem {} removida do s3 com sucesso", objectKey);
-        } else {
-            log.info("Nao foi possivel extrair a key da URL: {}", url);
-        }
+        return "https://" + bucketName + ".s3."+ Region.SA_EAST_1 +".amazonaws.com" + objectKey;
     }
 }

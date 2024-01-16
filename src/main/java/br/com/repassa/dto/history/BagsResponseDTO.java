@@ -35,5 +35,7 @@ public class BagsResponseDTO implements Serializable {
     private String qtyItem;
     private String qtyApprovedItem;
     private String qtyDisapprovedItem;
+    private String photographyStatus;
+    private String photographyQty;
 
 }

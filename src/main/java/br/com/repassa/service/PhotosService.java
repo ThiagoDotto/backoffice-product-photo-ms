@@ -4,6 +4,8 @@ import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.AwsConfig;
 import br.com.repassa.dto.*;
+import br.com.repassa.dto.history.BagsResponseDTO;
+import br.com.repassa.dto.history.HistoryResponseDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -24,8 +26,10 @@ import br.com.repassa.service.rekognition.RekognitionService;
 import br.com.repassa.utils.CommonsUtil;
 import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
+import io.quarkus.panache.common.Parameters;
 import io.quarkus.runtime.util.StringUtil;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +39,12 @@ import javax.transaction.Transactional;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -793,5 +801,58 @@ public class PhotosService {
 
     private static boolean isPhotoEqual(String idPhoto, Photo photo) {
         return Objects.nonNull(photo.getId()) && (photo.getId().equals(idPhoto));
+    }
+
+    public PhotoBagsResponseDTO findBagsForPhoto(int page, int size, String bagId, String email, String statusBag, String partner, String photographyStatus) throws RepassaException {
+        List<BagsResponseDTO> history;
+        BigInteger totalrecords;
+        try {
+            HistoryResponseDTO historyResponse = historyService.findHistorys(page, size, bagId, email, statusBag,
+                    partner, photographyStatus, "MS-PHOTO");
+            history = historyResponse.getBagsResponse();
+            totalrecords = historyResponse.getTotalRecords();
+        } catch (ClientWebApplicationException e) {
+            throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_SACOLAS);
+        }
+
+        List<BagsPhotoDTO> listSearch = new ArrayList<>();
+        history.forEach(bagsResponseDTO -> {
+
+            String photoQtyText = Objects.nonNull(bagsResponseDTO.getPhotographyQty()) ? bagsResponseDTO.getPhotographyQty() : "-";
+            String totalQtytext = Objects.nonNull(bagsResponseDTO.getQtyApprovedItem()) ? bagsResponseDTO.getQtyApprovedItem() : "-";
+
+            BagsPhotoDTO build = BagsPhotoDTO.builder()
+                    .receiveDate(dateConverter(bagsResponseDTO.getReceivedDate()))
+                    .registrationDate(dateConverter(bagsResponseDTO.getTriageDate()))
+                    .bagId(Objects.nonNull(bagsResponseDTO.getBagId()) ? bagsResponseDTO.getBagId().toString() : "")
+                    .bagStatus(bagsResponseDTO.getStatusBag())
+                    .clientEmail(bagsResponseDTO.getEmail())
+                    .partner(bagsResponseDTO.getPartner())
+                    .photographyStatus(bagsResponseDTO.getPhotographyStatus())
+                    .items(photoQtyText + "/" + totalQtytext)
+                    .build();
+
+            listSearch.add(build);
+        });
+
+        return new PhotoBagsResponseDTO(totalrecords, listSearch);
+
+    }
+
+    private LocalDateTime dateConverter(String dateString) {
+        if (Objects.isNull(dateString))
+            return null;
+
+        String pattern = "yyyy-MM-dd";
+        SimpleDateFormat sdf = new SimpleDateFormat(pattern);
+        try {
+            Date date = sdf.parse(dateString);
+            return date.toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDateTime();
+        } catch (ParseException exception) {
+            return null;
+        }
+
     }
 }

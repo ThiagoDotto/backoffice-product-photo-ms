@@ -18,7 +18,7 @@ import java.math.BigInteger;
 public class BagsResponseDTO implements Serializable {
 
     @Serial
-    private static final long serialVersionUID = 1825981948649941689L;
+    private static final long serialVersionUID = 1972007077362639740L;
 
     private BigInteger bagId;
     private String receivedDate;
@@ -35,5 +35,7 @@ public class BagsResponseDTO implements Serializable {
     private String qtyItem;
     private String qtyApprovedItem;
     private String qtyDisapprovedItem;
+    private String photographyStatus;
+    private String photographyQty;
 
 }

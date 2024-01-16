@@ -8,6 +8,7 @@ import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -37,6 +38,7 @@ import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.service.PhotosService;
+import org.jboss.resteasy.reactive.RestQuery;
 
 @Tag(name = "Photos", description = "Gerenciar Photos")
 @Produces()
@@ -80,6 +82,21 @@ public class PhotosResource {
 
             throw new RepassaException(exception.getRepassaUtilError());
         }
+    }
+
+    @GET
+    @Operation(summary = "Buscar Sacolas no historico", description = "Endpoint usado para buscar sacolas por filtro.")
+    @Path("/findbags")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "CADASTRO DE PRODUTOS.CONSULTAR_SACOLAS"})
+    public Response findBagsForProduct(@DefaultValue("0") @RestQuery("page") int page,
+                                       @DefaultValue("40") @RestQuery("size") int size,
+                                       @QueryParam("bagId") String bagId,
+                                       @QueryParam("email") String email,
+                                       @QueryParam("statusBag") String statusBag,
+                                       @QueryParam("partner") String partner,
+                                       @QueryParam("photographyStatus") String photographyStatus) throws RepassaException {
+        return Response.ok(photosService.findBagsForPhoto(page, size, bagId, email, statusBag, partner, photographyStatus)).build();
     }
 
     @GET

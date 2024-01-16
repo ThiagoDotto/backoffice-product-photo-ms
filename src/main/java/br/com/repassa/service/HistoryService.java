@@ -11,6 +11,7 @@ import br.com.backoffice_repassa_utils_lib.dto.history.UserSystem;
 import br.com.backoffice_repassa_utils_lib.dto.history.enums.BagStatus;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.dto.PhotographyUpdateDTO;
+import br.com.repassa.dto.history.HistoryResponseDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -60,6 +61,11 @@ public class HistoryService {
         Response historyResponse = historyClient.getInfoBag(bagId, tokenAuth);
         isEmpty(historyResponse);
         return historyResponse.readEntity(HistoryDTO.class);
+    }
+
+    public HistoryResponseDTO findHistorys(int page, int size, String bagId, String email, String statusBag, String partner, String photographyStatus, String api){
+        return historyClient.findHistory(page, size, bagId, email, statusBag,
+                partner, photographyStatus, api, headers.getHeaderString(AUTHORIZATION));
     }
 
     private void isEmpty(Response historyResponse) throws RepassaException {

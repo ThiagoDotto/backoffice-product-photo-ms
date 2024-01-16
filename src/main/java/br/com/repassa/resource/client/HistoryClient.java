@@ -2,10 +2,13 @@ package br.com.repassa.resource.client;
 
 import br.com.backoffice_repassa_utils_lib.dto.history.HistoryDTO;
 import br.com.repassa.dto.PhotographyUpdateDTO;
+import br.com.repassa.dto.history.HistoryResponseDTO;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.reactive.RestQuery;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
@@ -36,4 +39,18 @@ public interface HistoryClient {
     @GET
     @Path("/findbag")
     Response getInfoBag(@QueryParam("bagId") String bagId, @HeaderParam("Authorization") String token);
+
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @GET
+    @Path("/find")
+    HistoryResponseDTO findHistory(@DefaultValue("0") @RestQuery("page") int page,
+                                   @DefaultValue("40") @RestQuery("size") int size,
+                                   @QueryParam("bagId") String bagId,
+                                   @QueryParam("email") String email,
+                                   @QueryParam("statusBag") String statusBag,
+                                   @QueryParam("partner") String partner,
+                                   @QueryParam("photographyStatus") String photographyStatus,
+                                   @QueryParam("api") String api,
+                                   @HeaderParam("Authorization") String token);
 }

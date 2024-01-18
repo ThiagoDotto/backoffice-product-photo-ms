@@ -1,18 +1,8 @@
 package br.com.repassa.resource.client;
 
-import java.io.IOException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.AwsConfig;
 import br.com.repassa.exception.PhotoError;
-import br.com.repassa.utils.PhotoUtils;
-import br.com.repassa.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -20,8 +10,11 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 @Slf4j
@@ -60,8 +53,9 @@ public class AwsS3RenovaClient {
         } catch (IllegalArgumentException ignored) {
             throw new RepassaException(PhotoError.BASE64_INVALIDO);
         }
+
         log.info("Retornando endereco da imagem");
 
-        return "https://" + bucketName + ".s3."+ Region.SA_EAST_1 +".amazonaws.com" + objectKey;
+        return "https://" + bucketName + ".s3."+ Region.SA_EAST_1 +".amazonaws.com/" + objectKey;
     }
 }

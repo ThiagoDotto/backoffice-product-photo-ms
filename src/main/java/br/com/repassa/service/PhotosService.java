@@ -533,8 +533,7 @@ public class PhotosService {
                 .forEach(productId -> productRestClient.updatePhotographyStatus(productId, tokenAuth));
     }
 
-    public PhotosManager moveBucket(PhotosManager photosManager, UserPrincipalDTO userPrincipalDTO)
-            throws RepassaException {
+    public PhotosManager moveBucket(PhotosManager photosManager, UserPrincipalDTO userPrincipalDTO) {
         if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
             photosManager.getGroupPhotos().forEach(group -> {
                 if (!group.getPhotos().isEmpty()) {

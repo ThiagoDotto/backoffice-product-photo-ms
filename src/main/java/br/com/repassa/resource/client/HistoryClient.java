@@ -49,6 +49,8 @@ public interface HistoryClient {
                                    @QueryParam("bagId") String bagId,
                                    @QueryParam("email") String email,
                                    @QueryParam("statusBag") String statusBag,
+                                   @QueryParam("receiptDate") String receiptDate,
+                                   @QueryParam("receiptDateSecundary") String receiptDateSecundary,
                                    @QueryParam("partner") String partner,
                                    @QueryParam("photographyStatus") String photographyStatus,
                                    @QueryParam("api") String api,

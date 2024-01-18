@@ -281,20 +281,22 @@ public class PhotosServiceTest {
         String statusBag = "OPEN";
         String partner = "SomePartner";
         String photographyStatus = "APPROVED";
+        String rDate = "2021-01-01";
+        String rDateSecundary = "2025-01-01";
 
         BagsResponseDTO bagsResponseDTO = new BagsResponseDTO(); // Suponha que você precise configurar corretamente os valores aqui
         HistoryResponseDTO historyResponseDTO = new HistoryResponseDTO(BigInteger.TEN, Collections.singletonList(bagsResponseDTO));
 
-        when(historyService.findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(partner), eq(photographyStatus), eq("MS-PHOTO")))
+        when(historyService.findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(rDate), eq(rDateSecundary), eq(partner), eq(photographyStatus), eq("MS-PHOTO")))
                 .thenReturn(historyResponseDTO);
 
-        PhotoBagsResponseDTO result = photosService.findBagsForPhoto(page, size, bagId, email, statusBag, partner, photographyStatus);
+        PhotoBagsResponseDTO result = photosService.findBagsForPhoto(page, size, bagId, email, statusBag, rDate, rDateSecundary, partner, photographyStatus);
 
         assertEquals(BigInteger.TEN, result.getTotalRecords());
         assertEquals(1, result.getBagsProductDTO().size());
 
 
-        Mockito.verify(historyService, Mockito.times(1)).findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(partner), eq(photographyStatus), eq("MS-PHOTO"));
+        Mockito.verify(historyService, Mockito.times(1)).findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(rDate), eq(rDateSecundary), eq(partner), eq(photographyStatus), eq("MS-PHOTO"));
     }
 
     @Test
@@ -306,13 +308,15 @@ public class PhotosServiceTest {
         String statusBag = "OPEN";
         String partner = "SomePartner";
         String photographyStatus = "APPROVED";
+        String rDate = "2021-01-01";
+        String rDateSecundary = "2025-01-01";
 
-        when(historyService.findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(partner), eq(photographyStatus), eq("MS-PHOTO")))
+        when(historyService.findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(rDate), eq(rDateSecundary), eq(partner), eq(photographyStatus), eq("MS-PHOTO")))
                 .thenThrow(new ClientWebApplicationException());
 
         assertThrows(RepassaException.class,
-                () -> photosService.findBagsForPhoto(page, size, bagId, email, statusBag, partner, photographyStatus));
+                () -> photosService.findBagsForPhoto(page, size, bagId, email, statusBag, rDate, rDateSecundary, partner, photographyStatus));
 
-        Mockito.verify(historyService, Mockito.times(1)).findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(partner), eq(photographyStatus), eq("MS-PHOTO"));
+        Mockito.verify(historyService, Mockito.times(1)).findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(rDate), eq(rDateSecundary), eq(partner), eq(photographyStatus), eq("MS-PHOTO"));
     }
 }

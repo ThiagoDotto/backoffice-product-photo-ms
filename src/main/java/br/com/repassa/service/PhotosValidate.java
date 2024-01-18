@@ -1,10 +1,9 @@
 package br.com.repassa.service;
 
-import java.text.Normalizer;
-import java.util.Base64;
-
 import br.com.repassa.dto.PhotoBase64DTO;
 import br.com.repassa.dto.PhotoInsertValidateDTO;
+
+import java.text.Normalizer;
 
 public class PhotosValidate {
 
@@ -47,7 +46,7 @@ public class PhotosValidate {
     }
 
     public String validatePathBucketRenova(String productId, String style, String photoName) {
-        String objectKeyWithCount = "/spree/products/"
+        String objectKeyWithCount = "spree/products/"
                 .concat(productId + "/")
                 .concat(style + "/")
                 .concat(photoName);

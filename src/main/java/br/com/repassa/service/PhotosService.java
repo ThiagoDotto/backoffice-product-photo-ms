@@ -536,8 +536,7 @@ public class PhotosService {
                 .forEach(productId -> productRestClient.updatePhotographyStatus(productId, tokenAuth));
     }
 
-    public PhotosManager moveBucket(PhotosManager photosManager, UserPrincipalDTO userPrincipalDTO)
-            throws RepassaException {
+    public PhotosManager moveBucket(PhotosManager photosManager, UserPrincipalDTO userPrincipalDTO) {
         if (photosManager.getStatusManagerPhotos() == StatusManagerPhotos.FINISHED) {
             photosManager.getGroupPhotos().forEach(group -> {
                 if (!group.getPhotos().isEmpty()) {
@@ -577,18 +576,14 @@ public class PhotosService {
             byte[] imageBytes = is.readAllBytes();
 
             // Codifica os bytes para Base64
-            String base64String = Base64.getEncoder().encodeToString(imageBytes);
+            String base64Data = Base64.getEncoder().encodeToString(imageBytes);
 
             var photosValidate = new PhotosValidate();
 
-            String photoBase64 = "data:image/jpg;base64," + base64String;
-
             String objectKey = photosValidate.validatePathBucketRenova(productId, "original", photoName);
-            String urlImage = awsConfig.getUrlBase() + objectKey;
+            String mimeType = PhotoUtils.getMimeTypeFromBase64(base64Data);
 
-            awsS3RenovaClient.uploadBase64FileToS3(awsConfig.getBucketNameRenova(), objectKey, photoBase64);
-
-            return urlImage;
+            return awsS3RenovaClient.uploadBase64FileToS3(awsConfig.getBucketNameRenova(), objectKey, base64Data, mimeType);
         } catch (Exception e) {
             LOG.error("Error 3" + e.getMessage());
             return null;

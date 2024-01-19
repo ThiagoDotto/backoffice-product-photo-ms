@@ -63,8 +63,8 @@ public class HistoryService {
         return historyResponse.readEntity(HistoryDTO.class);
     }
 
-    public HistoryResponseDTO findHistorys(int page, int size, String bagId, String email, String statusBag, String receiptDate, String receiptDateSecundary, String partner, String photographyStatus, String api){
-        return historyClient.findHistory(page, size, bagId, email, statusBag, receiptDate, receiptDateSecundary,
+    public HistoryResponseDTO findHistorys(int page, int size, String bagId, String email, String statusBag, String receiptDate, String receiptDateSecondary, String partner, String photographyStatus, String api){
+        return historyClient.findHistory(page, size, bagId, email, statusBag, receiptDate, receiptDateSecondary,
                 partner, photographyStatus, api, headers.getHeaderString(AUTHORIZATION));
     }
 

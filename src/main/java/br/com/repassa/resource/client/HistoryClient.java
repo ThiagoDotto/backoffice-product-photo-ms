@@ -50,7 +50,7 @@ public interface HistoryClient {
                                    @QueryParam("email") String email,
                                    @QueryParam("statusBag") String statusBag,
                                    @QueryParam("receiptDate") String receiptDate,
-                                   @QueryParam("receiptDateSecundary") String receiptDateSecundary,
+                                   @QueryParam("receiptDateSecondary") String receiptDateSecondary,
                                    @QueryParam("partner") String partner,
                                    @QueryParam("photographyStatus") String photographyStatus,
                                    @QueryParam("api") String api,

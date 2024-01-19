@@ -613,8 +613,7 @@ public class PhotosService {
                                 .typePhoto(Objects.nonNull(p.getTypePhoto()) ? p.getTypePhoto().toString() : "")
                                 .sizePhoto(p.getSizePhoto())
                                 .namePhoto(p.getNamePhoto())
-                                .urlPhoto(StringUtils.formatToCloudFrontURL(p.getUrlPhoto(),
-                                        awsConfig.getCloudFrontURL()))
+                                .urlPhoto(p.getUrlPhoto())
                                 .build())
                         .toList();
                 return ProductPhotoListDTO.builder().photos(productPhotoDTOList).build();

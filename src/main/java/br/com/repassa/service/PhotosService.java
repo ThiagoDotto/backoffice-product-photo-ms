@@ -1,6 +1,7 @@
 package br.com.repassa.service;
 
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
+import br.com.backoffice_repassa_utils_lib.dto.history.HistoryDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.AwsConfig;
 import br.com.repassa.dto.*;
@@ -36,7 +37,10 @@ import org.slf4j.LoggerFactory;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -54,9 +58,13 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class PhotosService {
     private static final Logger LOG = LoggerFactory.getLogger(PhotosService.class);
+    private static final String AUTHORIZATION = "Authorization";
 
     @Inject
     AwsConfig awsConfig;
+
+    @Context
+    HttpHeaders headers;
 
     @Inject
     ProductService productService;
@@ -854,5 +862,13 @@ public class PhotosService {
             return null;
         }
 
+    }
+
+    public Object findProductsByBagId(int page, int size, String bagId) throws RepassaException {
+        String tokenAuth = headers.getHeaderString(AUTHORIZATION);
+        Response returnProducts = productRestClient.findBagsForProduct(page, size, bagId, tokenAuth);
+        List<ProductPhotographyDTO> photographyDTOS = returnProducts.readEntity(new GenericType<List<ProductPhotographyDTO>>() {});
+        List<PhotosManager> photosManagerList = photoManagerRepository.findByIds(photographyDTOS.stream().map(ProductPhotographyDTO::getProductId).toList());
+        return null;
     }
 }

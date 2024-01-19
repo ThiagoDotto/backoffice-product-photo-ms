@@ -20,6 +20,7 @@ import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @ApplicationScoped
@@ -223,6 +224,28 @@ public class PhotoManagerRepository {
         }
 
         return responseDTO;
+    }
+
+    public List<PhotosManager> findByIds(List<Long> ids) throws RepassaException {
+        List<String> stringIds = ids.stream().map(String::valueOf).toList();
+        String filterExpression = "id IN (" + stringIds.stream().collect(Collectors.joining(",")) + ")";
+        Map<String, AttributeValue> expressionAttributeValues = stringIds.stream()
+                .collect(Collectors.toMap(id -> ":" + id, id -> AttributeValue.builder().n(id).build()));
+
+        DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
+
+        try {
+            List<Map<String, AttributeValue>> items = dynamoDB.scan(scanRequest -> scanRequest
+                    .tableName(dynamoConfig.getPhotosManager())
+                    .filterExpression(filterExpression)
+                    .expressionAttributeValues(expressionAttributeValues)
+            ).items();
+
+            return List.of();
+        } catch (DynamoDbException e) {
+            e.printStackTrace();
+            return List.of();
+        }
     }
 
 }

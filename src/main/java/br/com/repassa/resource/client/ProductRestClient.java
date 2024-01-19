@@ -1,8 +1,13 @@
 package br.com.repassa.resource.client;
 
+import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
+import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.reactive.RestQuery;
 
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.PUT;
@@ -25,4 +30,14 @@ public interface ProductRestClient {
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("/photographystatus")
     Response updatePhotographyStatus(@QueryParam("productId") Long productId, @HeaderParam("Authorization") String token);
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Path("/findproducts")
+    Response findBagsForProduct(@DefaultValue("0") @RestQuery("page") int page,
+                                @DefaultValue("40") @RestQuery("size") int size,
+                                @QueryParam("bagId") String bagId,
+                                @HeaderParam("Authorization") String token);
+
 }

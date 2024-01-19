@@ -102,6 +102,17 @@ public class PhotosResource {
     }
 
     @GET
+    @Operation(summary = "Buscar produtos por sacola", description = "Endpoint usado para buscar produtos presentes em uma sacola.")
+    @Path("/findproducts")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "CADASTRO DE PRODUTOS.CONSULTAR_SACOLAS"})
+    public Response findBagsForProduct(@DefaultValue("0") @RestQuery("page") int page,
+                                       @DefaultValue("40") @RestQuery("size") int size,
+                                       @QueryParam("bagId") String bagId) throws RepassaException {
+       return Response.ok(photosService.findProductsByBagId(page, size, bagId)).build();
+    }
+
+    @GET
     @RolesAllowed({"admin", "CADASTRO DE PRODUTOS.CADASTRAR_PRODUTOS", "HISTÓRICO DE PROCESSAMENTO DA SACOLA.VISUALIZAR_DETALHES"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Busca as fotos do produto", description = "Busca as fotos pelo id do produto.")

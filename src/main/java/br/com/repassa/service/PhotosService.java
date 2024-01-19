@@ -828,6 +828,7 @@ public class PhotosService {
 
             listSearch.add(build);
         });
+        listSearch.sort(Comparator.comparing(BagsPhotoDTO::getReceiveDate).reversed());
 
         return new PhotoBagsResponseDTO(totalrecords, listSearch);
 

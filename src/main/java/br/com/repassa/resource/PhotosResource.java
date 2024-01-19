@@ -95,10 +95,10 @@ public class PhotosResource {
                                        @QueryParam("email") String email,
                                        @QueryParam("statusBag") String statusBag,
                                        @QueryParam("receiptDate") String receiptDate,
-                                       @QueryParam("receiptDateSecundary") String receiptDateSecundary,
+                                       @QueryParam("receiptDateSecondary") String receiptDateSecondary,
                                        @QueryParam("partner") String partner,
                                        @QueryParam("photographyStatus") String photographyStatus) throws RepassaException {
-        return Response.ok(photosService.findBagsForPhoto(page, size, bagId, email, statusBag, receiptDate, receiptDateSecundary,partner, photographyStatus)).build();
+        return Response.ok(photosService.findBagsForPhoto(page, size, bagId, email, statusBag, receiptDate, receiptDateSecondary,partner, photographyStatus)).build();
     }
 
     @GET

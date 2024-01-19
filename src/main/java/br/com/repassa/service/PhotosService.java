@@ -798,11 +798,11 @@ public class PhotosService {
         return Objects.nonNull(photo.getId()) && (photo.getId().equals(idPhoto));
     }
 
-    public PhotoBagsResponseDTO findBagsForPhoto(int page, int size, String bagId, String email, String statusBag, String receiptDate, String receiptDateSecundary, String partner, String photographyStatus) throws RepassaException {
+    public PhotoBagsResponseDTO findBagsForPhoto(int page, int size, String bagId, String email, String statusBag, String receiptDate, String receiptDateSecondary, String partner, String photographyStatus) throws RepassaException {
         List<BagsResponseDTO> history;
         BigInteger totalrecords;
         try {
-            HistoryResponseDTO historyResponse = historyService.findHistorys(page, size, bagId, email, statusBag, receiptDate, receiptDateSecundary,
+            HistoryResponseDTO historyResponse = historyService.findHistorys(page, size, bagId, email, statusBag, receiptDate, receiptDateSecondary,
                     partner, photographyStatus, "MS-PHOTO");
             history = historyResponse.getBagsResponse();
             totalrecords = historyResponse.getTotalRecords();

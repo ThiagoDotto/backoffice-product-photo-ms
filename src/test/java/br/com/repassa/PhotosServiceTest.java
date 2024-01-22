@@ -3,6 +3,7 @@ package br.com.repassa;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.AwsConfig;
+import br.com.repassa.config.DynamoConfig;
 import br.com.repassa.dto.PhotoBagsResponseDTO;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
@@ -27,14 +28,21 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
-import javax.inject.Inject;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static io.smallrye.common.constraint.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 
 public class PhotosServiceTest {
@@ -51,6 +59,9 @@ public class PhotosServiceTest {
 
     @Mock
     HistoryService historyService;
+
+    @Mock
+    DynamoConfig dynamoConfigMock;
 
     List<PhotoFilterResponseDTO> listPhotoFilter = new ArrayList<>();
 

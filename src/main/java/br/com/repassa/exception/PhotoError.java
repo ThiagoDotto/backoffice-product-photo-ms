@@ -60,6 +60,8 @@ public class PhotoError implements RepassaUtilError {
         public static final RepassaUtilError SACOLA_NAO_ENCONTRADA = new PhotoError("026", "Sacola não encontrada.");
         public static final RepassaUtilError ERRO_AO_BUSCAR_SACOLAS = new PhotoError("027", "Erro ao buscar sacolas no histórico.");
 
+        public static final RepassaUtilError FOTOS_NAO_ENCONTRADAS = new PhotoError("028",
+                "Não foram localizadas as fotos dos produtos desta sacola.");
         public PhotoError(String errorCode, String errorMessage) {
                 this.errorCode = errorCode;
                 this.errorMessage = errorMessage;

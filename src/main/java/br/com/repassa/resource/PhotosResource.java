@@ -26,6 +26,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.jboss.resteasy.reactive.RestQuery;
 
 @Tag(name = "Photos", description = "Gerenciar Photos")
 @Produces()
@@ -71,6 +72,34 @@ public class PhotosResource {
 
             throw new RepassaException(exception.getRepassaUtilError());
         }
+    }
+
+    @GET
+    @Operation(summary = "Buscar Sacolas no historico", description = "Endpoint usado para buscar sacolas por filtro.")
+    @Path("/findbags")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "CADASTRO DE PRODUTOS.CONSULTAR_SACOLAS"})
+    public Response findBagsForProduct(@DefaultValue("0") @RestQuery("page") int page,
+                                       @DefaultValue("40") @RestQuery("size") int size,
+                                       @QueryParam("bagId") String bagId,
+                                       @QueryParam("email") String email,
+                                       @QueryParam("statusBag") String statusBag,
+                                       @QueryParam("receiptDate") String receiptDate,
+                                       @QueryParam("receiptDateSecondary") String receiptDateSecondary,
+                                       @QueryParam("partner") String partner,
+                                       @QueryParam("photographyStatus") String photographyStatus) throws RepassaException {
+        return Response.ok(photosService.findBagsForPhoto(page, size, bagId, email, statusBag, receiptDate, receiptDateSecondary,partner, photographyStatus)).build();
+    }
+
+    @GET
+    @Operation(summary = "Buscar produtos por sacola", description = "Endpoint usado para buscar produtos presentes em uma sacola.")
+    @Path("/findproducts")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "CADASTRO DE PRODUTOS.CONSULTAR_SACOLAS"})
+    public Response findBagsForProduct(@DefaultValue("0") @RestQuery("page") int page,
+                                       @DefaultValue("40") @RestQuery("size") int size,
+                                       @QueryParam("bagId") String bagId) throws RepassaException, JsonProcessingException {
+       return Response.ok(photosService.findProductsByBagId(page, size, bagId)).build();
     }
 
     @GET

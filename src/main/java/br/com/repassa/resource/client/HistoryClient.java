@@ -1,9 +1,11 @@
 package br.com.repassa.resource.client;
 
 import br.com.backoffice_repassa_utils_lib.dto.history.HistoryDTO;
+import br.com.repassa.config.HeaderFactory;
 import br.com.repassa.dto.PhotographyUpdateDTO;
 import br.com.repassa.dto.history.HistoryResponseDTO;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.RestQuery;
 
@@ -23,22 +25,23 @@ import javax.ws.rs.core.Response;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @RegisterRestClient(configKey = "history-resource")
+@RegisterClientHeaders(HeaderFactory.class)
 public interface HistoryClient {
 
 
     @POST
     @Path("/update")
-    void updateHistory(@RequestBody HistoryDTO historyDTO, @HeaderParam("Authorization") String token);
+    void updateHistory(@RequestBody HistoryDTO historyDTO);
 
     @PUT
     @Path("/photographystatus")
-    void updatePhotographyhistory(@RequestBody PhotographyUpdateDTO photographyUpdateDTO, @HeaderParam("Authorization") String token);
+    void updatePhotographyhistory(@RequestBody PhotographyUpdateDTO photographyUpdateDTO);
 
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     @GET
     @Path("/findbag")
-    Response getInfoBag(@QueryParam("bagId") String bagId, @HeaderParam("Authorization") String token);
+    Response getInfoBag(@QueryParam("bagId") String bagId);
 
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -53,6 +56,5 @@ public interface HistoryClient {
                                    @QueryParam("receiptDateSecondary") String receiptDateSecondary,
                                    @QueryParam("partner") String partner,
                                    @QueryParam("photographyStatus") String photographyStatus,
-                                   @QueryParam("api") String api,
-                                   @HeaderParam("Authorization") String token);
+                                   @QueryParam("api") String api);
 }

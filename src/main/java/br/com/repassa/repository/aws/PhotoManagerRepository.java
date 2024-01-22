@@ -236,29 +236,35 @@ public class PhotoManagerRepository {
     public List<ProductPhotographyDTO> findByIds(List<ProductPhotographyDTO> photographyDTOS) throws RepassaException, JsonProcessingException {
         List<Long> ids = photographyDTOS.stream().map(ProductPhotographyDTO::getProductId).toList();
         List<String> stringIds = ids.stream().map(String::valueOf).toList();
-        String filterExpression = "productId IN (" + stringIds.stream().collect(Collectors.joining(",")) + ")";
-        Map<String, AttributeValue> expressionAttributeValues = IntStream.range(0, stringIds.size())
-                .boxed()
-                .collect(Collectors.toMap(
-                        i -> ":productId" + i,
-                        i -> AttributeValue.builder().s("\"productId\":\"" + stringIds.get(i) + "\"").build()
-                ));
 
-        String expression = IntStream.range(0, stringIds.size())
-                .mapToObj(i -> "contains(groupPhotos, :productId" + i + ")")
-                .collect(Collectors.joining(" OR "));
+        try{
+            Map<String, AttributeValue> expressionAttributeValues = IntStream.range(0, stringIds.size())
+                    .boxed()
+                    .collect(Collectors.toMap(
+                            i -> ":productId" + i,
+                            i -> AttributeValue.builder().s("\"productId\":\"" + stringIds.get(i) + "\"").build()
+                    ));
+
+            String expression = IntStream.range(0, stringIds.size())
+                    .mapToObj(i -> "contains(groupPhotos, :productId" + i + ")")
+                    .collect(Collectors.joining(" OR "));
 
 
-        DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
+            DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
 
-        ScanRequest scanRequest = ScanRequest.builder()
-                .tableName(dynamoConfig.getPhotosManager())
-                .filterExpression(expression)
-                .expressionAttributeValues(expressionAttributeValues)
-                .build();
+            ScanRequest scanRequest = ScanRequest.builder()
+                    .tableName(dynamoConfig.getPhotosManager())
+                    .filterExpression(expression)
+                    .expressionAttributeValues(expressionAttributeValues)
+                    .build();
 
-        ScanResponse items = dynamoDB.scan(scanRequest);
-        return parseJsonToList(items, photographyDTOS);
+            ScanResponse items = dynamoDB.scan(scanRequest);
+            return parseJsonToList(items, photographyDTOS);
+        }catch (Exception e) {
+            log.error("Não foi possivel buscar as fotos, erro: " + e);
+            throw new RepassaException(PhotoError.FOTOS_NAO_ENCONTRADAS);
+        }
+
     }
 
     private List<ProductPhotographyDTO> parseJsonToList(ScanResponse items, List<ProductPhotographyDTO> photographyDTOS) throws RepassaException, JsonProcessingException {

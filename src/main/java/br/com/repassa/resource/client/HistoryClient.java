@@ -41,7 +41,7 @@ public interface HistoryClient {
     @Consumes(MediaType.APPLICATION_JSON)
     @GET
     @Path("/findbag")
-    Response getInfoBag(@QueryParam("bagId") String bagId, @HeaderParam("Authorization") String token);
+    Response getInfoBag(@QueryParam("bagId") String bagId);
 
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -56,6 +56,5 @@ public interface HistoryClient {
                                    @QueryParam("receiptDateSecondary") String receiptDateSecondary,
                                    @QueryParam("partner") String partner,
                                    @QueryParam("photographyStatus") String photographyStatus,
-                                   @QueryParam("api") String api,
-                                   @HeaderParam("Authorization") String token);
+                                   @QueryParam("api") String api);
 }

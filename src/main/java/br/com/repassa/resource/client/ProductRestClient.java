@@ -2,21 +2,10 @@ package br.com.repassa.resource.client;
 
 import br.com.repassa.config.HeaderFactory;
 import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
-import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.RestQuery;
 
 import javax.ws.rs.*;
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -41,6 +30,5 @@ public interface ProductRestClient {
     @Path("/findproducts")
     Response findBagsForProduct(@DefaultValue("0") @RestQuery("page") int page,
                                 @DefaultValue("40") @RestQuery("size") int size,
-                                @QueryParam("bagId") String bagId,
-                                @HeaderParam("Authorization") String token);
+                                @QueryParam("bagId") String bagId);
 }

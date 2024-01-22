@@ -38,6 +38,8 @@ import org.slf4j.LoggerFactory;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -138,11 +140,6 @@ public class PhotosService {
             validateIdentificators(validateIds, true);
         } catch (Exception e) {
             throw new RepassaException(AwsPhotoError.REKOGNITION_ERROR);
-        }
-
-        List<String> bagIds = extractBagIdFromDTO(validateIds);
-        for(String bagId : bagIds){
-                historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), "IN_PROGRESS", null);
         }
 
         return searchPhotos(processBarCodeRequestDTO.getDate(), user);
@@ -866,8 +863,7 @@ public class PhotosService {
     }
 
     public List<ProductPhotographyDTO> findProductsByBagId(int page, int size, String bagId) throws RepassaException, JsonProcessingException {
-        String tokenAuth = headers.getHeaderString(AUTHORIZATION);
-        Response returnProducts = productRestClient.findBagsForProduct(page, size, bagId, tokenAuth);
+        Response returnProducts = productRestClient.findBagsForProduct(page, size, bagId);
         List<ProductPhotographyDTO> photographyDTOS = returnProducts.readEntity(new GenericType<List<ProductPhotographyDTO>>() {});
         return photoManagerRepository.findByIds(photographyDTOS);
 

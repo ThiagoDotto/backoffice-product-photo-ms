@@ -6,6 +6,7 @@ import br.com.repassa.dto.*;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.service.PhotosService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -17,6 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.jboss.resteasy.reactive.RestQuery;
 
 import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
@@ -26,7 +28,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.jboss.resteasy.reactive.RestQuery;
 
 @Tag(name = "Photos", description = "Gerenciar Photos")
 @Produces()
@@ -88,7 +89,7 @@ public class PhotosResource {
                                        @QueryParam("receiptDateSecondary") String receiptDateSecondary,
                                        @QueryParam("partner") String partner,
                                        @QueryParam("photographyStatus") String photographyStatus) throws RepassaException {
-        return Response.ok(photosService.findBagsForPhoto(page, size, bagId, email, statusBag, receiptDate, receiptDateSecondary,partner, photographyStatus)).build();
+        return Response.ok(photosService.findBagsForPhoto(page, size, bagId, email, statusBag, receiptDate, receiptDateSecondary, partner, photographyStatus)).build();
     }
 
     @GET
@@ -99,7 +100,7 @@ public class PhotosResource {
     public Response findBagsForProduct(@DefaultValue("0") @RestQuery("page") int page,
                                        @DefaultValue("40") @RestQuery("size") int size,
                                        @QueryParam("bagId") String bagId) throws RepassaException, JsonProcessingException {
-       return Response.ok(photosService.findProductsByBagId(page, size, bagId)).build();
+        return Response.ok(photosService.findProductsByBagId(page, size, bagId)).build();
     }
 
     @GET

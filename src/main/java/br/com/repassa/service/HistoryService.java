@@ -1,9 +1,7 @@
 package br.com.repassa.service;
 
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
-import br.com.backoffice_repassa_utils_lib.dto.history.FinishedTriageDTO;
 import br.com.backoffice_repassa_utils_lib.dto.history.*;
-import br.com.backoffice_repassa_utils_lib.dto.history.ProductDTO;
 import br.com.backoffice_repassa_utils_lib.dto.history.enums.BagStatus;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.dto.PhotographyUpdateDTO;
@@ -20,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.ws.rs.core.Response;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -35,7 +34,7 @@ public class HistoryService {
     @RestClient
     HistoryClient historyClient;
 
-    public void save(PhotosManager photosManager, UserPrincipalDTO loggerUser) {
+    public void save(PhotosManager photosManager, UserPrincipalDTO loggerUser) throws RepassaException {
 
         List<GroupPhotos> groupPhotos = photosManager.getGroupPhotos();
         List<HistoryDTO> histories = new ArrayList<>();
@@ -46,15 +45,14 @@ public class HistoryService {
     }
 
     public HistoryDTO findHistoryForBagId(String bagId) throws RepassaException {
-        String tokenAuth = headers.getHeaderString(AUTHORIZATION);
-        Response historyResponse = historyClient.getInfoBag(bagId, tokenAuth);
+        Response historyResponse = historyClient.getInfoBag(bagId);
         isEmpty(historyResponse);
         return historyResponse.readEntity(HistoryDTO.class);
     }
 
-    public HistoryResponseDTO findHistorys(int page, int size, String bagId, String email, String statusBag, String receiptDate, String receiptDateSecondary, String partner, String photographyStatus, String api){
+    public HistoryResponseDTO findHistorys(int page, int size, String bagId, String email, String statusBag, String receiptDate, String receiptDateSecondary, String partner, String photographyStatus, String api) {
         return historyClient.findHistory(page, size, bagId, email, statusBag, receiptDate, receiptDateSecondary,
-                partner, photographyStatus, api, headers.getHeaderString(AUTHORIZATION));
+                partner, photographyStatus, api);
     }
 
     private void isEmpty(Response historyResponse) throws RepassaException {
@@ -72,18 +70,18 @@ public class HistoryService {
     private List<HistoryDTO> historiesObjsBuilder(UserPrincipalDTO loggerUser, List<GroupPhotos> groupPhotos, List<HistoryDTO> histories) throws RepassaException {
         HistoryDTO historyDTO = new HistoryDTO();
 
-        for(GroupPhotos group : groupPhotos){
+        for (GroupPhotos group : groupPhotos) {
             String productId = group.getProductId();
             String bagID = productId.substring(0, productId.length() - 3);
 
-            if(!bagID.equalsIgnoreCase(String.valueOf(historyDTO.getBagId()))){
+            if (!bagID.equalsIgnoreCase(String.valueOf(historyDTO.getBagId()))) {
                 historyDTO = findHistoryForBagId(bagID);
             }
 
             List<ProductDTO> productDTOS;
-            if(Objects.isNull(historyDTO.getStepDTO()) || Objects.isNull(historyDTO.getStepDTO().getPhotographs()) || Objects.isNull(historyDTO.getStepDTO().getPhotographs().getProducts())){
+            if (Objects.isNull(historyDTO.getStepDTO()) || Objects.isNull(historyDTO.getStepDTO().getPhotographs()) || Objects.isNull(historyDTO.getStepDTO().getPhotographs().getProducts())) {
                 productDTOS = new ArrayList<>();
-            }else{
+            } else {
                 productDTOS = historyDTO.getStepDTO().getPhotographs().getProducts();
             }
 
@@ -111,9 +109,9 @@ public class HistoryService {
                             .build())
                     .build();
 
-            if(!Objects.isNull(historyDTO.getStepDTO())){
+            if (!Objects.isNull(historyDTO.getStepDTO())) {
                 historyDTO.getStepDTO().setPhotographs(photographyDTO);
-            }else{
+            } else {
                 StepDTO stepDTO = StepDTO
                         .builder()
                         .photographs(photographyDTO)
@@ -123,14 +121,14 @@ public class HistoryService {
             histories.add(historyDTO);
         }
 
-        if(!histories.isEmpty()){
-            for(HistoryDTO history : histories){
+        if (!histories.isEmpty()) {
+            for (HistoryDTO history : histories) {
                 FinishedTriageDTO finishedTriageDTO = Objects.nonNull(history.getStepDTO()) ? history.getStepDTO().getFinishedTriageDTO() : null;
-                if(Objects.nonNull(finishedTriageDTO)){
+                if (Objects.nonNull(finishedTriageDTO)) {
                     int qtyApproved = finishedTriageDTO.getQtyApprovedItem();
                     int qtyProductPhoto = Objects.nonNull(history.getStepDTO().getPhotographs()) ? history.getStepDTO().getPhotographs().getProducts().size() : 0;
 
-                    if(qtyProductPhoto >= qtyApproved)
+                    if (qtyProductPhoto >= qtyApproved)
                         history.setStatusBag(BagStatus.PHOTOGRAPHY_REVIEW);
                 }
             }

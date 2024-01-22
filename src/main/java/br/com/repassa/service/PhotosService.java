@@ -1,6 +1,7 @@
 package br.com.repassa.service;
 
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
+import br.com.backoffice_repassa_utils_lib.dto.history.HistoryDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.AwsConfig;
 import br.com.repassa.dto.*;
@@ -26,6 +27,7 @@ import br.com.repassa.service.rekognition.RekognitionService;
 import br.com.repassa.utils.CommonsUtil;
 import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.runtime.util.StringUtil;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -36,7 +38,10 @@ import org.slf4j.LoggerFactory;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -54,9 +59,13 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class PhotosService {
     private static final Logger LOG = LoggerFactory.getLogger(PhotosService.class);
+    private static final String AUTHORIZATION = "Authorization";
 
     @Inject
     AwsConfig awsConfig;
+
+    @Context
+    HttpHeaders headers;
 
     @Inject
     ProductService productService;
@@ -850,4 +859,14 @@ public class PhotosService {
         }
 
     }
+
+    public List<ProductPhotographyDTO> findProductsByBagId(int page, int size, String bagId) throws RepassaException, JsonProcessingException {
+        String tokenAuth = headers.getHeaderString(AUTHORIZATION);
+        Response returnProducts = productRestClient.findBagsForProduct(page, size, bagId, tokenAuth);
+        List<ProductPhotographyDTO> photographyDTOS = returnProducts.readEntity(new GenericType<List<ProductPhotographyDTO>>() {});
+        return photoManagerRepository.findByIds(photographyDTOS);
+
+    }
+
+
 }

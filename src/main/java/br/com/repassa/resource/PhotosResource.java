@@ -22,6 +22,7 @@ import javax.ws.rs.core.Response;
 
 import br.com.repassa.dto.*;
 import br.com.repassa.exception.PhotoError;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -99,6 +100,17 @@ public class PhotosResource {
                                        @QueryParam("partner") String partner,
                                        @QueryParam("photographyStatus") String photographyStatus) throws RepassaException {
         return Response.ok(photosService.findBagsForPhoto(page, size, bagId, email, statusBag, receiptDate, receiptDateSecondary,partner, photographyStatus)).build();
+    }
+
+    @GET
+    @Operation(summary = "Buscar produtos por sacola", description = "Endpoint usado para buscar produtos presentes em uma sacola.")
+    @Path("/findproducts")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "CADASTRO DE PRODUTOS.CONSULTAR_SACOLAS"})
+    public Response findBagsForProduct(@DefaultValue("0") @RestQuery("page") int page,
+                                       @DefaultValue("40") @RestQuery("size") int size,
+                                       @QueryParam("bagId") String bagId) throws RepassaException, JsonProcessingException {
+       return Response.ok(photosService.findProductsByBagId(page, size, bagId)).build();
     }
 
     @GET

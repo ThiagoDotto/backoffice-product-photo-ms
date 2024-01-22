@@ -27,6 +27,7 @@ import br.com.repassa.service.rekognition.RekognitionService;
 import br.com.repassa.utils.CommonsUtil;
 import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.runtime.util.StringUtil;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -864,11 +865,13 @@ public class PhotosService {
 
     }
 
-    public Object findProductsByBagId(int page, int size, String bagId) throws RepassaException {
+    public List<ProductPhotographyDTO> findProductsByBagId(int page, int size, String bagId) throws RepassaException, JsonProcessingException {
         String tokenAuth = headers.getHeaderString(AUTHORIZATION);
         Response returnProducts = productRestClient.findBagsForProduct(page, size, bagId, tokenAuth);
         List<ProductPhotographyDTO> photographyDTOS = returnProducts.readEntity(new GenericType<List<ProductPhotographyDTO>>() {});
-        List<PhotosManager> photosManagerList = photoManagerRepository.findByIds(photographyDTOS.stream().map(ProductPhotographyDTO::getProductId).toList());
-        return null;
+        return photoManagerRepository.findByIds(photographyDTOS);
+
     }
+
+
 }

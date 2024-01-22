@@ -1,8 +1,11 @@
 package br.com.repassa.repository.aws;
 
+import br.com.backoffice_repassa_utils_lib.dto.history.PhotographyDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.DynamoConfig;
+import br.com.repassa.dto.ProductPhotographyDTO;
 import br.com.repassa.entity.GroupPhotos;
+import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.exception.AwsPhotoError;
@@ -11,16 +14,20 @@ import br.com.repassa.resource.client.PhotosManagerRepositoryImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.runtime.util.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @ApplicationScoped
@@ -226,26 +233,87 @@ public class PhotoManagerRepository {
         return responseDTO;
     }
 
-    public List<PhotosManager> findByIds(List<Long> ids) throws RepassaException {
+    public List<ProductPhotographyDTO> findByIds(List<ProductPhotographyDTO> photographyDTOS) throws RepassaException, JsonProcessingException {
+        List<Long> ids = photographyDTOS.stream().map(ProductPhotographyDTO::getProductId).toList();
         List<String> stringIds = ids.stream().map(String::valueOf).toList();
-        String filterExpression = "id IN (" + stringIds.stream().collect(Collectors.joining(",")) + ")";
-        Map<String, AttributeValue> expressionAttributeValues = stringIds.stream()
-                .collect(Collectors.toMap(id -> ":" + id, id -> AttributeValue.builder().n(id).build()));
+        String filterExpression = "productId IN (" + stringIds.stream().collect(Collectors.joining(",")) + ")";
+        Map<String, AttributeValue> expressionAttributeValues = IntStream.range(0, stringIds.size())
+                .boxed()
+                .collect(Collectors.toMap(
+                        i -> ":productId" + i,
+                        i -> AttributeValue.builder().s("\"productId\":\"" + stringIds.get(i) + "\"").build()
+                ));
+
+        String expression = IntStream.range(0, stringIds.size())
+                .mapToObj(i -> "contains(groupPhotos, :productId" + i + ")")
+                .collect(Collectors.joining(" OR "));
+
 
         DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
 
-        try {
-            List<Map<String, AttributeValue>> items = dynamoDB.scan(scanRequest -> scanRequest
-                    .tableName(dynamoConfig.getPhotosManager())
-                    .filterExpression(filterExpression)
-                    .expressionAttributeValues(expressionAttributeValues)
-            ).items();
+        ScanRequest scanRequest = ScanRequest.builder()
+                .tableName(dynamoConfig.getPhotosManager())
+                .filterExpression(expression)
+                .expressionAttributeValues(expressionAttributeValues)
+                .build();
 
-            return List.of();
-        } catch (DynamoDbException e) {
-            e.printStackTrace();
-            return List.of();
+        ScanResponse items = dynamoDB.scan(scanRequest);
+        return parseJsonToList(items, photographyDTOS);
+    }
+
+    private List<ProductPhotographyDTO> parseJsonToList(ScanResponse items, List<ProductPhotographyDTO> photographyDTOS) throws RepassaException, JsonProcessingException {
+        if (items.count() == 0) {
+            return photographyDTOS;
         }
+
+        for (Map<String, AttributeValue> item : items.items()) {
+            String json = item.get("groupPhotos").s();
+            String editor = item.get("editor").s();
+            String statusPhotos = item.get("statusManagerPhotos").s();
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<GroupPhotos> readValue = objectMapper.readValue(json, new TypeReference<List<GroupPhotos>>() {});
+            for(GroupPhotos group : readValue){
+                photographyDTOS = photographyDTOS.stream()
+                        .map(dto -> {
+                            if (Objects.equals(dto.getProductId(), Long.valueOf(group.getProductId()))) {
+                                dto.setStatus(statusPhotos);
+                                dto.setUpdatedAt(group.getUpdateDate());
+                                if(StringUtil.isNullOrEmpty(dto.getEditorEmail())){
+                                    dto.setEditorEmail(editor);
+                                }
+                            }
+                            return dto;
+                        }).toList();
+
+                List<Photo> photos = group.getPhotos();
+                for(Photo photo : photos){
+                    switch (photo.getTypePhoto().toString()) {
+                        case "PRINCIPAL" -> photographyDTOS = photographyDTOS.stream()
+                                .map(dto -> {
+                                    if (Objects.equals(dto.getProductId(), Long.valueOf(group.getProductId()))) {
+                                        dto.setMainPhoto(photo.getUrlPhoto());
+                                    }
+                                    return dto;
+                                }).toList();
+                        case "DETALHE" -> photographyDTOS = photographyDTOS.stream()
+                                .map(dto -> {
+                                    if (Objects.equals(dto.getProductId(), Long.valueOf(group.getProductId()))) {
+                                        dto.setDetailPhoto(photo.getUrlPhoto());
+                                    }
+                                    return dto;
+                                }).toList();
+                        case "COSTA" -> photographyDTOS = photographyDTOS.stream()
+                                .map(dto -> {
+                                    if (Objects.equals(dto.getProductId(), Long.valueOf(group.getProductId()))) {
+                                        dto.setBackPhoto(photo.getUrlPhoto());
+                                    }
+                                    return dto;
+                                }).toList();
+                    }
+                }
+            }
+        }
+        return photographyDTOS;
     }
 
 }

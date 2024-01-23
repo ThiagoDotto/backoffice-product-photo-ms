@@ -54,13 +54,13 @@ public class HistoryService {
     }
 
     private void isEmpty(Response historyResponse) throws RepassaException {
-        log.info("Validando se o bagId existe no banco de dados");
+        LOGGER.info("Validando se o bagId existe no banco de dados");
         if (Response.Status.NO_CONTENT.getStatusCode() == historyResponse.getStatus()) {
-            log.info("bagId nao foi encontrado, codigo invalido");
+            LOGGER.info("bagId nao foi encontrado, codigo invalido");
             throw new RepassaException(PhotoError.SACOLA_NAO_ENCONTRADA);
         }
         if (Response.Status.INTERNAL_SERVER_ERROR.getStatusCode() == historyResponse.getStatus()) {
-            log.info("Erro ao acessar o history-ms");
+            LOGGER.info("Erro ao acessar o history-ms");
             throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_SACOLAS);
         }
     }

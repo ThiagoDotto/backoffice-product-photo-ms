@@ -1,7 +1,6 @@
 package br.com.repassa.service;
 
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
-import br.com.backoffice_repassa_utils_lib.dto.history.HistoryDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.AwsConfig;
 import br.com.repassa.dto.*;
@@ -28,7 +27,6 @@ import br.com.repassa.utils.CommonsUtil;
 import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.quarkus.panache.common.Parameters;
 import io.quarkus.runtime.util.StringUtil;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;

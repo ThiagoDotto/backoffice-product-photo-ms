@@ -6,6 +6,7 @@ import br.com.repassa.dto.*;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.service.PhotosService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -17,6 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.jboss.resteasy.reactive.RestQuery;
 
 import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
@@ -74,6 +76,34 @@ public class PhotosResource {
 
             throw new RepassaException(exception.getRepassaUtilError());
         }
+    }
+
+    @GET
+    @Operation(summary = "Buscar Sacolas no historico", description = "Endpoint usado para buscar sacolas por filtro.")
+    @Path("/findbags")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "CADASTRO DE PRODUTOS.CONSULTAR_SACOLAS"})
+    public Response findBagsForProduct(@DefaultValue("0") @RestQuery("page") int page,
+                                       @DefaultValue("40") @RestQuery("size") int size,
+                                       @QueryParam("bagId") String bagId,
+                                       @QueryParam("email") String email,
+                                       @QueryParam("statusBag") String statusBag,
+                                       @QueryParam("receiptDate") String receiptDate,
+                                       @QueryParam("receiptDateSecondary") String receiptDateSecondary,
+                                       @QueryParam("partner") String partner,
+                                       @QueryParam("photographyStatus") String photographyStatus) throws RepassaException {
+        return Response.ok(photosService.findBagsForPhoto(page, size, bagId, email, statusBag, receiptDate, receiptDateSecondary, partner, photographyStatus)).build();
+    }
+
+    @GET
+    @Operation(summary = "Buscar produtos por sacola", description = "Endpoint usado para buscar produtos presentes em uma sacola.")
+    @Path("/findproducts")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "CADASTRO DE PRODUTOS.CONSULTAR_SACOLAS"})
+    public Response findBagsForProduct(@DefaultValue("0") @RestQuery("page") int page,
+                                       @DefaultValue("40") @RestQuery("size") int size,
+                                       @QueryParam("bagId") String bagId) throws RepassaException, JsonProcessingException {
+        return Response.ok(photosService.findProductsByBagId(page, size, bagId)).build();
     }
 
     @GET

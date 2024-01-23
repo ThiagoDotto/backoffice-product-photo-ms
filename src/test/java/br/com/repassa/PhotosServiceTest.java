@@ -3,8 +3,12 @@ package br.com.repassa;
 
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.AwsConfig;
+import br.com.repassa.config.DynamoConfig;
+import br.com.repassa.dto.PhotoBagsResponseDTO;
 import br.com.repassa.dto.PhotoFilterDTO;
 import br.com.repassa.dto.PhotoFilterResponseDTO;
+import br.com.repassa.dto.history.BagsResponseDTO;
+import br.com.repassa.dto.history.HistoryResponseDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
@@ -13,20 +17,32 @@ import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.repository.aws.PhotoManagerRepository;
 import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.resource.client.PhotoClientInterface;
+import br.com.repassa.service.HistoryService;
 import br.com.repassa.service.PhotosService;
+import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
-import java.util.*;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static io.smallrye.common.constraint.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 
 public class PhotosServiceTest {
@@ -40,6 +56,12 @@ public class PhotosServiceTest {
 
     @Mock
     AwsS3Client awsS3Client;
+
+    @Mock
+    HistoryService historyService;
+
+    @Mock
+    DynamoConfig dynamoConfigMock;
 
     List<PhotoFilterResponseDTO> listPhotoFilter = new ArrayList<>();
 
@@ -259,5 +281,53 @@ public class PhotosServiceTest {
                 filterResponseDTO2, filterResponseDTO3, filterResponseDTO4, filterResponseDTO5));
 
         return listPhotoFilter;
+    }
+
+    @Test
+    void testFindBagsForPhoto() throws RepassaException {
+        int page = 1;
+        int size = 10;
+        String bagId = "123";
+        String email = "test@example.com";
+        String statusBag = "OPEN";
+        String partner = "SomePartner";
+        String photographyStatus = "APPROVED";
+        String rDate = "2021-01-01";
+        String rDateSecundary = "2025-01-01";
+
+        BagsResponseDTO bagsResponseDTO = new BagsResponseDTO(); // Suponha que você precise configurar corretamente os valores aqui
+        HistoryResponseDTO historyResponseDTO = new HistoryResponseDTO(BigInteger.TEN, Collections.singletonList(bagsResponseDTO));
+
+        when(historyService.findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(rDate), eq(rDateSecundary), eq(partner), eq(photographyStatus), eq("MS-PHOTO")))
+                .thenReturn(historyResponseDTO);
+
+        PhotoBagsResponseDTO result = photosService.findBagsForPhoto(page, size, bagId, email, statusBag, rDate, rDateSecundary, partner, photographyStatus);
+
+        assertEquals(BigInteger.TEN, result.getTotalRecords());
+        assertEquals(1, result.getBagsProductDTO().size());
+
+
+        Mockito.verify(historyService, Mockito.times(1)).findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(rDate), eq(rDateSecundary), eq(partner), eq(photographyStatus), eq("MS-PHOTO"));
+    }
+
+    @Test
+    void testFindBagsForPhotoWithException() throws RepassaException {
+        int page = 1;
+        int size = 10;
+        String bagId = "123";
+        String email = "test@example.com";
+        String statusBag = "OPEN";
+        String partner = "SomePartner";
+        String photographyStatus = "APPROVED";
+        String rDate = "2021-01-01";
+        String rDateSecundary = "2025-01-01";
+
+        when(historyService.findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(rDate), eq(rDateSecundary), eq(partner), eq(photographyStatus), eq("MS-PHOTO")))
+                .thenThrow(new ClientWebApplicationException());
+
+        assertThrows(RepassaException.class,
+                () -> photosService.findBagsForPhoto(page, size, bagId, email, statusBag, rDate, rDateSecundary, partner, photographyStatus));
+
+        Mockito.verify(historyService, Mockito.times(1)).findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(rDate), eq(rDateSecundary), eq(partner), eq(photographyStatus), eq("MS-PHOTO"));
     }
 }

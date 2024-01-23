@@ -1,14 +1,15 @@
 package br.com.repassa.service;
 
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
-import br.com.backoffice_repassa_utils_lib.dto.history.HistoryDTO;
-import br.com.backoffice_repassa_utils_lib.dto.history.PhotoDTO;
-import br.com.backoffice_repassa_utils_lib.dto.history.PhotographyDTO;
-import br.com.backoffice_repassa_utils_lib.dto.history.UserSystem;
+import br.com.backoffice_repassa_utils_lib.dto.history.*;
+import br.com.backoffice_repassa_utils_lib.dto.history.enums.BagStatus;
+import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.dto.PhotographyUpdateDTO;
+import br.com.repassa.dto.history.HistoryResponseDTO;
 import br.com.repassa.entity.GroupPhotos;
 import br.com.repassa.entity.Photo;
 import br.com.repassa.entity.PhotosManager;
+import br.com.repassa.exception.PhotoError;
 import br.com.repassa.resource.client.HistoryClient;
 import io.quarkus.runtime.util.StringUtil;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -16,10 +17,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.ws.rs.core.Response;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @ApplicationScoped
 public class HistoryService {
@@ -29,47 +32,105 @@ public class HistoryService {
     @RestClient
     HistoryClient historyClient;
 
-    public void save(PhotosManager photosManager, UserPrincipalDTO loggerUser) {
+    public void save(PhotosManager photosManager, UserPrincipalDTO loggerUser) throws RepassaException {
 
         List<GroupPhotos> groupPhotos = photosManager.getGroupPhotos();
         List<HistoryDTO> histories = new ArrayList<>();
 
         List<HistoryDTO> historyDTOS = historiesObjsBuilder(loggerUser, groupPhotos, histories);
         LOGGER.debug("Salvando no History as photos");
-        historyDTOS.forEach(historyDTO ->
-                historyClient.updateHistory(historyDTO));
+        historyDTOS.forEach(historyDTO -> historyClient.updateHistory(historyDTO));
     }
 
-    private static List<HistoryDTO> historiesObjsBuilder(UserPrincipalDTO loggerUser, List<GroupPhotos> groupPhotos, List<HistoryDTO> histories) {
-        groupPhotos
-                .forEach(groupPhoto -> {
-                    String productId = groupPhoto.getProductId();
-                    String bagID = productId.substring(0, productId.length() - 3);
-                    List<Photo> photos = groupPhoto.getPhotos();
+    public HistoryDTO findHistoryForBagId(String bagId) throws RepassaException {
+        Response historyResponse = historyClient.getInfoBag(bagId);
+        isEmpty(historyResponse);
+        return historyResponse.readEntity(HistoryDTO.class);
+    }
 
-                    List<PhotoDTO> foto = new ArrayList<>();
-                    photos.forEach(photo -> {
-                        PhotoDTO photoDTO = new PhotoDTO();
-                        photoDTO.setName(photo.getNamePhoto());
-                        photoDTO.setId(photo.getId());
-                        photoDTO.setType(photo.getTypePhoto().toString());
-                        photoDTO.setUrl(photo.getUrlPhoto());
-                        foto.add(photoDTO);
-                    });
+    public HistoryResponseDTO findHistorys(int page, int size, String bagId, String email, String statusBag, String receiptDate, String receiptDateSecondary, String partner, String photographyStatus, String api) {
+        return historyClient.findHistory(page, size, bagId, email, statusBag, receiptDate, receiptDateSecondary,
+                partner, photographyStatus, api);
+    }
 
-                    PhotographyDTO photographyDTO = PhotographyDTO.builder()
-                            .date(LocalDateTime.now().toString())
-                            .photos(foto)
-                            .productId(Long.valueOf(productId))
-                            .userSystem(UserSystem.builder()
-                                    .id(loggerUser.getId())
-                                    .build())
-                            .build();
+    private void isEmpty(Response historyResponse) throws RepassaException {
+        log.info("Validando se o bagId existe no banco de dados");
+        if (Response.Status.NO_CONTENT.getStatusCode() == historyResponse.getStatus()) {
+            log.info("bagId nao foi encontrado, codigo invalido");
+            throw new RepassaException(PhotoError.SACOLA_NAO_ENCONTRADA);
+        }
+        if (Response.Status.INTERNAL_SERVER_ERROR.getStatusCode() == historyResponse.getStatus()) {
+            log.info("Erro ao acessar o history-ms");
+            throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_SACOLAS);
+        }
+    }
 
-                    HistoryManagement historyManagement = new HistoryManagement();
-                    HistoryDTO historyDTO = historyManagement.addPhotography(bagID, photographyDTO);
-                    histories.add(historyDTO);
-                });
+    private List<HistoryDTO> historiesObjsBuilder(UserPrincipalDTO loggerUser, List<GroupPhotos> groupPhotos, List<HistoryDTO> histories) throws RepassaException {
+        HistoryDTO historyDTO = new HistoryDTO();
+
+        for (GroupPhotos group : groupPhotos) {
+            String productId = group.getProductId();
+            String bagID = productId.substring(0, productId.length() - 3);
+
+            if (!bagID.equalsIgnoreCase(String.valueOf(historyDTO.getBagId()))) {
+                historyDTO = findHistoryForBagId(bagID);
+            }
+
+            List<ProductDTO> productDTOS;
+            if (Objects.isNull(historyDTO.getStepDTO()) || Objects.isNull(historyDTO.getStepDTO().getPhotographs()) || Objects.isNull(historyDTO.getStepDTO().getPhotographs().getProducts())) {
+                productDTOS = new ArrayList<>();
+            } else {
+                productDTOS = historyDTO.getStepDTO().getPhotographs().getProducts();
+            }
+
+            List<Photo> photos = group.getPhotos();
+            List<PhotoDTO> foto = new ArrayList<>();
+            photos.forEach(photo -> {
+                PhotoDTO photoDTO = new PhotoDTO();
+                photoDTO.setName(photo.getNamePhoto());
+                photoDTO.setId(photo.getId());
+                photoDTO.setType(photo.getTypePhoto().toString());
+                photoDTO.setUrl(photo.getUrlPhoto());
+                foto.add(photoDTO);
+            });
+
+            ProductDTO productDTO = new ProductDTO();
+            productDTO.setProductId(Long.valueOf(productId));
+            productDTO.setPhotos(foto);
+            productDTOS.add(productDTO);
+
+            PhotographyDTO photographyDTO = PhotographyDTO.builder()
+                    .date(LocalDateTime.now().toString())
+                    .products(productDTOS)
+                    .userSystem(UserSystem.builder()
+                            .id(loggerUser.getId())
+                            .build())
+                    .build();
+
+            if (!Objects.isNull(historyDTO.getStepDTO())) {
+                historyDTO.getStepDTO().setPhotographs(photographyDTO);
+            } else {
+                StepDTO stepDTO = StepDTO
+                        .builder()
+                        .photographs(photographyDTO)
+                        .build();
+                historyDTO.setStepDTO(stepDTO);
+            }
+            histories.add(historyDTO);
+        }
+
+        if (!histories.isEmpty()) {
+            for (HistoryDTO history : histories) {
+                FinishedTriageDTO finishedTriageDTO = Objects.nonNull(history.getStepDTO()) ? history.getStepDTO().getFinishedTriageDTO() : null;
+                if (Objects.nonNull(finishedTriageDTO)) {
+                    int qtyApproved = finishedTriageDTO.getQtyApprovedItem();
+                    int qtyProductPhoto = Objects.nonNull(history.getStepDTO().getPhotographs()) ? history.getStepDTO().getPhotographs().getProducts().size() : 0;
+
+                    if (qtyProductPhoto >= qtyApproved)
+                        history.setStatusBag(BagStatus.PHOTOGRAPHY_REVIEW);
+                }
+            }
+        }
         return histories;
     }
 

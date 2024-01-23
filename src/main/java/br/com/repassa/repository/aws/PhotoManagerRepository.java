@@ -11,6 +11,7 @@ import br.com.repassa.enums.StatusManagerPhotos;
 import br.com.repassa.exception.AwsPhotoError;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.resource.client.PhotosManagerRepositoryImpl;
+import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -166,8 +167,16 @@ public class PhotoManagerRepository {
             throws RepassaException {
 
         try {
+            System.out.println("####### Inicio do processo de consultar PhotoManager  #######");
+            long inicioPhotoManager = System.currentTimeMillis();
+
             PhotosManager responseDTO = null;
+            long inicio = System.currentTimeMillis();
+            System.out.println("Criando conexeão com Dynamo");
             DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
+
+            long fim = System.currentTimeMillis();
+            System.out.printf("Conexão criada %.3f ms%n", (fim - inicio) / 1000d);
 
             Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
             expressionAttributeValues.put(":editor", AttributeValue.builder().s(userName).build());
@@ -175,13 +184,15 @@ public class PhotoManagerRepository {
 
             ScanRequest scanRequest = ScanRequest.builder()
                     .tableName(dynamoConfig.getPhotosManager())
-                    .filterExpression(
-                            "contains(upload_date, :upload_date) and editor = :editor")
+                    .filterExpression("contains(upload_date, :upload_date) and editor = :editor")
                     .expressionAttributeValues(expressionAttributeValues)
+                    .limit(10)
                     .build();
 
             ScanResponse items = dynamoDB.scan(scanRequest);
 
+            System.out.println("####### Percorrendo lista de objetos  #######");
+            long inicioLista = System.currentTimeMillis();
             for (Map<String, AttributeValue> item : items.items()) {
 
                 responseDTO = new PhotosManager();
@@ -201,7 +212,11 @@ public class PhotoManagerRepository {
                 responseDTO.setGroupPhotos(readValue);
                 break;
             }
+            long fimLista = System.currentTimeMillis();
+            System.out.printf("Fim do Lista de Objetos  %.3f ms%n", (fimLista - inicioLista) / 1000d);
 
+            long fimPhotoManager = System.currentTimeMillis();
+            System.out.printf("Fim do Projeto PhotoManager %.3f ms%n", (fimPhotoManager - inicioPhotoManager) / 1000d);
             return responseDTO;
         } catch (Exception e) {
             log.error("Erro nao esperado ao buscar as Fotos no DynamoDB");

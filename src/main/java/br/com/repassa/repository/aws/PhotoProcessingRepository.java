@@ -6,6 +6,7 @@ import br.com.repassa.dto.PhotoFilterResponseDTO;
 import br.com.repassa.entity.dynamo.PhotoProcessed;
 import br.com.repassa.exception.AwsPhotoError;
 import br.com.repassa.exception.PhotoError;
+import io.quarkus.runtime.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -17,12 +18,14 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @ApplicationScoped
-public class PhotoProcessingService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PhotoProcessingService.class);
+public class PhotoProcessingRepository {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PhotoProcessingRepository.class);
     @Inject
     DynamoConfig dynamoConfig;
 
     private static final String SUCCESSFUL_STATS = "successful";
+    private static final int NUMBER_PHOTO_FOR_GROUP = 4;
+
 
     public void save(PhotoProcessed photoProcessed) throws RepassaException {
         try {
@@ -126,6 +129,46 @@ public class PhotoProcessingService {
         }
     }
 
+    public List<PhotoFilterResponseDTO> listItensByDateAndUser_new(String date, String username, int pageSize, String lastEvaluatedKey) throws RepassaException {
+        long inicio = System.currentTimeMillis();
+        System.out.println("inicio da lista de fotos ");
+        DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();
+
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+        expressionAttributeValues.put(":upload_date", AttributeValue.builder().s(date).build());
+        expressionAttributeValues.put(":edited_by", AttributeValue.builder().s(username).build());
+
+        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = new ArrayList<PhotoFilterResponseDTO>();
+
+        ScanRequest.Builder scanRequest = ScanRequest.builder()
+                .tableName(dynamoConfig.getPhotoProcessingTable())
+                .filterExpression("contains(upload_date, :upload_date) AND edited_by = :edited_by")
+                .limit(pageSize * NUMBER_PHOTO_FOR_GROUP)
+                .expressionAttributeValues(expressionAttributeValues);
+
+        if (!StringUtil.isNullOrEmpty(lastEvaluatedKey)) {
+            HashMap<String, AttributeValue> lastAttributeValueHashMap = new HashMap<>();
+            lastAttributeValueHashMap.put("id", AttributeValue.fromS(lastEvaluatedKey));
+            scanRequest.exclusiveStartKey(lastAttributeValueHashMap);
+        }
+
+        ScanResponse items = dynamoDB.scan(scanRequest.build());
+        photoFilterResponseDTOS.addAll(mapPhotoFilter(items));
+        System.out.println("Last photo, " + items.lastEvaluatedKey());
+
+        if (photoFilterResponseDTOS.isEmpty()) {
+            LOGGER.error("Não há itens encontrados para a data informada. Selecione uma nova data ou tente novamente");
+            throw new RepassaException(PhotoError.FOTOS_NAO_ENCONTRADA);
+        } else {
+            Collections.sort(photoFilterResponseDTOS,
+                    Comparator.nullsFirst(Comparator.comparing(PhotoFilterResponseDTO::getImageName)));
+        }
+        long fim = System.currentTimeMillis();
+        System.out.printf("Fim da lista de fotos %.3f ms%n", (fim - inicio) / 1000d);
+        return photoFilterResponseDTOS;
+    }
+
+    @Deprecated
     public List<PhotoFilterResponseDTO> listItensByDateAndUser(String date, String username) throws RepassaException {
 
         DynamoDbClient dynamoDB = DynamoConfig.openDynamoDBConnection();

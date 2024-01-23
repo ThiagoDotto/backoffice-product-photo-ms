@@ -1,7 +1,6 @@
 package br.com.repassa.service;
 
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
-import br.com.backoffice_repassa_utils_lib.dto.history.HistoryDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
 import br.com.repassa.config.AwsConfig;
 import br.com.repassa.dto.*;
@@ -18,7 +17,7 @@ import br.com.repassa.enums.TypePhoto;
 import br.com.repassa.exception.AwsPhotoError;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.repository.aws.PhotoManagerRepository;
-import br.com.repassa.repository.aws.PhotoProcessingService;
+import br.com.repassa.repository.aws.PhotoProcessingRepository;
 import br.com.repassa.resource.client.AwsS3Client;
 import br.com.repassa.resource.client.AwsS3RenovaClient;
 import br.com.repassa.resource.client.ProductRestClient;
@@ -28,7 +27,6 @@ import br.com.repassa.utils.CommonsUtil;
 import br.com.repassa.utils.PhotoUtils;
 import br.com.repassa.utils.StringUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.quarkus.panache.common.Parameters;
 import io.quarkus.runtime.util.StringUtil;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
@@ -60,29 +58,31 @@ public class PhotosService {
     AwsConfig awsConfig;
     ProductService productService;
     PhotoManagerRepository photoManagerRepository;
-    PhotoProcessingService photoProcessingService;
+    PhotoProcessingRepository photoProcessingRepository;
     HistoryService historyService;
     AwsS3Client awsS3Client;
     AwsS3RenovaClient awsS3RenovaClient;
     ProductRestClient productRestClient;
     RekognitionService rekognitionService;
     PhotoRemoveService photoRemoveService;
+    PhotoProcessingService processingService;
 
     @Inject
     public PhotosService(AwsConfig awsConfig, ProductService productService, PhotoManagerRepository photoManagerRepository,
-                         PhotoProcessingService photoProcessingService, HistoryService historyService, AwsS3Client awsS3Client,
-                         AwsS3RenovaClient awsS3RenovaClient, RekognitionService rekognitionService,
+                         PhotoProcessingRepository photoProcessingRepository, HistoryService historyService, AwsS3Client awsS3Client,
+                         AwsS3RenovaClient awsS3RenovaClient, RekognitionService rekognitionService, PhotoProcessingService processingService,
                          PhotoRemoveService photoRemoveService, @RestClient ProductRestClient productRestClient) {
         this.awsConfig = awsConfig;
         this.productService = productService;
         this.photoManagerRepository = photoManagerRepository;
-        this.photoProcessingService = photoProcessingService;
+        this.photoProcessingRepository = photoProcessingRepository;
         this.historyService = historyService;
         this.awsS3Client = awsS3Client;
         this.awsS3RenovaClient = awsS3RenovaClient;
         this.productRestClient = productRestClient;
         this.rekognitionService = rekognitionService;
         this.photoRemoveService = photoRemoveService;
+        this.processingService = processingService;
     }
 
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
@@ -91,7 +91,7 @@ public class PhotosService {
         String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
 
         LOG.info("Fetered by Name: {}", username);
-        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = this.photoProcessingService
+        List<PhotoFilterResponseDTO> photoFilterResponseDTOS = this.photoProcessingRepository
                 .listItensByDateAndUser(filter.getDate(), username);
 
         persistPhotoManager(photoFilterResponseDTOS);
@@ -101,7 +101,7 @@ public class PhotosService {
         Set<String> modifiedProductIdsSet = new HashSet<>();
         for (IdentificatorsDTO dto : validateIds) {
             String productId = dto.getProductId();
-            if(!StringUtil.isNullOrEmpty(productId) && productId.length() > 3){
+            if (!StringUtil.isNullOrEmpty(productId) && productId.length() > 3) {
                 String modifiedProductId = productId.substring(0, productId.length() - 3);
                 modifiedProductIdsSet.add(modifiedProductId);
             }
@@ -133,7 +133,11 @@ public class PhotosService {
 
         List<String> bagIds = extractBagIdFromDTO(validateIds);
         for (String bagId : bagIds) {
-            historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), "IN_PROGRESS", null);
+            try {
+                historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), "IN_PROGRESS", null);
+            } catch (Exception e) {
+                throw new RepassaException(PhotoError.PHOTO_STATUS_ERROR);
+            }
         }
 
         try {
@@ -145,9 +149,27 @@ public class PhotosService {
         return searchPhotos(processBarCodeRequestDTO.getDate(), user);
     }
 
-    public PhotosManager searchPhotos(String date, String name) throws RepassaException {
-        String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
-        LOG.info("Fetered by Name: {}", username);
+
+    public DinamicPaginationDTO searchPhotosPagination(String date, String username, int pageSize, String lastEvaluatedKey) throws RepassaException {
+        long inicio = System.currentTimeMillis();
+        System.out.println("inicio da logica da busca de fotos por usuário ");
+        //TODO: buscar as fotos no PhotoProcessing com paginação
+
+        PhotoFilterDTO photoFilterDTO = new PhotoFilterDTO();
+        photoFilterDTO.setDate(date);
+        List<PhotoFilterResponseDTO> photosProcessing = processingService.getPhotosProcessing(photoFilterDTO, username, pageSize, lastEvaluatedKey);
+
+        PhotosManager photosManager = persistPhotoManager_new(photosProcessing);
+        DinamicPaginationDTO dinamicPaginationDTO = new DinamicPaginationDTO(photosManager, photosProcessing);
+
+        long fim = System.currentTimeMillis();
+        System.out.printf("FIM da Logica busca de fotos por usuário %.3f ms%n", (fim - inicio) / 1000d);
+        // TODO: salvar fotos no photoManager.
+
+        return dinamicPaginationDTO;
+    }
+
+    public PhotosManager searchPhotos(String date, String username) throws RepassaException {
 
         long inicio = System.currentTimeMillis();
         System.out.println("inicio da busca (getByEditorUploadDateAndStatus) de fotos por usuário " + inicio);
@@ -160,7 +182,7 @@ public class PhotosService {
             PhotoFilterDTO photoFilterDTO = new PhotoFilterDTO();
             photoFilterDTO.setDate(date);
 
-            filterAndPersist(photoFilterDTO, name);
+            filterAndPersist(photoFilterDTO, username);
             long inicio2 = System.currentTimeMillis();
             System.out.println("inicio da busca (getByEditorUploadDateAndStatus2) de fotos por usuário " + inicio2);
             photosManager = photoManagerRepository.getByEditorUploadDateAndStatus(date, username);
@@ -413,7 +435,7 @@ public class PhotosService {
         }
     }
 
-    @Transactional
+    //    @Transactional
     public void persistPhotoManager(List<PhotoFilterResponseDTO> resultList) throws RepassaException {
         LOG.info("Iniciando processo de persistencia");
 
@@ -424,7 +446,7 @@ public class PhotosService {
 
         AtomicInteger count = new AtomicInteger();
         AtomicBoolean isPhotoValid = new AtomicBoolean(Boolean.TRUE);
-
+//TODO: Regra para criar o grupo de 4 fotos.
         for (int pos = 0; pos < resultList.size(); pos++) {
             PhotoFilterResponseDTO photosFilter = resultList.get(pos);
 
@@ -465,7 +487,65 @@ public class PhotosService {
         }
         photoManager.setStatusManagerPhotos(StatusManagerPhotos.IN_PROGRESS);
         photoManager.setGroupPhotos(groupPhotos);
+        //TODO: Salva o grupo fotos no dynamo.
+        // Retornar já esse objeto para o front
         persistPhotoManagerDynamoDB(photoManager);
+    }
+
+    public PhotosManager persistPhotoManager_new(List<PhotoFilterResponseDTO> resultList) throws RepassaException {
+        LOG.info("Iniciando processo de persistencia");
+
+        var photoManager = new PhotosManager();
+        List<GroupPhotos> groupPhotos = new ArrayList<>();
+        List<Photo> photos = new ArrayList<>(4);
+        var managerGroupPhotos = new ManagerGroupPhotos(groupPhotos);
+
+        AtomicInteger count = new AtomicInteger();
+        AtomicBoolean isPhotoValid = new AtomicBoolean(Boolean.TRUE);
+//TODO: Regra para criar o grupo de 4 fotos.
+        for (int pos = 0; pos < resultList.size(); pos++) {
+            PhotoFilterResponseDTO photosFilter = resultList.get(pos);
+
+            var photo = Photo.builder().namePhoto(photosFilter.getImageName())
+                    .sizePhoto(photosFilter.getSizePhoto())
+                    .id(photosFilter.getImageId())
+                    .typePhoto(TypePhoto.getPosition(count.get()))
+                    .urlPhoto(photosFilter.getOriginalImageUrl())
+                    .urlThumbnail(photosFilter.getUrlThumbnail()).build();
+
+            PhotoUtils.urlToBase64AndMimeType(photo.getUrlPhoto(), photo);
+
+            CommonsUtil.validatePhoto(Long.valueOf(photo.getSizePhoto()), photo, awsConfig.getUrlBase());
+
+            // Seta photoManager
+            photoManager.setEditor(photosFilter.getEditedBy());
+            photoManager.setDate(photosFilter.getUploadDate());
+            photoManager.setId(UUID.randomUUID().toString());
+
+            photos.add(photo);
+            count.set(count.get() + 1);
+
+            isPhotoValid.set(Boolean.parseBoolean(photosFilter.getIsValid()));
+
+            if (photos.size() % 4 == 0) {
+                managerGroupPhotos.addPhotos(photos, isPhotoValid);
+                photos.clear();
+                count.set(0);
+                isPhotoValid.set(Boolean.TRUE);
+            }
+
+            if (photos.size() % 4 != 0 && resultList.size() - 1 == pos) {
+                managerGroupPhotos.addPhotos(photos, isPhotoValid);
+                photos.clear();
+                count.set(0);
+                isPhotoValid.set(Boolean.TRUE);
+            }
+        }
+        photoManager.setStatusManagerPhotos(StatusManagerPhotos.IN_PROGRESS);
+        photoManager.setGroupPhotos(groupPhotos);
+        //TODO: Salva o grupo fotos no dynamo.
+        // Retornar já esse objeto para o front
+        return photoManager;
     }
 
     public void finishManager(String id, UserPrincipalDTO userPrincipalDTO) throws Exception {
@@ -530,9 +610,9 @@ public class PhotosService {
         }
         List<String> bagIds = extractBagIdFromGroup(groupPhotosList);
         for (String bagId : bagIds) {
-            try{
+            try {
                 historyService.savePhotographyStatusInHistory(Long.parseLong(bagId), "IN_PROGRESS", String.valueOf(qtyFinisheds));
-            }catch (Exception e){
+            } catch (Exception e) {
                 throw new RepassaException(PhotoError.PHOTO_STATUS_ERROR);
             }
         }
@@ -706,7 +786,7 @@ public class PhotosService {
         photoProcessed.setUrlThumbnail(photoBase64DTO.getUrlThumbNail());
         photoProcessed.setOriginalImageUrl(urlImage.get());
 
-        photoProcessingService.save(photoProcessed);
+        photoProcessingRepository.save(photoProcessed);
         return photoProcessed;
     }
 

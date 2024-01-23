@@ -12,7 +12,6 @@ import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.resource.client.HistoryClient;
 import io.quarkus.runtime.util.StringUtil;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 
 @ApplicationScoped
-@Slf4j
 public class HistoryService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HistoryService.class);
@@ -56,13 +54,13 @@ public class HistoryService {
     }
 
     private void isEmpty(Response historyResponse) throws RepassaException {
-        log.info("Validando se o bagId existe no banco de dados");
+        LOGGER.info("Validando se o bagId existe no banco de dados");
         if (Response.Status.NO_CONTENT.getStatusCode() == historyResponse.getStatus()) {
-            log.info("bagId nao foi encontrado, codigo invalido");
+            LOGGER.info("bagId nao foi encontrado, codigo invalido");
             throw new RepassaException(PhotoError.SACOLA_NAO_ENCONTRADA);
         }
         if (Response.Status.INTERNAL_SERVER_ERROR.getStatusCode() == historyResponse.getStatus()) {
-            log.info("Erro ao acessar o history-ms");
+            LOGGER.info("Erro ao acessar o history-ms");
             throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_SACOLAS);
         }
     }

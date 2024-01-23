@@ -873,10 +873,10 @@ public class PhotosService {
             LOG.info("Validado, buscando no MS-PRODUCT");
             returnProducts  = productRestClient.findBagsForProduct(page, size, String.valueOf(bagIdFinal));
         }catch (NumberFormatException e){
-            LOG.info("O formato de bagId está incorreto, o mesmo deve ser Long.");
+            LOG.error("O formato de bagId está incorreto, o mesmo deve ser Long. Erro: "+ e);
             throw new RepassaException(PhotoError.BAG_ID_INVALIDO);
         }catch (Exception e){
-            LOG.info("O MS-Product retornou erro ao buscar a bag.");
+            LOG.error("O MS-Product retornou erro ao buscar a bag. Erro: "+ e);
             throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_SACOLAS);
         }
 

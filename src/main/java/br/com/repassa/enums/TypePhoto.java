@@ -3,7 +3,7 @@ package br.com.repassa.enums;
 public enum TypePhoto {
     ETIQUETA,
     PRINCIPAL,
-    COSTA,
+    COSTAS,
     DETALHE;
     
     public static TypePhoto getPosition(int count) {

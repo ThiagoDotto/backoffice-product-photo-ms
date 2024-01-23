@@ -62,6 +62,8 @@ public class PhotoError implements RepassaUtilError {
 
         public static final RepassaUtilError FOTOS_NAO_ENCONTRADAS = new PhotoError("028",
                 "Não foram localizadas as fotos dos produtos desta sacola.");
+        public static final RepassaUtilError BAG_ID_INVALIDO = new PhotoError("029",
+                "O bagId informado nao esta correto.");
         public PhotoError(String errorCode, String errorMessage) {
                 this.errorCode = errorCode;
                 this.errorMessage = errorMessage;

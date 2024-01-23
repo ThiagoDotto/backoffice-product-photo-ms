@@ -945,17 +945,18 @@ public class PhotosService {
     public List<ProductPhotographyDTO> findProductsByBagId(int page, int size, String bagId) throws RepassaException, JsonProcessingException {
         LOG.info("Iniciando busca por produtos, validando o id: {}", bagId);
         long bagIdFinal;
-        try{
-            bagIdFinal = Long.parseLong(bagId);
-        }catch (Exception e){
-            throw new RepassaException(PhotoError.SACOLA_NAO_ENCONTRADA);
-        }
-
-        LOG.info("Validado, buscando no MS-PRODUCT");
         Response returnProducts;
+
         try{
+            LOG.info("Validando se bagId é um ID");
+            bagIdFinal = Long.parseLong(bagId);
+            LOG.info("Validado, buscando no MS-PRODUCT");
             returnProducts  = productRestClient.findBagsForProduct(page, size, String.valueOf(bagIdFinal));
+        }catch (NumberFormatException e){
+            LOG.error("O formato de bagId está incorreto, o mesmo deve ser Long. Erro: "+ e);
+            throw new RepassaException(PhotoError.BAG_ID_INVALIDO);
         }catch (Exception e){
+            LOG.error("O MS-Product retornou erro ao buscar a bag. Erro: "+ e);
             throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_SACOLAS);
         }
 

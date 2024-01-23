@@ -863,8 +863,25 @@ public class PhotosService {
     }
 
     public List<ProductPhotographyDTO> findProductsByBagId(int page, int size, String bagId) throws RepassaException, JsonProcessingException {
-        Response returnProducts = productRestClient.findBagsForProduct(page, size, bagId);
+        LOG.info("Iniciando busca por produtos, validando o id: {}", bagId);
+        long bagIdFinal;
+        try{
+            bagIdFinal = Long.parseLong(bagId);
+        }catch (Exception e){
+            throw new RepassaException(PhotoError.SACOLA_NAO_ENCONTRADA);
+        }
+
+        LOG.info("Validado, buscando no MS-PRODUCT");
+        Response returnProducts;
+        try{
+            returnProducts  = productRestClient.findBagsForProduct(page, size, String.valueOf(bagIdFinal));
+        }catch (Exception e){
+            throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_SACOLAS);
+        }
+
+        LOG.info("Tratando o retorno do MS-PRODUCT");
         List<ProductPhotographyDTO> photographyDTOS = returnProducts.readEntity(new GenericType<List<ProductPhotographyDTO>>() {});
+        LOG.info("Preparando o retorno do endpoint.");
         return photoManagerRepository.findByIds(photographyDTOS);
 
     }

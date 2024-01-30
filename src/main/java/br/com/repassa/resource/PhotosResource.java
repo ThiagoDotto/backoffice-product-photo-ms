@@ -2,7 +2,15 @@ package br.com.repassa.resource;
 
 import br.com.backoffice_repassa_utils_lib.dto.UserPrincipalDTO;
 import br.com.backoffice_repassa_utils_lib.error.exception.RepassaException;
-import br.com.repassa.dto.*;
+import br.com.repassa.dto.ChangeTypePhotoDTO;
+import br.com.repassa.dto.DeleteGroupPhotosDTO;
+import br.com.repassa.dto.FinishPhotoManagerDTO;
+import br.com.repassa.dto.IdentificatorsDTO;
+import br.com.repassa.dto.ImageDTO;
+import br.com.repassa.dto.PhotoFilterDTO;
+import br.com.repassa.dto.ProcessBarCodeRequestDTO;
+import br.com.repassa.dto.ProductPhotoListDTO;
+import br.com.repassa.dto.ProductResponseDTO;
 import br.com.repassa.entity.PhotosManager;
 import br.com.repassa.exception.PhotoError;
 import br.com.repassa.service.PhotosService;
@@ -20,10 +28,17 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestQuery;
 
-import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.validation.Valid;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -39,7 +54,6 @@ public class PhotosResource {
     JsonWebToken token;
 
     @POST
-    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Adiciona nova imagem",
             description = "endpoint usado para adicionar uma nova imagem.")
@@ -48,7 +62,6 @@ public class PhotosResource {
     }
 
     @GET
-    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Busca por photos", description = "Buscar todas as Photos.")
     @Path("/search")
@@ -76,7 +89,6 @@ public class PhotosResource {
     @Operation(summary = "Buscar Sacolas no historico", description = "Endpoint usado para buscar sacolas por filtro.")
     @Path("/findbags")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"admin", "CADASTRO DE PRODUTOS.CONSULTAR_SACOLAS"})
     public Response findBagsForProduct(@DefaultValue("0") @RestQuery("page") int page,
                                        @DefaultValue("40") @RestQuery("size") int size,
                                        @QueryParam("bagId") String bagId,
@@ -93,7 +105,6 @@ public class PhotosResource {
     @Operation(summary = "Buscar produtos por sacola", description = "Endpoint usado para buscar produtos presentes em uma sacola.")
     @Path("/findproducts")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"admin", "FOTOGRAFIA.CONSULTAR_SACOLAS"})
     public Response findBagsForProduct(@DefaultValue("0") @RestQuery("page") int page,
                                        @DefaultValue("40") @RestQuery("size") int size,
                                        @QueryParam("bagId") String bagId) throws RepassaException, JsonProcessingException {
@@ -101,7 +112,6 @@ public class PhotosResource {
     }
 
     @GET
-    @RolesAllowed({"admin", "CADASTRO DE PRODUTOS.CADASTRAR_PRODUTOS", "HISTÓRICO DE PROCESSAMENTO DA SACOLA.VISUALIZAR_DETALHES"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Busca as fotos do produto", description = "Busca as fotos pelo id do produto.")
     @Path("/getbyproductid")
@@ -110,7 +120,6 @@ public class PhotosResource {
     }
 
     @POST
-    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Processa os IDs das fotos", description = "Processa de forma automatica os IDs atraves dos codigos de barra")
     @Path("/processBarCode")
@@ -119,7 +128,6 @@ public class PhotosResource {
     }
 
     @POST
-    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Buscar fotos por filtro", description = "As fotos existentes no Bucket, poderá ser buscadas através de filtros pré-configurados.")
     @Path("/filter-and-persist")
@@ -135,7 +143,6 @@ public class PhotosResource {
     }
 
     @POST
-    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Validar ID's do(s) grupo(s) de foto(s)", description = "Irá validar os ID's identificado (da etiqueta) ou inserido manualmente dos grupos de fotos.")
     @APIResponses(value = {
@@ -167,7 +174,6 @@ public class PhotosResource {
     }
 
     @POST
-    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Finaliza Gerencia de Fotos",
             description = "endpoint usado para finalizar o processo de gerencia de fotos")
@@ -185,7 +191,6 @@ public class PhotosResource {
     @Operation(summary = "Atualizar Tipo da Foto", description = "Endpoint com finalidade para atualizar o Tipo da foto.")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @APIResponses(value = {
             @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = ChangeTypePhotoDTO.class, type = SchemaType.ARRAY))),
@@ -201,7 +206,6 @@ public class PhotosResource {
     @Operation(summary = "Deleta uma imagem do S3 e Dynamo", description = "Endpoint com finalidade para deletar a foto.")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     public Response deletePhoto(@QueryParam("idPhoto") String idPhoto) throws Exception {
         UserPrincipalDTO userPrincipalDTO = UserPrincipalDTO.builder()
                 .id(this.token.getClaim(Claims.sub))
@@ -216,7 +220,6 @@ public class PhotosResource {
     @Operation(summary = "Deleta os Grupos do Foto", description = "Endpoint com finalidade para deletar a grupo de foto.")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @Path("/group")
     public Response deleteGroupsOfPhoto(@QueryParam("groupId") String groupId) throws Exception {
         photosService.deleteGroupsOfPhoto(groupId);
@@ -227,7 +230,6 @@ public class PhotosResource {
     @Operation(summary = "Deleta os Grupos do Foto", description = "Endpoint com finalidade para deletar todos os grupos vinculado no PhotoManager.")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"admin", "FOTOGRAFIA.GERENCIAR_FOTOS"})
     @APIResponses(value = {
             @APIResponse(responseCode = "202", description = "Objecto aceito", content = @Content(mediaType = "application/json", schema = @Schema(implementation = DeleteGroupPhotosDTO.class, type = SchemaType.ARRAY))),
     })

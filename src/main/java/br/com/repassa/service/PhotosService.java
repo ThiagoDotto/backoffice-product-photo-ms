@@ -919,7 +919,7 @@ public class PhotosService {
 
             listSearch.add(build);
         });
-        listSearch.sort(Comparator.comparing(BagsPhotoDTO::getReceiveDate).reversed());
+        listSearch.sort(Comparator.comparing(BagsPhotoDTO::getReceiveDate));
 
         return new PhotoBagsResponseDTO(totalrecords, listSearch);
 

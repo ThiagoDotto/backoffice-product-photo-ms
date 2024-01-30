@@ -169,8 +169,9 @@ public class PhotosService {
         return dinamicPaginationDTO;
     }
 
-    public PhotosManager searchPhotos(String date, String username) throws RepassaException {
-
+    public PhotosManager searchPhotos(String date, String name) throws RepassaException {
+        String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
+        LOG.info("Fetered by Name: {}", username);
         long inicio = System.currentTimeMillis();
         System.out.println("inicio da busca (getByEditorUploadDateAndStatus) de fotos por usuário " + inicio);
         PhotosManager photosManager = photoManagerRepository.getByEditorUploadDateAndStatus(date, username);

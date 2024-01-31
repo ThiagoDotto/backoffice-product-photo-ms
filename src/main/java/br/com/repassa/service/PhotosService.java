@@ -889,12 +889,19 @@ public class PhotosService {
         return Objects.nonNull(photo.getId()) && (photo.getId().equals(idPhoto));
     }
 
-    public PhotoBagsResponseDTO findBagsForPhoto(int page, int size, String bagId, String email, String statusBag, String receiptDate, String receiptDateSecondary, String partner, String photographyStatus) throws RepassaException {
+    public PhotoBagsResponseDTO findBagsForPhoto(int page, int size, String bagId, String email, String statusBag, String receiptDate, String receiptDateSecondary, String partner, String photographyStatus, String sorter) throws RepassaException {
         List<BagsResponseDTO> history;
         BigInteger totalrecords;
+
+        String api = "MS-PHOTO";
+        if(!StringUtil.isNullOrEmpty(sorter)){
+            if(sorter.equalsIgnoreCase("D") || sorter.equalsIgnoreCase("desc"))
+                api = "MS-PHOTO-DESC";
+        }
+
         try {
             HistoryResponseDTO historyResponse = historyService.findHistorys(page, size, bagId, email, statusBag, receiptDate, receiptDateSecondary,
-                    partner, photographyStatus, "MS-PHOTO");
+                    partner, photographyStatus, api);
             history = historyResponse.getBagsResponse();
             totalrecords = historyResponse.getTotalRecords();
         } catch (ClientWebApplicationException e) {
@@ -920,7 +927,7 @@ public class PhotosService {
 
             listSearch.add(build);
         });
-        listSearch.sort(Comparator.comparing(BagsPhotoDTO::getReceiveDate));
+        listSearch.sort(Comparator.nullsFirst(Comparator.comparing(BagsPhotoDTO::getReceiveDate, Comparator.nullsFirst(Comparator.naturalOrder()))));
 
         return new PhotoBagsResponseDTO(totalrecords, listSearch);
 

@@ -301,7 +301,7 @@ public class PhotosServiceTest {
         when(historyService.findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(rDate), eq(rDateSecundary), eq(partner), eq(photographyStatus), eq("MS-PHOTO")))
                 .thenReturn(historyResponseDTO);
 
-        PhotoBagsResponseDTO result = photosService.findBagsForPhoto(page, size, bagId, email, statusBag, rDate, rDateSecundary, partner, photographyStatus);
+        PhotoBagsResponseDTO result = photosService.findBagsForPhoto(page, size, bagId, email, statusBag, rDate, rDateSecundary, partner, photographyStatus, "");
 
         assertEquals(BigInteger.TEN, result.getTotalRecords());
         assertEquals(1, result.getBagsProductDTO().size());
@@ -326,7 +326,7 @@ public class PhotosServiceTest {
                 .thenThrow(new ClientWebApplicationException());
 
         assertThrows(RepassaException.class,
-                () -> photosService.findBagsForPhoto(page, size, bagId, email, statusBag, rDate, rDateSecundary, partner, photographyStatus));
+                () -> photosService.findBagsForPhoto(page, size, bagId, email, statusBag, rDate, rDateSecundary, partner, photographyStatus, ""));
 
         Mockito.verify(historyService, Mockito.times(1)).findHistorys(eq(page), eq(size), eq(bagId), eq(email), eq(statusBag), eq(rDate), eq(rDateSecundary), eq(partner), eq(photographyStatus), eq("MS-PHOTO"));
     }

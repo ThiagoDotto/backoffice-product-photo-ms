@@ -323,7 +323,7 @@ public class PhotoManagerRepository {
                                     }
                                     return dto;
                                 }).toList();
-                        case "COSTA" -> photographyDTOS = photographyDTOS.stream()
+                        case "COSTA", "COSTAS" -> photographyDTOS = photographyDTOS.stream()
                                 .map(dto -> {
                                     if (Objects.equals(dto.getProductId(), Long.valueOf(group.getProductId()))) {
                                         dto.setBackPhoto(photo.getUrlPhoto());

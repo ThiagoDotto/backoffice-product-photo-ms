@@ -85,8 +85,9 @@ public class PhotosResource {
                                        @QueryParam("receiptDate") String receiptDate,
                                        @QueryParam("receiptDateSecondary") String receiptDateSecondary,
                                        @QueryParam("partner") String partner,
-                                       @QueryParam("photographyStatus") String photographyStatus) throws RepassaException {
-        return Response.ok(photosService.findBagsForPhoto(page, size, bagId, email, statusBag, receiptDate, receiptDateSecondary, partner, photographyStatus)).build();
+                                       @QueryParam("photographyStatus") String photographyStatus,
+                                       @QueryParam("sorter") String sorter) throws RepassaException {
+        return Response.ok(photosService.findBagsForPhoto(page, size, bagId, email, statusBag, receiptDate, receiptDateSecondary, partner, photographyStatus, sorter)).build();
     }
 
     @GET

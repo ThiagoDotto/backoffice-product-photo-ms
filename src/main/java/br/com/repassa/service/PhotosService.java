@@ -66,12 +66,13 @@ public class PhotosService {
     RekognitionService rekognitionService;
     PhotoRemoveService photoRemoveService;
     PhotoProcessingService processingService;
+    PhotoManagerService photoManagerService;
 
     @Inject
     public PhotosService(AwsConfig awsConfig, ProductService productService, PhotoManagerRepository photoManagerRepository,
                          PhotoProcessingRepository photoProcessingRepository, HistoryService historyService, AwsS3Client awsS3Client,
                          AwsS3RenovaClient awsS3RenovaClient, RekognitionService rekognitionService, PhotoProcessingService processingService,
-                         PhotoRemoveService photoRemoveService, @RestClient ProductRestClient productRestClient) {
+                         PhotoRemoveService photoRemoveService, @RestClient ProductRestClient productRestClient, PhotoManagerService photoManagerService) {
         this.awsConfig = awsConfig;
         this.productService = productService;
         this.photoManagerRepository = photoManagerRepository;
@@ -83,6 +84,7 @@ public class PhotosService {
         this.rekognitionService = rekognitionService;
         this.photoRemoveService = photoRemoveService;
         this.processingService = processingService;
+        this.photoManagerService = photoManagerService;
     }
 
     public void filterAndPersist(final PhotoFilterDTO filter, final String name) throws RepassaException {
@@ -113,7 +115,7 @@ public class PhotosService {
         Set<String> modifiedProductIdsSet = new HashSet<>();
         for (GroupPhotos groupPhoto : groupPhotos) {
             String productId = groupPhoto.getProductId();
-            if(!StringUtil.isNullOrEmpty(productId) && productId.length() > 3){
+            if (!StringUtil.isNullOrEmpty(productId) && productId.length() > 3) {
                 String modifiedProductId = productId.substring(0, productId.length() - 3);
                 modifiedProductIdsSet.add(modifiedProductId);
             }
@@ -150,23 +152,26 @@ public class PhotosService {
     }
 
 
-    public DinamicPaginationDTO searchPhotosPagination(String date, String username, int pageSize, String lastEvaluatedKey) throws RepassaException {
-        long inicio = System.currentTimeMillis();
+    public DinamicPaginationDTO searchPhotosPagination(String date, String name, int pageSize, String lastEvaluatedKey) throws RepassaException {
         System.out.println("inicio da logica da busca de fotos por usuário ");
-        //TODO: buscar as fotos no PhotoProcessing com paginação
+        long inicio = System.currentTimeMillis();
 
+        String username = StringUtils.replaceCaracterSpecial(StringUtils.normalizerNFD(name));
         PhotoFilterDTO photoFilterDTO = new PhotoFilterDTO();
         photoFilterDTO.setDate(date);
         List<PhotoFilterResponseDTO> photosProcessing = processingService.getPhotosProcessing(photoFilterDTO, username, pageSize, lastEvaluatedKey);
 
-        PhotosManager photosManager = persistPhotoManager_new(photosProcessing);
-        DinamicPaginationDTO dinamicPaginationDTO = new DinamicPaginationDTO(photosManager, photosProcessing);
+        if (!photosProcessing.isEmpty()) {
+            List<PhotoFilterResponseDTO> photoFilterResponseDTOS = this.photoProcessingRepository
+                    .listItensByDateAndUser_new(photoFilterDTO.getDate(), username, pageSize, lastEvaluatedKey);
+            PhotosManager photosManager = photoManagerService.photoManagerBuilder(photosProcessing);
+            photoManagerService.persistPhotoManagerDynamoDB(photosManager);
 
+            return new DinamicPaginationDTO(photosManager, photosProcessing);
+        }
         long fim = System.currentTimeMillis();
         System.out.printf("FIM da Logica busca de fotos por usuário %.3f ms%n", (fim - inicio) / 1000d);
-        // TODO: salvar fotos no photoManager.
-
-        return dinamicPaginationDTO;
+        return null;
     }
 
     public PhotosManager searchPhotos(String date, String name) throws RepassaException {
@@ -493,61 +498,6 @@ public class PhotosService {
         persistPhotoManagerDynamoDB(photoManager);
     }
 
-    public PhotosManager persistPhotoManager_new(List<PhotoFilterResponseDTO> resultList) throws RepassaException {
-        LOG.info("Iniciando processo de persistencia");
-
-        var photoManager = new PhotosManager();
-        List<GroupPhotos> groupPhotos = new ArrayList<>();
-        List<Photo> photos = new ArrayList<>(4);
-        var managerGroupPhotos = new ManagerGroupPhotos(groupPhotos);
-
-        AtomicInteger count = new AtomicInteger();
-        AtomicBoolean isPhotoValid = new AtomicBoolean(Boolean.TRUE);
-//TODO: Regra para criar o grupo de 4 fotos.
-        for (int pos = 0; pos < resultList.size(); pos++) {
-            PhotoFilterResponseDTO photosFilter = resultList.get(pos);
-
-            var photo = Photo.builder().namePhoto(photosFilter.getImageName())
-                    .sizePhoto(photosFilter.getSizePhoto())
-                    .id(photosFilter.getImageId())
-                    .typePhoto(TypePhoto.getPosition(count.get()))
-                    .urlPhoto(photosFilter.getOriginalImageUrl())
-                    .urlThumbnail(photosFilter.getUrlThumbnail()).build();
-
-            PhotoUtils.urlToBase64AndMimeType(photo.getUrlPhoto(), photo);
-
-            CommonsUtil.validatePhoto(Long.valueOf(photo.getSizePhoto()), photo, awsConfig.getUrlBase());
-
-            // Seta photoManager
-            photoManager.setEditor(photosFilter.getEditedBy());
-            photoManager.setDate(photosFilter.getUploadDate());
-            photoManager.setId(UUID.randomUUID().toString());
-
-            photos.add(photo);
-            count.set(count.get() + 1);
-
-            isPhotoValid.set(Boolean.parseBoolean(photosFilter.getIsValid()));
-
-            if (photos.size() % 4 == 0) {
-                managerGroupPhotos.addPhotos(photos, isPhotoValid);
-                photos.clear();
-                count.set(0);
-                isPhotoValid.set(Boolean.TRUE);
-            }
-
-            if (photos.size() % 4 != 0 && resultList.size() - 1 == pos) {
-                managerGroupPhotos.addPhotos(photos, isPhotoValid);
-                photos.clear();
-                count.set(0);
-                isPhotoValid.set(Boolean.TRUE);
-            }
-        }
-        photoManager.setStatusManagerPhotos(StatusManagerPhotos.IN_PROGRESS);
-        photoManager.setGroupPhotos(groupPhotos);
-        //TODO: Salva o grupo fotos no dynamo.
-        // Retornar já esse objeto para o front
-        return photoManager;
-    }
 
     public void finishManager(String id, UserPrincipalDTO userPrincipalDTO) throws Exception {
         PhotosManager photosManager = finishManagerPhotos(id, userPrincipalDTO);
@@ -955,21 +905,22 @@ public class PhotosService {
         long bagIdFinal;
         Response returnProducts;
 
-        try{
+        try {
             LOG.info("Validando se bagId é um ID");
             bagIdFinal = Long.parseLong(bagId);
             LOG.info("Validado, buscando no MS-PRODUCT");
-            returnProducts  = productRestClient.findBagsForProduct(page, size, String.valueOf(bagIdFinal));
-        }catch (NumberFormatException e){
-            LOG.error("O formato de bagId está incorreto, o mesmo deve ser Long. Erro: "+ e);
+            returnProducts = productRestClient.findBagsForProduct(page, size, String.valueOf(bagIdFinal));
+        } catch (NumberFormatException e) {
+            LOG.error("O formato de bagId está incorreto, o mesmo deve ser Long. Erro: " + e);
             throw new RepassaException(PhotoError.BAG_ID_INVALIDO);
-        }catch (Exception e){
-            LOG.error("O MS-Product retornou erro ao buscar a bag. Erro: "+ e);
+        } catch (Exception e) {
+            LOG.error("O MS-Product retornou erro ao buscar a bag. Erro: " + e);
             throw new RepassaException(PhotoError.ERRO_AO_BUSCAR_SACOLAS);
         }
 
         LOG.info("Tratando o retorno do MS-PRODUCT");
-        List<ProductPhotographyDTO> photographyDTOS = returnProducts.readEntity(new GenericType<List<ProductPhotographyDTO>>() {});
+        List<ProductPhotographyDTO> photographyDTOS = returnProducts.readEntity(new GenericType<List<ProductPhotographyDTO>>() {
+        });
         LOG.info("Preparando o retorno do endpoint.");
         return photoManagerRepository.findByIds(photographyDTOS);
 
